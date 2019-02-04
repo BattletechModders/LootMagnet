@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{78DD6587-C0F0-4497-8A2D-C58332071562}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>LootMagnet</RootNamespace>
+    <AssemblyName>LootMagnet</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="0Harmony">
+      <HintPath>..\..\..\..\..\..\..\Volumes\SourceCode\Steam\steamapps\common\BATTLETECH\BattleTech.app\Contents\Resources\Data\Managed\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\..\..\..\..\..\Volumes\SourceCode\Steam\steamapps\common\BATTLETECH\BattleTech.app\Contents\Resources\Data\Managed\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="BattleTech.Common">
+      <HintPath>..\..\..\..\..\..\..\Volumes\SourceCode\Steam\steamapps\common\BATTLETECH\BattleTech.app\Contents\Resources\Data\Managed\BattleTech.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>..\..\..\..\..\..\..\Volumes\SourceCode\Steam\steamapps\common\BATTLETECH\BattleTech.app\Contents\Resources\Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>..\..\..\..\..\..\..\Volumes\SourceCode\Steam\steamapps\common\BATTLETECH\BattleTech.app\Contents\Resources\Data\Managed\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.1\lib\net35\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="LootMagnet.cs" />
+    <Compile Include="Utils\Logger.cs" />
+    <Compile Include="Utils\ModConfig.cs" />
+    <Compile Include="Patches\Patches.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Patches\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>

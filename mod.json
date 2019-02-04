@@ -1,0 +1,15 @@
+{
+    "Name": "LootMagnet",
+    "Enabled": true,
+    "Version": "0.1.0",
+    "Description": "Groups similar Salvage",
+    "Author": "IceRaptor",
+    "Website": "https://github.com/IceRaptor/LootMagnet",
+    "Contact": "",
+    "DLL": "LootMagnet.dll",
+    "DependsOn" : [ ],
+    "Settings": {
+        "Debug" : true,
+        "LoreMode" : false
+    }
+}

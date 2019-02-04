@@ -1,0 +1,15 @@
+# Loot Magnet
+This mod for the [HBS BattleTech](http://battletechgame.com/) game strives to build a better salvage experience. In the vanilla game, you can only select so many pieces of salvage, regardless of their value. The same weight is given to a _Box of SRM Ammo_ as to a piece of a _BattleMech_. Only a completely inept negotiator would agree to such terms, but I suppose we have Darius to thank so perhaps this makes sense!
+
+In the BattleTech lore salvage was a hotly negotiated topic for mercenaries. Most employers want to retain as much of the salvage as possible, and only the shrewdest, most respected companies could negotiate on anything like even terms. Young companies have to deal with like-in-kind equipment trades, or cash-equivalents, or outright theft from the employer.
+
+To simulate that negotiation process, this mod modifies your salvage choices based upon your MSRB rating and your faction allegiance. The vanilla experience becomes the default for low MSRB and faction contracts. As your MSRB or faction allegiance increases, your employer will be more willing to negotiate bundles of equipment of equivalent value. At the highest levels, you'll find all similar equipment bundled together as a single salvage pick.
+
+## Lore Mode
+If you prefer a grittier playstyle closer to the lore, enabled `LoreMode : true` in the __LootMagnet/mod.json__ file. In this mode, BattleTechs and rare equipment is jealously guarded by the employer and only the savviest of companies can claw it from their hands. In addition your faction rank matters much more, and with unfriendly factions you may find them replacing your hard-earned loot with worse alternatives. After all, what's a contract for other than screwing someone over?
+
+Changes in Lore Mode include:
+
+BattleTech salvage is rarer; at a faction rating of 50 or less you will only receive a single BattleTech part included in the salvage table. If there are multiple chassis types in the salvage table, the lowest tonnage BattleMech will be chosen.
+
+Rare equipment is considered more valuable; any equipment over FIXME C-Bills is considered rare and will be replaced
