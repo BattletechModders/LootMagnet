@@ -8,57 +8,18 @@ using System.Reflection;
 
 namespace LootMagnet.Patches {
 
-    [HarmonyPatch]
-    public static class Contract_GenerateSalvage {
-
-        // Private method can't be patched by annotations, so use MethodInfo
-        public static MethodInfo TargetMethod() {
-            return AccessTools.Method(typeof(Contract), "GenerateSalvage");
-        }
-
-        public static void Postfix (Contract __instance, List<UnitResult> enemyMechs, List<VehicleDef> enemyVehicles, List<UnitResult> lostUnits, bool logResults,
-            List<SalvageDef> ___finalPotentialSalvage) {
-            
-            LootMagnet.Logger.Log("Checking salvage results for contract.");
-
-            //Dictionary<string, SalvageDef> salvagedComponents = new Dictionary<string, SalvageDef>();
-
-            //List<SalvageDef> allComponents = new List<SalvageDef>();
-            //List<SalvageDef> allMechParts = new List<SalvageDef>();
-            //List<SalvageDef> allChassis = new List<SalvageDef>();
-            //foreach (SalvageDef sDef in ___finalPotentialSalvage) {
-            //    LootMagnet.Logger.Log($"Found sDef - UIName:{sDef?.Description?.UIName} count:{sDef?.Count} type:{sDef?.Type} " +
-            //        $"cost:{sDef?.Description?.Cost} salvageId:{sDef.Description.Id}");
-            //    if (sDef.Type == SalvageDef.SalvageType.COMPONENT) {
-            //        allComponents.Add(sDef);                    
-            //        if (salvagedComponents.ContainsKey(sDef.Description.Id)) {
-            //            SalvageDef comp = salvagedComponents[sDef.Description.Id];
-            //            comp.Count++;
-            //            //comp.Description.UIName = $"{comp.Description.UIName}+";
-            //        } else {
-            //            salvagedComponents[sDef.Description.Id] = sDef;
-            //        }
-            //    } else if (sDef.Type == SalvageDef.SalvageType.MECH_PART) {
-            //        allMechParts.Add(sDef);
-            //    } else {
-            //        allChassis.Add(sDef);
-            //    }
-            //}
-
-            //List<SalvageDef> newSalvage = salvagedComponents.Values.ToList();
-            //___finalPotentialSalvage.Clear();
-            //___finalPotentialSalvage.AddRange(newSalvage);
-        }
-    }
 
     public static class SalvageHelper {
 
         public static Dictionary<string, SalvageHolder> SalvageState = new Dictionary<string, SalvageHolder>();
 
+        public static SimGameReputation EmployerReputation = SimGameReputation.INDIFFERENT;
+        public static int MSRBLevel = 0;
+
         // This always returns a quantity of 1!
         public static SalvageDef CloneToXName(SalvageDef salvageDef) {
             
-            string uiNameWithQuantity = $"{salvageDef.Description.UIName} - {salvageDef.Count}";
+            string uiNameWithQuantity = $"{salvageDef.Description.UIName} ({salvageDef.Count}ct.)";
             DescriptionDef newDescDef = new DescriptionDef(
                 salvageDef.Description.Id,
                 salvageDef.Description.Name,
@@ -86,12 +47,41 @@ namespace LootMagnet.Patches {
         public int available;
     }
 
+    [HarmonyPatch]
+    public static class Contract_GenerateSalvage {
+
+        // Private method can't be patched by annotations, so use MethodInfo
+        public static MethodInfo TargetMethod() {
+            return AccessTools.Method(typeof(Contract), "GenerateSalvage");
+        }
+
+        public static void Postfix(Contract __instance, List<UnitResult> enemyMechs, List<VehicleDef> enemyVehicles, List<UnitResult> lostUnits, bool logResults,
+            List<SalvageDef> ___finalPotentialSalvage) {
+
+            LootMagnet.Logger.Log("Checking salvage results for contract.");
+
+        }
+    }
+
+    [HarmonyPatch(typeof(Contract), "CompleteContract")]
+    public static class Contract_CompleteContract {
+        
+        public static void Prefix(Contract __instance, MissionResult result, bool isGoodFaithEffort) {
+            if (__instance != null) {
+                SimGameState simulation = HBS.LazySingletonBehavior<UnityGameInstance>.Instance.Game.Simulation;
+
+                SimGameReputation employerRep = simulation.GetReputation(__instance.GetTeamFaction("ecc8d4f2-74b4-465d-adf6-84445e5dfc230"));
+                SalvageHelper.EmployerReputation = employerRep;
+                SalvageHelper.MSRBLevel = simulation.GetCurrentMRBLevel();
+            }            
+        }
+    }
+
     [HarmonyPatch(typeof(Contract), "GetPotentialSalvage")]
     public static class Contract_GetPotentialSalvage {
 
         // At this point, salvage has been collapsed and grouped. For each of those that have count > 1, change their name, add them to the Dict, and set count to 1.
         public static void Postfix(Contract __instance, List<SalvageDef> __result) {
-            LootMagnet.Logger.Log("C:GPS entered.");
             if (__result != null) {
 
                 List<SalvageDef> normdSalvage = new List<SalvageDef>();
@@ -115,11 +105,28 @@ namespace LootMagnet.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(Contract), "AddToFinalSalvage")]
+    public static class Contract_AddToFinalSalvage {
+        
+        public static void Prefix(Contract __instance, ref SalvageDef def) {
+            if (def != null) {
+                if (SalvageHelper.SalvageState.ContainsKey(def.RewardID)) {
+                    SalvageHolder sHolder = SalvageHelper.SalvageState[def.RewardID];
+                    LootMagnet.Logger.Log($"C:ATFS - updating {def.RewardID} / {def?.Description?.Name} to count {sHolder.available}");
+                    def.Count = sHolder.available;
+                }
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(Contract), "FinalizeSalvage")]
     public static class Contract_FinalizeSalvage {
 
         public static void Postfix(Contract __instance) {
             LootMagnet.Logger.Log("C:FS entered.");
+            SalvageHelper.SalvageState.Clear();
+            SalvageHelper.EmployerReputation = SimGameReputation.INDIFFERENT;
+            SalvageHelper.MSRBLevel = 0;
         }
     }
 
