@@ -13,3 +13,15 @@ Changes in Lore Mode include:
 BattleTech salvage is rarer; at a faction rating of 50 or less you will only receive a single BattleTech part included in the salvage table. If there are multiple chassis types in the salvage table, the lowest tonnage BattleMech will be chosen.
 
 Rare equipment is considered more valuable; any equipment over FIXME C-Bills is considered rare and will be replaced
+
+## WIP NOTES
+
+from mpstark - Yeah, you could hook on to the end of GenerateSalvage, grab the items out, add the "fake" items back in, adjust the UI, and then hook FinalizeSalvage to add the extra items in. Balancing it would be a challenge though. Because the progression is really build around how much salvage you get. 
+Really like the idea though.
+
+
+
+* there is Salvage.VictorySalvageChance, Salvage.VictorySalvageLostPerMechDestroyed, plus analogs for Failed and Retreated.
+* There is something called PercentageContractSalve from the contract
+* There is also constants.Finances.ContractFloorSalvageBonus
+

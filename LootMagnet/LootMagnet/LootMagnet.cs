@@ -12,8 +12,6 @@ namespace LootMagnet {
         public static string ModDir;
         public static ModConfig Config;
 
-        public static string CampaignSeed;
-
         public static readonly Random Random = new Random();
 
         public static void Init(string modDirectory, string settingsJSON) {
@@ -27,7 +25,7 @@ namespace LootMagnet {
                 LootMagnet.Config = new ModConfig();
             }
 
-            Logger = new Logger(modDirectory, "low_visibility");
+            Logger = new Logger(modDirectory, "loot_magnet");
             Logger.LogIfDebug($"ModDir is:{modDirectory}");
             Logger.LogIfDebug($"mod.json settings are:({settingsJSON})");
             Logger.LogIfDebug($"mergedConfig is:{LootMagnet.Config}");
