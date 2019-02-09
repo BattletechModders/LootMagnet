@@ -5,8 +5,22 @@ In the BattleTech lore salvage was a hotly negotiated topic for mercenaries. Mos
 
 To simulate that negotiation process, this mod modifies your salvage choices based upon your MSRB rating and your faction allegiance. The vanilla experience becomes the default for low MSRB and faction contracts. As your MSRB or faction allegiance increases, your employer will be more willing to negotiate bundles of equipment of equivalent value. At the highest levels, you'll find all similar equipment bundled together as a single salvage pick.
 
+## Overview
+
+Your rating with a particular faction determines your companies negotiating power come salvage time. Your rating^3 sets a c-bill limit
+- Strong MSRB & friendly = good outcome
+- Strong MSRB & neutral = good outcome
+- Moderate MSRB & friendly =
+- Moderate MSRB & neutral =
+- Low MSRB & friendly = good outcome
+- Low MSRB & neutral = vanilla
+
+Allied is where you start rolling up mech parts into a single bundle?
+MSRB & faction influences how much gets rolled up?
+
+
 ## Lore Mode
-If you prefer a grittier playstyle closer to the lore, enabled `LoreMode : true` in the __LootMagnet/mod.json__ file. In this mode, BattleTechs and rare equipment is jealously guarded by the employer and only the savviest of companies can claw it from their hands. In addition your faction rank matters much more, and with unfriendly factions you may find them replacing your hard-earned loot with worse alternatives. After all, what's a contract for other than screwing someone over?
+If you prefer a grittier play-style that's closer to the lore, enabled `LoreMode : true` in the __LootMagnet/mod.json__ file. In this mode, BattleTechs and rare equipment is jealously guarded by the employer and only the savviest of companies can claw it from their hands. In addition your faction rank matters much more, and with unfriendly factions you may find them replacing your hard-earned loot with worse alternatives. After all, in every contract somebody gets screwed over - why not the mercs?
 
 Changes in Lore Mode include:
 
@@ -25,3 +39,4 @@ Really like the idea though.
 * There is something called PercentageContractSalve from the contract
 * There is also constants.Finances.ContractFloorSalvageBonus
 
+- Employer will hide even regular equipment at very low relation levels
