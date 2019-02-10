@@ -14,6 +14,7 @@ namespace LootMagnet.Patches {
         public static Dictionary<string, SalvageHolder> SalvageState = new Dictionary<string, SalvageHolder>();
 
         public static SimGameReputation EmployerReputation = SimGameReputation.INDIFFERENT;
+        public static bool IsEmployerAlly = false;
         public static int MSRBLevel = 0;
 
         // This always returns a quantity of 1!
@@ -70,8 +71,10 @@ namespace LootMagnet.Patches {
             if (__instance != null) {
                 SimGameState simulation = HBS.LazySingletonBehavior<UnityGameInstance>.Instance.Game.Simulation;
 
-                SimGameReputation employerRep = simulation.GetReputation(__instance.GetTeamFaction("ecc8d4f2-74b4-465d-adf6-84445e5dfc230"));
+                Faction employerFaction = __instance.GetTeamFaction("ecc8d4f2-74b4-465d-adf6-84445e5dfc230");
+                SimGameReputation employerRep = simulation.GetReputation(employerFaction);
                 SalvageHelper.EmployerReputation = employerRep;
+                SalvageHelper.IsEmployerAlly = simulation.IsCareerFactionAlly(employerFaction);
                 SalvageHelper.MSRBLevel = simulation.GetCurrentMRBLevel();
             }            
         }
@@ -126,6 +129,7 @@ namespace LootMagnet.Patches {
             LootMagnet.Logger.Log("C:FS entered.");
             SalvageHelper.SalvageState.Clear();
             SalvageHelper.EmployerReputation = SimGameReputation.INDIFFERENT;
+            SalvageHelper.IsEmployerAlly = false;
             SalvageHelper.MSRBLevel = 0;
         }
     }
