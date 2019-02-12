@@ -27,19 +27,19 @@ Your rating with a particular faction determines your companies negotiating powe
 
 | MRB Rating | Indifferent | Liked | Friendly | Honored |
 | -- | -- | -- | -- | -- |
-| 0 | 15,000 | 90,000 | 180,000 | 300,000 |
-| 1 | 20,000 | 120,000 | 240,000 | 400,000 |
-| 2 | 25,000 | 150,000 | 300,000 | 500,000 |
-| 3 | 30,000 | 180,000 | 360,000 | 600,000 |
-| 4 | 35,000 | 210,000 | 420,000 | 700,000 |
-| 5 | 40,000 | 240,000 | 480,000 | 800,000 |
+| 0 | 20,000 | 100,000 | 220,000 | 360,000 |
+| 1 | 30,000 | 150,000 | 330,000 | 540,000 |
+| 2 | 45,000 | 225,000 | 495,000   | 810,000   |
+| 3 | 65,000 | 320,000 | 715,000   | 1,170,000 |
+| 4 | 90,000 | 450,000 | 990,000   | 1,620,000 |
+| 5 | 120,000 | 600,000 | 1,320,000 | 2,160,000 |
 
 > Example: A company with MRB rating 2 is Liked by a faction. Their  threshold is $25,000 * 6 = 125,000k. They destroy multiple mechs and the salvage pool includes 10 standard heat sinks. Each heat sink is worth 30,000. 125,000 / 30,000 = 4.166, so the player will see 2 salvage picks of 4 Heat Sinks, and one salvage pick of 2 Heat Sinks.
 
-### Optional Mech Rollup
-By default, only components are rolled up into salvage picks. This reflects the background where mechs (in whole or part) are extremely valuable pieces of salvage.
+These values are controlled through the **mod.json** values RollupMRBValue and RollupFactionMulti. Default values have been set to reflect a vanilla BattleTech experience, but you should feel free to customize them as you see fit.
 
-If the option *RollupMechsForAllies* in `mod.json` is set to true, mech parts will also be rolled up into buckets if the player is **Allied** with the employing faction.
+### Optional Mech Rollup
+If the option *RollupMechsForAllies* in `mod.json` is set to true (the default), mech parts will also be rolled up into buckets if the player is **Allied** with the employing faction. The value *RollupAlliedMultiForMechs* is a multipler to the threshold value that determines when a part can be rolled up. Mech parts are priced at the **full market value** of the Mech, typically making each of them valued at 3-12 milliion c-bills. This defaults to a x10 multiplier to give the player a chance to rollup mechs when they have a high MRB rating.
 
 ## Salvage Holdback
 
@@ -51,7 +51,7 @@ This mod replicates this effect by giving employers an opportunity to remove one
 
 The employer faction rating determines how strong this effect is, and how many items the employer will try to remove. The employer will try to remove up to their Picks count of items from the salvage list, but no more.
 
-The chance for a holdback, and the number of holdback picks an employer receives, are given by the table below.
+The chance for a holdback, and the number of holdback picks an employer receives, are given by the table below. They are controlled by the *HoldbackFactionValue* and *HoldbackMRBMulti* values in **mod.json**.
 
 | Faction Rating | Picks | MRB 0 | MRB 1 | MRB 2 | MRB 3 | MRB 4 | MRB 5 |
 | -- | -- | -- | -- | -- | -- | -- | -- |
@@ -63,21 +63,6 @@ The chance for a holdback, and the number of holdback picks an employer receives
 | Friendly | 1 | 2.50% | 2.19% | 1.88% | 1.56% | 1.25% | 0.94% |
 | Honored | 0 | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
 
+### Optional Mech Holdback
 
-## WIP NOTES
-* there is Salvage.VictorySalvageChance, Salvage.VictorySalvageLostPerMechDestroyed, plus analogs for Failed and Retreated.
-* There is something called PercentageContractSalve from the contract
-* There is also constants.Finances.ContractFloorSalvageBonus
-
-* add a salvage bonus boost, that you get some items for free without picking them, just for completing the mission? Tie into victory chance, faction loyalty, etc
-* Show holdback items on the salvage screen, but prevent them from being selected?
-* Show bonus items on the salvage screen, but prevent them from being removed?
-
-### Lore Mode
-If you prefer a grittier play-style that's closer to the lore, enabled `LoreMode : true` in the __LootMagnet/mod.json__ file. In this mode, BattleTechs and rare equipment is jealously guarded by the employer and only the savviest of companies can claw it from their hands. In addition your faction rank matters much more, and with unfriendly factions you may find them replacing your hard-earned loot with worse alternatives. After all, in every contract somebody gets screwed over - why not the mercs?
-
-Changes in Lore Mode include:
-
-BattleTech salvage is rarer; at a faction rating of 50 or less you will only receive a single BattleTech part included in the salvage table. If there are multiple chassis types in the salvage table, the lowest tonnage BattleMech will be chosen.
-
-Rare equipment is considered more valuable; any equipment over FIXME C-Bills is considered rare and will be replaced
+If the option *HoldbackAlwaysForMechs* in **mod.json** is set to true (defaults to false), then the employer will attempt to holdback each and every mech part in the salvage pool. This is appropriate for players wanting a more lore-based experience, as salvage rights for mechs were hotly debated and often a sore point in negotiations.

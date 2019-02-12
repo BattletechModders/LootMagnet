@@ -28,7 +28,7 @@ namespace LootMagnet {
             Logger = new Logger(modDirectory, "loot_magnet");
             Logger.LogIfDebug($"ModDir is:{modDirectory}");
             Logger.LogIfDebug($"mod.json settings are:({settingsJSON})");
-            Logger.LogIfDebug($"mergedConfig is:{LootMagnet.Config}");
+            Logger.Log($"mergedConfig is:{LootMagnet.Config}");
 
             var harmony = HarmonyInstance.Create(HarmonyPackage);
             harmony.PatchAll(Assembly.GetExecutingAssembly());

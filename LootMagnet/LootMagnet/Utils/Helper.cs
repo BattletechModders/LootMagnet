@@ -1,4 +1,5 @@
 ﻿using BattleTech;
+using BattleTech.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace LootMagnet {
             float rollup = LootMagnet.Config.RollupMRBValue[MRBCfgIdx()];
             float multi = LootMagnet.Config.RollupFactionMulti[FactionCfgIdx()];
             float result = (float)Math.Floor(rollup * multi);
-            LootMagnet.Logger.Log($"rollup:{rollup} x multi:{multi} = result:{result}");
+            LootMagnet.Logger.LogIfDebug($"rollup:{rollup} x multi:{multi} = result:{result}");
             return result;
         }
 
@@ -19,7 +20,7 @@ namespace LootMagnet {
             float holdback = LootMagnet.Config.HoldbackFactionValue[FactionCfgIdx()];
             float multi = LootMagnet.Config.HoldbackMRBMulti[MRBCfgIdx()];
             float result = (float)Math.Floor(holdback * multi);
-            LootMagnet.Logger.Log($"holdback:{holdback} x multi:{multi} = result:{result}");
+            LootMagnet.Logger.LogIfDebug($"holdback:{holdback} x multi:{multi} = result:{result}");
             return result;
         }
 
@@ -37,12 +38,12 @@ namespace LootMagnet {
             float baseThreshold = LootMagnet.Config.DeveloperMode ? 999999999f : GetSalvageThreshold();
             float mechThreshold = LootMagnet.Config.DeveloperMode ? 999999999f : baseThreshold * LootMagnet.Config.RollupAlliedMultiForMechs;
             foreach (SalvageDef rawDef in toRollup) {
-                LootMagnet.Logger.Log($"Found {rawDef.Count} of salvage:'{rawDef?.Description?.Name}' / '{rawDef?.Description.Id}' with rewardId:'{rawDef?.RewardID}'");
+                LootMagnet.Logger.LogIfDebug($"Found {rawDef.Count} of salvage:'{rawDef?.Description?.Name}' / '{rawDef?.Description.Id}' with rewardId:'{rawDef?.RewardID}'");
 
                 if (rawDef.Type == SalvageDef.SalvageType.COMPONENT) {
                     LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of component salvage:'{rawDef?.Description?.Name}' with threshold:{baseThreshold.ToString("0")}");
                     RollupSalvage(rawDef, baseThreshold, rolledUpSalvage);
-                } else if (rawDef.Type == SalvageDef.SalvageType.MECH_PART && LootMagnet.Config.RollupMechsAtAllied || LootMagnet.Config.DeveloperMode) {
+                } else if (rawDef.Type == SalvageDef.SalvageType.MECH_PART && LootMagnet.Config.RollupMechsAtAllied && State.IsEmployerAlly || LootMagnet.Config.DeveloperMode) {                    
                     LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of mech part salvage:'{rawDef?.Description?.Name}' with threshold:{mechThreshold.ToString("0")}");
                     RollupSalvage(rawDef, mechThreshold, rolledUpSalvage);
                 }
@@ -53,12 +54,12 @@ namespace LootMagnet {
 
         private static void RollupSalvage(SalvageDef salvageDef, float threshold, List<SalvageDef> salvage) {
             int rollupCount = (int)Math.Ceiling(threshold / salvageDef.Description.Cost);
-            LootMagnet.Logger.Log($"threshold:{threshold.ToString("0")} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
+            LootMagnet.Logger.LogIfDebug($"threshold:{threshold.ToString("0")} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
 
             if (rollupCount > 1) {
                 int buckets = (int)Math.Floor(salvageDef.Count / (double)rollupCount);
                 int remainder = salvageDef.Count % rollupCount;
-                LootMagnet.Logger.Log($"count:{salvageDef.Count} / limit:{rollupCount} = buckets:{buckets}, remainder:{remainder}");
+                LootMagnet.Logger.LogIfDebug($"count:{salvageDef.Count} / limit:{rollupCount} = buckets:{buckets}, remainder:{remainder}");
 
                 int i = 0;
                 for (i = 0; i < buckets; i++) {
@@ -82,23 +83,36 @@ namespace LootMagnet {
             List<SalvageDef> sortedSalvage = new List<SalvageDef>(salvage);
             sortedSalvage.Sort(new SalvageDefByCostDescendingComparer());
 
-            float holdbackChance = Helper.GetHoldbackChance();
-            int holdbackPicks = Helper.GetHoldbackPicks();
-            
+            float holdbackChance = LootMagnet.Config.DeveloperMode ? 0f : Helper.GetHoldbackChance();
+            int holdbackPicks = LootMagnet.Config.DeveloperMode ? 0 : Helper.GetHoldbackPicks();
+
+            List<SalvageDef> heldbackItems = new List<SalvageDef>();
             foreach (SalvageDef sDef in sortedSalvage) {
                 if ((sDef.Type != SalvageDef.SalvageType.COMPONENT && LootMagnet.Config.HoldbackAlwaysForMechs) || holdbackPicks > 0) {
                     int roll = LootMagnet.Random.Next(100);
                     if (roll <= holdbackChance) {
                         LootMagnet.Logger.Log($"Roll:{roll} <= holdback%:{holdbackChance}. Employer is holding back item:{sDef.Description.Name}.");
+                        heldbackItems.Add(sDef);
                         holdbackPicks--;
                     } else {
-                        LootMagnet.Logger.Log($"Roll:{roll} > holdback%:{holdbackChance}. Player retains item:{sDef.Description.Name}");
+                        LootMagnet.Logger.LogIfDebug($"Roll:{roll} > holdback%:{holdbackChance}. Player retains item:{sDef.Description.Name}");
                         postHoldbackSalvage.Add(sDef);
                     }
                 } else {
-                    LootMagnet.Logger.Log($"Employer has no holdback picks. Player retains item:{sDef.Description.Name}");
+                    LootMagnet.Logger.LogIfDebug($"Employer has no holdback picks. Player retains item:{sDef.Description.Name}");
                     postHoldbackSalvage.Add(sDef);
                 }
+            }
+
+            if (heldbackItems.Count > 0) {
+                List<string> heldbackNames = heldbackItems.Select(sd => sd.Description.Name).ToList();
+                string names = string.Join("\n<line-indent=2px>", heldbackNames.ToArray());
+                GenericPopupBuilder.Create(GenericPopupType.Info, 
+                    $"<i>I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii...</i>\n\n" +
+                    $"A contract dispute has withheld the following items:\n\n{names}"                    
+                    )
+                    .AddButton("Continue")
+                    .Render();
             }
 
             return postHoldbackSalvage;
@@ -120,7 +134,7 @@ namespace LootMagnet {
         // This always returns a quantity of 1!
         public static SalvageDef CloneToXName(SalvageDef salvageDef, int quantity, int count) {
 
-            string uiNameWithQuantity = $"{salvageDef.Description.UIName} ({quantity}ct.)";
+            string uiNameWithQuantity = $"{salvageDef.Description.UIName} <lowercase>[QTY:{quantity}]</lowercase>";
             DescriptionDef newDescDef = new DescriptionDef(
                 salvageDef.Description.Id,
                 salvageDef.Description.Name,

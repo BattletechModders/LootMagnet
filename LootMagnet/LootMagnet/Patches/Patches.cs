@@ -1,5 +1,4 @@
 ﻿using BattleTech;
-using BattleTech.Data;
 using BattleTech.UI;
 using Harmony;
 using Localize;
@@ -8,8 +7,6 @@ using System.Collections.Generic;
 using System.Reflection;
 
 namespace LootMagnet {
-
-
 
     [HarmonyPatch]
     public static class Contract_GenerateSalvage {
@@ -70,15 +67,15 @@ namespace LootMagnet {
     [HarmonyPatch(new Type[] { typeof(InventoryItemElement_NotListView) })]
     public static class ListElementController_SalvageMechPart_RefreshInfoOnWidget {
         public static void Postfix(ListElementController_SalvageMechPart_NotListView __instance, InventoryItemElement_NotListView theWidget, MechDef ___mechDef, SalvageDef ___salvageDef) {
-            LootMagnet.Logger.Log($"LEC_SMP_NLV:RIOW - entered");
+            LootMagnet.Logger.LogIfDebug($"LEC_SMP_NLV:RIOW - entered");
             if (___salvageDef.RewardID != null && ___salvageDef.RewardID.Contains("_qty")) {
                 int qtyIdx = ___salvageDef.RewardID.IndexOf("_qty");
                 string countS = ___salvageDef.RewardID.Substring(qtyIdx + 4);
                 int count = int.Parse(countS);
-                LootMagnet.Logger.Log($"LEC_SMP_NLV:RIOW - found quantity {count}, changing mechdef");
+                LootMagnet.Logger.LogIfDebug($"LEC_SMP_NLV:RIOW - found quantity {count}, changing mechdef");
 
                 DescriptionDef currentDesc = ___mechDef.Chassis.Description;
-                string newUIName = $"{currentDesc.UIName} ({count}ct.)";
+                string newUIName = $"{currentDesc.UIName} <lowercase>[QTY:{count}]</lowercase>";
 
                 Text newPartName = new Text(newUIName, new object[] { });
                 theWidget.mechPartName.SetText(newPartName);
@@ -95,7 +92,7 @@ namespace LootMagnet {
                 if (def.RewardID != null && def.RewardID.Contains("_qty")) {
                     int qtyIdx = def.RewardID.IndexOf("_qty");
                     string countS = def.RewardID.Substring(qtyIdx + 4);
-                    LootMagnet.Logger.Log($"Salvage {def.Description.Name} with rewardID:{def.RewardID} will be given count: {countS}");
+                    LootMagnet.Logger.LogIfDebug($"Salvage {def.Description.Name} with rewardID:{def.RewardID} will be given count: {countS}");
                     int count = int.Parse(countS);
                     def.Count = count;
                 }
@@ -107,8 +104,7 @@ namespace LootMagnet {
     public static class Contract_FinalizeSalvage {
 
         public static void Postfix(Contract __instance) {
-            LootMagnet.Logger.Log("C:FS entered.");
-            State.SalvageState.Clear();
+            LootMagnet.Logger.LogIfDebug("C:FS entered.");
             State.EmployerReputation = SimGameReputation.INDIFFERENT;
             State.IsEmployerAlly = false;
             State.MRBRating = 0;
