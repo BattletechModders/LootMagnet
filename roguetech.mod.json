@@ -10,7 +10,6 @@
     "DependsOn" : [ ],
     "Settings": {
         "Debug" : true,
-        "DeveloperMode" : false,
         "RollupsMechsAtAllied" : true,
         "RollupMRBValue" : [ 40000, 60000, 90000, 130000, 180000, 240000 ],
         "RollupFactionMulti" : [ 0, 0, 0, 1, 5, 11, 18 ],
