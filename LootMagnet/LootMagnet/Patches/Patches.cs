@@ -7,6 +7,8 @@ using System.Reflection;
 
 namespace LootMagnet {
 
+
+
     [HarmonyPatch]
     public static class Contract_GenerateSalvage {
 
@@ -18,7 +20,7 @@ namespace LootMagnet {
         public static void Postfix(Contract __instance, List<UnitResult> enemyMechs, List<VehicleDef> enemyVehicles, List<UnitResult> lostUnits, bool logResults,
             List<SalvageDef> ___finalPotentialSalvage) {
 
-            LootMagnet.Logger.Log("Checking salvage results for contract.");
+            LootMagnet.Logger.Log($"== Resolving salvage for contract:'{__instance.Name}' / '{__instance.GUID}' with result:{__instance.TheMissionResult}");
 
         }
     }
@@ -34,7 +36,8 @@ namespace LootMagnet {
                 SimGameReputation employerRep = simulation.GetReputation(employerFaction);
                 State.EmployerReputation = employerRep;
                 State.IsEmployerAlly = simulation.IsCareerFactionAlly(employerFaction);
-                State.MRBRating = simulation.GetCurrentMRBLevel();
+                State.MRBRating = simulation.GetCurrentMRBLevel() - 1; // Normalize to 0 indexing
+                LootMagnet.Logger.Log($"At contract start, Player has MRB:{State.MRBRating} / EmployerRep:{State.EmployerReputation} / EmployerAllied:{State.IsEmployerAlly}");
             }            
         }
     }
@@ -48,12 +51,12 @@ namespace LootMagnet {
 
                 // Roll up the salvage
                 float salvageThreshold = Helper.GetSalvageThreshold();
-                List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(__result, salvageThreshold);
+                List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(__result);
 
                 // Check for holdback
                 float holdbackChance = Helper.GetHoldbackChance();
                 int holdbackPicks = Helper.GetHoldbackPicks();
-                List<SalvageDef> postHoldbackSalvage = Helper.HoldbackSalvage(rolledUpSalvage, holdbackChance, holdbackPicks);
+                List<SalvageDef> postHoldbackSalvage = Helper.HoldbackSalvage(rolledUpSalvage);
 
                 __result.Clear();
                 __result.AddRange(postHoldbackSalvage);
