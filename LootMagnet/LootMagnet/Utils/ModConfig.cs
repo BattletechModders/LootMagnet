@@ -8,7 +8,7 @@ namespace LootMagnet {
         public bool Debug = false;
 
         // If true, short-cuts many checks for testing purposes. DO NOT SET TRUE FOR RELEASE
-        public bool DeveloperMode = true;
+        public bool DeveloperMode = false;
 
         // If true, when allied to a faction mech parts will be rolled up as well
         public bool RollupMechsAtAllied = true;

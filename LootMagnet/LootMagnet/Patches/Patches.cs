@@ -1,6 +1,8 @@
 ﻿using BattleTech;
+using BattleTech.Data;
 using BattleTech.UI;
 using Harmony;
+using Localize;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -17,11 +19,8 @@ namespace LootMagnet {
             return AccessTools.Method(typeof(Contract), "GenerateSalvage");
         }
 
-        public static void Postfix(Contract __instance, List<UnitResult> enemyMechs, List<VehicleDef> enemyVehicles, List<UnitResult> lostUnits, bool logResults,
-            List<SalvageDef> ___finalPotentialSalvage) {
-
+        public static void Prefix(Contract __instance) {
             LootMagnet.Logger.Log($"== Resolving salvage for contract:'{__instance.Name}' / '{__instance.GUID}' with result:{__instance.TheMissionResult}");
-
         }
     }
 
@@ -46,7 +45,7 @@ namespace LootMagnet {
     public static class Contract_GetPotentialSalvage {
 
         // At this point, salvage has been collapsed and grouped. For each of those that have count > 1, change their name, add them to the Dict, and set count to 1.
-        public static void Postfix(Contract __instance, List<SalvageDef> __result) {
+        public static void Postfix(Contract __instance, List<SalvageDef> __result, List<SalvageDef> ___finalPotentialSalvage) {
             if (__result != null) {
 
                 // Roll up the salvage
@@ -60,20 +59,35 @@ namespace LootMagnet {
 
                 __result.Clear();
                 __result.AddRange(postHoldbackSalvage);
+
+                ___finalPotentialSalvage.Clear();
+                ___finalPotentialSalvage.AddRange(postHoldbackSalvage);
+            }
+        }
+    } 
+
+    [HarmonyPatch(typeof(ListElementController_SalvageMechPart_NotListView), "RefreshInfoOnWidget")]
+    [HarmonyPatch(new Type[] { typeof(InventoryItemElement_NotListView) })]
+    public static class ListElementController_SalvageMechPart_RefreshInfoOnWidget {
+        public static void Postfix(ListElementController_SalvageMechPart_NotListView __instance, InventoryItemElement_NotListView theWidget, MechDef ___mechDef, SalvageDef ___salvageDef) {
+            LootMagnet.Logger.Log($"LEC_SMP_NLV:RIOW - entered");
+            if (___salvageDef.RewardID != null && ___salvageDef.RewardID.Contains("_qty")) {
+                int qtyIdx = ___salvageDef.RewardID.IndexOf("_qty");
+                string countS = ___salvageDef.RewardID.Substring(qtyIdx + 4);
+                int count = int.Parse(countS);
+                LootMagnet.Logger.Log($"LEC_SMP_NLV:RIOW - found quantity {count}, changing mechdef");
+
+                DescriptionDef currentDesc = ___mechDef.Chassis.Description;
+                string newUIName = $"{currentDesc.UIName} ({count}ct.)";
+
+                Text newPartName = new Text(newUIName, new object[] { });
+                theWidget.mechPartName.SetText(newPartName);
             }
         }
     }
 
-    [HarmonyPatch(typeof(AAR_SalvageScreen), "AddNewSalvageEntryToWidget")]
-    public static class AAR_SalvageScreen_AddNewSalvageEntryToWidget {
-
-        // Handle any remainders here
-        public static void Postfix(AAR_SalvageScreen __instance, SalvageDef salvageDef, IMechLabDropTarget targetWidget) {
-
-        }        
-    }    
-
     [HarmonyPatch(typeof(Contract), "AddToFinalSalvage")]
+    [HarmonyAfter("io.github.denadan.CustomComponents")]
     public static class Contract_AddToFinalSalvage {
         
         public static void Prefix(Contract __instance, ref SalvageDef def) {
@@ -81,7 +95,7 @@ namespace LootMagnet {
                 if (def.RewardID != null && def.RewardID.Contains("_qty")) {
                     int qtyIdx = def.RewardID.IndexOf("_qty");
                     string countS = def.RewardID.Substring(qtyIdx + 4);
-                    LootMagnet.Logger.Log($"C:ATFS - def:{def.RewardID} will be given count: {countS}");
+                    LootMagnet.Logger.Log($"Salvage {def.Description.Name} with rewardID:{def.RewardID} will be given count: {countS}");
                     int count = int.Parse(countS);
                     def.Count = count;
                 }

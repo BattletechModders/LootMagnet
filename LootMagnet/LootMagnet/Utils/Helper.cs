@@ -40,10 +40,10 @@ namespace LootMagnet {
                 LootMagnet.Logger.Log($"Found {rawDef.Count} of salvage:'{rawDef?.Description?.Name}' / '{rawDef?.Description.Id}' with rewardId:'{rawDef?.RewardID}'");
 
                 if (rawDef.Type == SalvageDef.SalvageType.COMPONENT) {
-                    LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of component salvage:'{rawDef?.Description?.Name}' with threshold:{baseThreshold}");
+                    LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of component salvage:'{rawDef?.Description?.Name}' with threshold:{baseThreshold.ToString("0")}");
                     RollupSalvage(rawDef, baseThreshold, rolledUpSalvage);
                 } else if (rawDef.Type == SalvageDef.SalvageType.MECH_PART && LootMagnet.Config.RollupMechsAtAllied || LootMagnet.Config.DeveloperMode) {
-                    LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of mech part salvage:'{rawDef?.Description?.Name}' with threshold:{mechThreshold}");
+                    LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of mech part salvage:'{rawDef?.Description?.Name}' with threshold:{mechThreshold.ToString("0")}");
                     RollupSalvage(rawDef, mechThreshold, rolledUpSalvage);
                 }
             } 
@@ -53,7 +53,7 @@ namespace LootMagnet {
 
         private static void RollupSalvage(SalvageDef salvageDef, float threshold, List<SalvageDef> salvage) {
             int rollupCount = (int)Math.Ceiling(threshold / salvageDef.Description.Cost);
-            LootMagnet.Logger.Log($"threshold:{threshold} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
+            LootMagnet.Logger.Log($"threshold:{threshold.ToString("0")} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
 
             if (rollupCount > 1) {
                 int buckets = (int)Math.Floor(salvageDef.Count / (double)rollupCount);
