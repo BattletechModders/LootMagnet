@@ -53,6 +53,8 @@
     <Compile Include="Utils\Logger.cs" />
     <Compile Include="Utils\ModConfig.cs" />
     <Compile Include="Patches\Patches.cs" />
+    <Compile Include="Utils\Helper.cs" />
+    <Compile Include="Utils\State.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

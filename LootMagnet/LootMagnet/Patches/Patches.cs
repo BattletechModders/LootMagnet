@@ -1,52 +1,11 @@
 ﻿using BattleTech;
+using BattleTech.UI;
 using Harmony;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
-namespace LootMagnet.Patches {
-
-
-    public static class SalvageHelper {
-
-        public static Dictionary<string, SalvageHolder> SalvageState = new Dictionary<string, SalvageHolder>();
-
-        public static SimGameReputation EmployerReputation = SimGameReputation.INDIFFERENT;
-        public static bool IsEmployerAlly = false;
-        public static int MSRBLevel = 0;
-
-        // This always returns a quantity of 1!
-        public static SalvageDef CloneToXName(SalvageDef salvageDef) {
-            
-            string uiNameWithQuantity = $"{salvageDef.Description.UIName} ({salvageDef.Count}ct.)";
-            DescriptionDef newDescDef = new DescriptionDef(
-                salvageDef.Description.Id,
-                salvageDef.Description.Name,
-                salvageDef.Description.Details,
-                salvageDef.Description.Icon,
-                salvageDef.Description.Cost,
-                salvageDef.Description.Rarity,
-                salvageDef.Description.Purchasable,
-                salvageDef.Description.Manufacturer,
-                salvageDef.Description.Model,
-                uiNameWithQuantity
-            );
-
-            SalvageDef newDef = new SalvageDef(salvageDef) {
-                Description = newDescDef,
-                Count = 1
-            };
-
-            return newDef;
-        }
-    }
-
-    public class SalvageHolder {
-        public SalvageDef salvageDef;
-        public int available;
-    }
+namespace LootMagnet {
 
     [HarmonyPatch]
     public static class Contract_GenerateSalvage {
@@ -73,9 +32,9 @@ namespace LootMagnet.Patches {
 
                 Faction employerFaction = __instance.GetTeamFaction("ecc8d4f2-74b4-465d-adf6-84445e5dfc230");
                 SimGameReputation employerRep = simulation.GetReputation(employerFaction);
-                SalvageHelper.EmployerReputation = employerRep;
-                SalvageHelper.IsEmployerAlly = simulation.IsCareerFactionAlly(employerFaction);
-                SalvageHelper.MSRBLevel = simulation.GetCurrentMRBLevel();
+                State.EmployerReputation = employerRep;
+                State.IsEmployerAlly = simulation.IsCareerFactionAlly(employerFaction);
+                State.MRBRating = simulation.GetCurrentMRBLevel();
             }            
         }
     }
@@ -87,36 +46,41 @@ namespace LootMagnet.Patches {
         public static void Postfix(Contract __instance, List<SalvageDef> __result) {
             if (__result != null) {
 
-                List<SalvageDef> normdSalvage = new List<SalvageDef>();
-                foreach (SalvageDef sDef in __result) {
-                    if (sDef.Count > 1) {
-                        LootMagnet.Logger.Log($"C:GPS - found {sDef.Count} of salvage:({sDef?.Description?.Name} / {sDef?.Description.Id} with rewardId:{sDef?.RewardID} / GUID:{sDef?.GUID}");
-                        SalvageDef newSDef = SalvageHelper.CloneToXName(sDef);
-                        SalvageHelper.SalvageState[sDef.RewardID] = new SalvageHolder {
-                            salvageDef = newSDef,
-                            available = sDef.Count
-                        };
-                        normdSalvage.Add(newSDef);
-                    } else {
-                        normdSalvage.Add(sDef);
-                    }
-                }
+                // Roll up the salvage
+                float salvageThreshold = Helper.GetSalvageThreshold();
+                List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(__result, salvageThreshold);
+
+                // Check for holdback
+                float holdbackChance = Helper.GetHoldbackChance();
+                int holdbackPicks = Helper.GetHoldbackPicks();
+                List<SalvageDef> postHoldbackSalvage = Helper.HoldbackSalvage(rolledUpSalvage, holdbackChance, holdbackPicks);
 
                 __result.Clear();
-                __result.AddRange(normdSalvage);
+                __result.AddRange(postHoldbackSalvage);
             }
         }
     }
+
+    [HarmonyPatch(typeof(AAR_SalvageScreen), "AddNewSalvageEntryToWidget")]
+    public static class AAR_SalvageScreen_AddNewSalvageEntryToWidget {
+
+        // Handle any remainders here
+        public static void Postfix(AAR_SalvageScreen __instance, SalvageDef salvageDef, IMechLabDropTarget targetWidget) {
+
+        }        
+    }    
 
     [HarmonyPatch(typeof(Contract), "AddToFinalSalvage")]
     public static class Contract_AddToFinalSalvage {
         
         public static void Prefix(Contract __instance, ref SalvageDef def) {
             if (def != null) {
-                if (SalvageHelper.SalvageState.ContainsKey(def.RewardID)) {
-                    SalvageHolder sHolder = SalvageHelper.SalvageState[def.RewardID];
-                    LootMagnet.Logger.Log($"C:ATFS - updating {def.RewardID} / {def?.Description?.Name} to count {sHolder.available}");
-                    def.Count = sHolder.available;
+                if (def.RewardID != null && def.RewardID.Contains("_qty")) {
+                    int qtyIdx = def.RewardID.IndexOf("_qty");
+                    string countS = def.RewardID.Substring(qtyIdx + 4);
+                    LootMagnet.Logger.Log($"C:ATFS - def:{def.RewardID} will be given count: {countS}");
+                    int count = int.Parse(countS);
+                    def.Count = count;
                 }
             }
         }
@@ -127,10 +91,10 @@ namespace LootMagnet.Patches {
 
         public static void Postfix(Contract __instance) {
             LootMagnet.Logger.Log("C:FS entered.");
-            SalvageHelper.SalvageState.Clear();
-            SalvageHelper.EmployerReputation = SimGameReputation.INDIFFERENT;
-            SalvageHelper.IsEmployerAlly = false;
-            SalvageHelper.MSRBLevel = 0;
+            State.SalvageState.Clear();
+            State.EmployerReputation = SimGameReputation.INDIFFERENT;
+            State.IsEmployerAlly = false;
+            State.MRBRating = 0;
         }
     }
 
