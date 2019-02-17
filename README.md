@@ -25,21 +25,31 @@ If a faction trusts you and wants to continue working with you, they will negoti
 
 Your rating with a particular faction determines your companies negotiating power come salvage time. Your MRB rating sets a C-Bill threshold, which determines how many items will be rolled up into a single salvage pick. This rating is multiplied by your faction rating. When you're honored with a faction you'll find they allow you to cart off more salvage, especially if you are a well-known merc company.
 
-| MRB Rating | Indifferent | Liked | Friendly | Honored |
-| -- | -- | -- | -- | -- |
-| 0 | 20,000 | 100,000 | 220,000 | 360,000 |
-| 1 | 30,000 | 150,000 | 330,000 | 540,000 |
-| 2 | 45,000 | 225,000 | 495,000   | 810,000   |
-| 3 | 65,000 | 320,000 | 715,000   | 1,170,000 |
-| 4 | 90,000 | 450,000 | 990,000   | 1,620,000 |
-| 5 | 120,000 | 600,000 | 1,320,000 | 2,160,000 |
+| MRB Rating | Indifferent | Liked | Friendly | Honored | Allied |
+| -- | -- | -- | -- | -- | -- | 
+| 0 | 20,000 | 100,000 | 180,000 | 260,000 | 420,000 |
+| 1 | 30,000 | 150,000 | 270,000 | 390,000 | 630,000 | 
+| 2 | 45,000 | 225,000 | 405,000 | 585,000 | 945,000 |
+| 3 | 65,000 | 320,000 | 585,000 | 845,000 | 1,365,000 |
+| 4 | 90,000 | 450,000 | 810,000 | 1,170,000 | 1,890,000 |
+| 5 | 120,000 | 600,000 | 1,080,000 | 1,560,000 | 2,520,000 |
 
 > Example: A company with MRB rating 2 is Liked by a faction. Their  threshold is $25,000 * 6 = 125,000k. They destroy multiple mechs and the salvage pool includes 10 standard heat sinks. Each heat sink is worth 30,000. 125,000 / 30,000 = 4.166, so the player will see 2 salvage picks of 4 Heat Sinks, and one salvage pick of 2 Heat Sinks.
 
-These values are controlled through the **mod.json** values RollupMRBValue and RollupFactionMulti. Default values have been set to reflect a vanilla BattleTech experience, but you should feel free to customize them as you see fit.
+These values are controlled through the **mod.json** values *RollupMRBValue* and *RollupFactionComponentMulti*. Default values have been set to reflect a vanilla BattleTech experience, but you should feel free to customize them as you see fit.
 
-### Optional Mech Rollup
-If the option *RollupMechsForAllies* in `mod.json` is set to true (the default), mech parts will also be rolled up into buckets if the player is **Allied** with the employing faction. The value *RollupAlliedMultiForMechs* is a multipler to the threshold value that determines when a part can be rolled up. Mech parts are priced at the **full market value** of the Mech, typically making each of them valued at 3-12 milliion c-bills. This defaults to a x10 multiplier to give the player a chance to rollup mechs when they have a high MRB rating.
+###  Mech Rollup
+Mech parts may also be rolled up, if your faction rating is good enough. The _RollupFactionMechMulti_ value in `mod.json` defines the multipliers to the base MRB threshold used for mech parts. Mech parts are priced at the **full market value** of the Mech, typically making each of them valued at 3-12 milliion c-bills. The default value applies a 
+20x multiplier at friendly, 30x at honored, and 180x at allied.
+
+| MRB Rating | Indifferent | Liked | Friendly | Honored | Allied |
+| -- | -- | -- | -- | -- | -- | 
+| 0 | 0 | 0 | 400,000 | 600,000 | 3,600,000 |
+| 1 | 0 | 0 | 600,000 | 900,000 | 5,400,000 | 
+| 2 | 0 | 0 | 900,000 | 1,350,000 | 8,100,000 |
+| 3 | 0 | 0 | 1,300,000 | 1,950,000 | 11,700,000 |
+| 4 | 0 | 0 | 1,800,000 | 2,700,000 | 16,200,000 |
+| 5 | 0 | 0 | 2,400,000 | 3,600,000 | 21,600,000 |
 
 ## Salvage Holdback
 
@@ -62,6 +72,7 @@ The chance for a holdback, and the number of holdback picks an employer receives
 | Liked | 1 | 5.00% | 4.38% | 3.75% | 3.13% | 2.50% | 1.88% |
 | Friendly | 1 | 2.50% | 2.19% | 1.88% | 1.56% | 1.25% | 0.94% |
 | Honored | 0 | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
+| Allied  | 0 | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
 
 ### Optional Mech Holdback
 

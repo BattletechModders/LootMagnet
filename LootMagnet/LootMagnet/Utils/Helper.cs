@@ -8,11 +8,20 @@ namespace LootMagnet {
 
     class Helper {
 
-        public static float GetSalvageThreshold() {
+        public static float GetComponentSalvageThreshold() {
+            float multi = LootMagnet.Config.RollupFactionComponentMulti[FactionCfgIdx()];
+            return GetSalvageThreshold(multi);
+        }
+
+        public static float GetMechSalvageThreshold() {
+            float multi = LootMagnet.Config.RollupFactionComponentMulti[FactionCfgIdx()];
+            return GetSalvageThreshold(multi);
+        }
+
+        private static float GetSalvageThreshold(float factionMulti) {
             float rollup = LootMagnet.Config.RollupMRBValue[MRBCfgIdx()];
-            float multi = LootMagnet.Config.RollupFactionMulti[FactionCfgIdx()];
-            float result = (float)Math.Floor(rollup * multi);
-            LootMagnet.Logger.LogIfDebug($"rollup:{rollup} x multi:{multi} = result:{result}");
+            float result = (float)Math.Floor(rollup * factionMulti);
+            LootMagnet.Logger.LogIfDebug($"rollup:{rollup} x multi:{factionMulti} = result:{result}");
             return result;
         }
 
@@ -35,24 +44,26 @@ namespace LootMagnet {
             List<SalvageDef> toRollup = rawSalvage.Where(sd => sd.Count > 1 && sd?.Description?.Cost != 0 && sd.Type != SalvageDef.SalvageType.CHASSIS).ToList();
             List<SalvageDef> rolledUpSalvage = rawSalvage.Except(toRollup).ToList();
 
-            float baseThreshold = LootMagnet.Config.DeveloperMode ? 999999999f : GetSalvageThreshold();
-            float mechThreshold = LootMagnet.Config.DeveloperMode ? 999999999f : baseThreshold * LootMagnet.Config.RollupAlliedMultiForMechs;
+            float componentThreshold = LootMagnet.Config.DeveloperMode ? 999999999f : GetComponentSalvageThreshold();
+            float mechThreshold = LootMagnet.Config.DeveloperMode ? 999999999f : GetMechSalvageThreshold();
             foreach (SalvageDef rawDef in toRollup) {
                 LootMagnet.Logger.LogIfDebug($"Found {rawDef.Count} of salvage:'{rawDef?.Description?.Name}' / '{rawDef?.Description.Id}' with rewardId:'{rawDef?.RewardID}'");
 
-                if (rawDef.Type == SalvageDef.SalvageType.COMPONENT) {
-                    LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of component salvage:'{rawDef?.Description?.Name}' with threshold:{baseThreshold.ToString("0")}");
-                    RollupSalvage(rawDef, baseThreshold, rolledUpSalvage);
-                } else if (rawDef.Type == SalvageDef.SalvageType.MECH_PART && LootMagnet.Config.RollupMechsAtAllied && State.IsEmployerAlly || LootMagnet.Config.DeveloperMode) {                    
+                if (rawDef.Type == SalvageDef.SalvageType.COMPONENT && componentThreshold > 0 ) {
+                    LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of component salvage:'{rawDef?.Description?.Name}' with threshold:{componentThreshold.ToString("0")}");
+                    RollupSalvageDef(rawDef, componentThreshold, rolledUpSalvage);
+                } else if (rawDef.Type == SalvageDef.SalvageType.MECH_PART && mechThreshold > 0) {
                     LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of mech part salvage:'{rawDef?.Description?.Name}' with threshold:{mechThreshold.ToString("0")}");
-                    RollupSalvage(rawDef, mechThreshold, rolledUpSalvage);
+                    RollupSalvageDef(rawDef, mechThreshold, rolledUpSalvage);
+                } else {
+                    rolledUpSalvage.Add(rawDef);
                 }
             } 
 
             return rolledUpSalvage;
         }
 
-        private static void RollupSalvage(SalvageDef salvageDef, float threshold, List<SalvageDef> salvage) {
+        private static void RollupSalvageDef(SalvageDef salvageDef, float threshold, List<SalvageDef> salvage) {
             int rollupCount = (int)Math.Ceiling(threshold / salvageDef.Description.Cost);
             LootMagnet.Logger.LogIfDebug($"threshold:{threshold.ToString("0")} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
 
@@ -158,23 +169,38 @@ namespace LootMagnet {
         }
 
         private static int FactionCfgIdx() {
+            int cfgIdx = 0;
             switch (State.EmployerReputation) {
                 case SimGameReputation.LOATHED:
-                    return 0;
+                    cfgIdx = 0;
+                    break;
                 case SimGameReputation.HATED:
-                    return 1;
+                    cfgIdx = 1;
+                    break;
                 case SimGameReputation.DISLIKED:
-                    return 2;
+                    cfgIdx = 2;
+                    break;
                 case SimGameReputation.INDIFFERENT:
-                    return 3;
+                    cfgIdx = 3;
+                    break;
                 case SimGameReputation.LIKED:
-                    return 4;
+                    cfgIdx = 4;
+                    break;
                 case SimGameReputation.FRIENDLY:
-                    return 5;
+                    cfgIdx = 5;
+                    break;
                 case SimGameReputation.HONORED:
                 default:
-                    return 6;
+                    cfgIdx = 6;
+                    break;
             }
+
+            // Check for allied
+            if (State.IsEmployerAlly) {
+                cfgIdx = 7;
+            }
+
+            return cfgIdx;
         }
 
         private static int MRBCfgIdx() {

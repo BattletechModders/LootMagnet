@@ -46,7 +46,7 @@ namespace LootMagnet {
             if (__result != null) {
 
                 // Roll up the salvage
-                float salvageThreshold = Helper.GetSalvageThreshold();
+                float salvageThreshold = Helper.GetComponentSalvageThreshold();
                 List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(__result);
 
                 // Check for holdback

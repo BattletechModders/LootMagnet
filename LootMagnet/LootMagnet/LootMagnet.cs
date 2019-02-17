@@ -1,6 +1,7 @@
 ﻿using Harmony;
 using Newtonsoft.Json;
 using System;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace LootMagnet {
@@ -26,6 +27,11 @@ namespace LootMagnet {
             }
 
             Logger = new Logger(modDirectory, "loot_magnet");
+
+            Assembly asm = Assembly.GetExecutingAssembly();
+            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(asm.Location);
+            Logger.Log($"Assembly version: {fvi.ProductVersion}");
+
             Logger.LogIfDebug($"ModDir is:{modDirectory}");
             Logger.LogIfDebug($"mod.json settings are:({settingsJSON})");
             Logger.Log($"mergedConfig is:{LootMagnet.Config}");
