@@ -26,9 +26,9 @@ If a faction trusts you and wants to continue working with you, they will negoti
 Your rating with a particular faction determines your companies negotiating power come salvage time. Your MRB rating sets a C-Bill threshold, which determines how many items will be rolled up into a single salvage pick. This rating is multiplied by your faction rating. When you're honored with a faction you'll find they allow you to cart off more salvage, especially if you are a well-known merc company.
 
 | MRB Rating | Indifferent | Liked | Friendly | Honored | Allied |
-| -- | -- | -- | -- | -- | -- | 
+| -- | -- | -- | -- | -- | -- |
 | 0 | 20,000 | 100,000 | 180,000 | 260,000 | 420,000 |
-| 1 | 30,000 | 150,000 | 270,000 | 390,000 | 630,000 | 
+| 1 | 30,000 | 150,000 | 270,000 | 390,000 | 630,000 |
 | 2 | 45,000 | 225,000 | 405,000 | 585,000 | 945,000 |
 | 3 | 65,000 | 320,000 | 585,000 | 845,000 | 1,365,000 |
 | 4 | 90,000 | 450,000 | 810,000 | 1,170,000 | 1,890,000 |
@@ -43,9 +43,9 @@ Mech parts may also be rolled up, if your faction rating is good enough. The _Ro
 20x multiplier at friendly, 30x at honored, and 180x at allied.
 
 | MRB Rating | Indifferent | Liked | Friendly | Honored | Allied |
-| -- | -- | -- | -- | -- | -- | 
+| -- | -- | -- | -- | -- | -- |
 | 0 | 0 | 0 | 400,000 | 600,000 | 3,600,000 |
-| 1 | 0 | 0 | 600,000 | 900,000 | 5,400,000 | 
+| 1 | 0 | 0 | 600,000 | 900,000 | 5,400,000 |
 | 2 | 0 | 0 | 900,000 | 1,350,000 | 8,100,000 |
 | 3 | 0 | 0 | 1,300,000 | 1,950,000 | 11,700,000 |
 | 4 | 0 | 0 | 1,800,000 | 2,700,000 | 16,200,000 |
@@ -77,3 +77,7 @@ The chance for a holdback, and the number of holdback picks an employer receives
 ### Optional Mech Holdback
 
 If the option *HoldbackAlwaysForMechs* in **mod.json** is set to true (defaults to false), then the employer will attempt to holdback each and every mech part in the salvage pool. This is appropriate for players wanting a more lore-based experience, as salvage rights for mechs were hotly debated and often a sore point in negotiations.
+
+## BUGS and WIP 
+
+* Holdback is currently completely RNG; each item is rolled for independently. This yields odd results, to move to a model where the rolls are made across the number of items, then hold back the most valuable ones.
