@@ -57,27 +57,23 @@ Players are mercenaries, and mercenaries are contract workers. Even friendly emp
 
 > Employer: I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii clearly covers the exemption clauses for material deemed 'critical to the war effort'. That bit of salvage falls under the clause, and thus out of your grubby hands. We'll be retaining it. You should be thankful we're honoring the terms of agreement in the first place, mercenary.
 
-This mod replicates this effect by giving employers an opportunity to remove one or more pieces of salvage from the salvage pool before the player ever sees it. The salvage pool is rolled up and sorted by cost (which closely tracks rarity and value), then a check if made made for each item in the list. If the check succeeds, the item is removed from the salvage pool before the player ever notices it.
+This mod replicates this effect by giving employers an opportunity to remove one or more pieces of salvage from the salvage pool before the player ever sees it. The employer faction rating determines how strong this effect is, and how many items the employer will try to remove. 
 
-The employer faction rating determines how strong this effect is, and how many items the employer will try to remove. The employer will try to remove up to their Picks count of items from the salvage list, but no more.
+Mechanically what happens is the employer makes one holdback roll for each item in the salvage pool. For each roll that's a success, they gain one **holdback pick**. The salvage pool is then rolled up and sorted by cost. The employer then removes a number of items from the list equal to their total holdback picks. They remove the most rare and valuable ones first, leaving the scraps for the mercenaries.
 
-The chance for a holdback, and the number of holdback picks an employer receives, are given by the table below. They are controlled by the *HoldbackFactionValue* and *HoldbackMRBMulti* values in **mod.json**.
+The chance for a holdback is given by the table below. These values are controlled by the *HoldbackFactionValue* and *HoldbackMRBMulti* values in **mod.json**.
 
-| Faction Rating | Picks | MRB 0 | MRB 1 | MRB 2 | MRB 3 | MRB 4 | MRB 5 |
-| -- | -- | -- | -- | -- | -- | -- | -- |
-| Loathed | 4 | 60.00% |52.50% | 45.00% | 37.50% | 30.00% | 22.50% |
-| Hated | 3 | 40.00% | 35.00% | 30.00% | 25.00% | 20.00% | 15.00% |
-| Disliked | 2 | 20.00% | 17.50% | 15.00% | 12.50% | 10.00% | 7.50% |
-| Indifferent | 1 | 10.00% |8.75% | 7.50%| 6.25% | 5.00% | 3.75% |
-| Liked | 1 | 5.00% | 4.38% | 3.75% | 3.13% | 2.50% | 1.88% |
-| Friendly | 1 | 2.50% | 2.19% | 1.88% | 1.56% | 1.25% | 0.94% |
-| Honored | 0 | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
-| Allied  | 0 | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
+| Faction Rating | MRB 0 | MRB 1 | MRB 2 | MRB 3 | MRB 4 | MRB 5 |
+| -- | -- | -- | -- | -- | -- | -- |
+| Loathed | 60.00% |52.50% | 45.00% | 37.50% | 30.00% | 22.50% |
+| Hated | 40.00% | 35.00% | 30.00% | 25.00% | 20.00% | 15.00% |
+| Disliked | 20.00% | 17.50% | 15.00% | 12.50% | 10.00% | 7.50% |
+| Indifferent | 10.00% |8.75% | 7.50%| 6.25% | 5.00% | 3.75% |
+| Liked | 5.00% | 4.38% | 3.75% | 3.13% | 2.50% | 1.88% |
+| Friendly | 2.50% | 2.19% | 1.88% | 1.56% | 1.25% | 0.94% |
+| Honored | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
+| Allied  | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
 
 ### Optional Mech Holdback
 
-If the option *HoldbackAlwaysForMechs* in **mod.json** is set to true (defaults to false), then the employer will attempt to holdback each and every mech part in the salvage pool. This is appropriate for players wanting a more lore-based experience, as salvage rights for mechs were hotly debated and often a sore point in negotiations.
-
-## BUGS and WIP 
-
-* Holdback is currently completely RNG; each item is rolled for independently. This yields odd results, to move to a model where the rolls are made across the number of items, then hold back the most valuable ones.
+If the option *AlwaysHoldbackMechs* in **mod.json** is set to true (defaults to false), then the employer will attempt to holdback each and every mech part in the salvage pool. This is appropriate for players wanting a more lore-based experience, as salvage rights for mechs were hotly debated and often a sore point in negotiations.
