@@ -1,4 +1,6 @@
 ﻿
+using BattleTech;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace LootMagnet {
@@ -14,33 +16,39 @@ namespace LootMagnet {
         public float[] RollupMRBValue = new float[] { 40000f, 60000f, 90000f, 130000f, 180000f, 240000f };
 
         // How much the rollup values should be multiplied for components
+        // loathed, hated, disliked, indifferent, liked, friendly, allied
         public float[] RollupFactionComponentMulti = new float[] { 0f, 0f, 0f, 1f, 5f, 9f, 13f, 21f };
 
         // How much the rollup values should be multipled for mech components
+        // loathed, hated, disliked, indifferent, liked, friendly, allied
         public float[] RollupFactionMechMulti = new float[] { 0f, 0f, 0f, 0f, 0f, 20f, 30f, 180f };
 
-        // The holdback percentage for any given item
-        public float[] HoldbackFactionValue = new float[] { 60f, 40f, 20f, 10f, 5f, 2.5f, 0f, 0f };
+        // The holdback percentage for any given item. 
+        // loathed, hated, disliked, indifferent, liked, friendly, allied
+        public float[] HoldbackTriggerChance = new float[] { 60f, 40f, 20f, 16f, 8f, 4f, 2f, 1f };
 
-        // How much your MRB reduces the holdback percentage
-        public float[] HoldbackMRBMulti = new float[] { 1f, 0.875f, 0.75f, 0.625f, 0.5f, 0.375f };
+        // The percentage of the total salvage list AFTER GROUPING that will be held back (rounded up)
+        public float HoldbackPicksGreed = 5.0f;
+
+        // The holdback percentage for any given item
+        // loathed, hated, disliked, indifferent, liked, friendly, allied
+        public int[] HoldbackPicksModifier = new int[] { +3, +2, +1, 0, -1, -2, -3 };
 
         // If true, the employer will roll on each and every mech part
         public bool AlwaysHoldbackMechs = false;
-
 
         // TODO: Print multiplier values
         public override string ToString() {
             string rollupMRBVal = string.Join(", ", RollupMRBValue.Select(v => v.ToString("0.00")).ToArray());
             string rollupFactComponentVal = string.Join(", ", RollupFactionComponentMulti.Select(v => v.ToString("0.00")).ToArray());
             string rollupFactMechVal = string.Join(", ", RollupFactionMechMulti.Select(v => v.ToString("0.00")).ToArray());
-            string holdbackFactVal = string.Join(", ", HoldbackFactionValue.Select(v => v.ToString("0.00")).ToArray());
-            string holdbackMRBVal = string.Join(", ", HoldbackMRBMulti.Select(v => v.ToString("0.00")).ToArray());
+            string holdbackTrigger = string.Join(", ", HoldbackTriggerChance.Select(v => v.ToString("0.00")).ToArray());
+            string holdbackPicks = string.Join(", ", HoldbackPicksModifier.Select(v => v.ToString("0")).ToArray());
 
             return $"Debug:{Debug} DeveloperMode:{DeveloperMode}\n " +
                 $"Rollup Components MRBValues:[{rollupMRBVal}] x FactMulti:[{rollupFactComponentVal}]\n " +
                 $"Rollup Mechs MRBValues:[{rollupMRBVal}] x FactMulti:[{rollupFactMechVal}]\n " +
-                $"Holdback alwaysHoldback:{AlwaysHoldbackMechs} FactPercent:[{holdbackFactVal}] x MRBMulti:[{holdbackMRBVal}]";
+                $"Holdback Chance:{holdbackTrigger} PicksGreed:{HoldbackPicksGreed} AdditionalPicks:{holdbackPicks}";
         }
     }
 }

@@ -14,7 +14,7 @@ namespace LootMagnet {
         }
 
         public static float GetMechSalvageThreshold() {
-            float multi = LootMagnet.Config.RollupFactionComponentMulti[FactionCfgIdx()];
+            float multi = LootMagnet.Config.RollupFactionMechMulti[FactionCfgIdx()];
             return GetSalvageThreshold(multi);
         }
 
@@ -25,12 +25,8 @@ namespace LootMagnet {
             return result;
         }
 
-        public static float GetHoldbackChance() {
-            float holdback = LootMagnet.Config.HoldbackFactionValue[FactionCfgIdx()];
-            float multi = LootMagnet.Config.HoldbackMRBMulti[MRBCfgIdx()];
-            float result = (float)Math.Floor(holdback * multi);
-            LootMagnet.Logger.LogIfDebug($"holdback:{holdback} x multi:{multi} = result:{result}");
-            return result;
+        public static float GetHoldbackTriggerChance() {
+            return LootMagnet.Config.HoldbackTriggerChance[FactionCfgIdx()];
         }
 
         // Rollup the salvage into buckets
@@ -90,34 +86,33 @@ namespace LootMagnet {
             List<SalvageDef> sortedSalvage = new List<SalvageDef>(salvage);
             sortedSalvage.Sort(new SalvageDefByCostDescendingComparer());
 
-            float holdbackChance = LootMagnet.Config.DeveloperMode ? 0f : Helper.GetHoldbackChance();
-            LootMagnet.Logger.Log($"Employer is making {sortedSalvage.Count} rolls with holdback percent: {holdbackChance}");
-            // Calculate the number of picks that will be held back
-            int holdbackPicks = 0;
-            for (int i = 0; i < sortedSalvage.Count; i++) {
-                int roll = LootMagnet.Random.Next(100);
-                if (roll <= holdbackChance) {
-                    holdbackPicks++;
-                }
-            }
-            LootMagnet.Logger.Log($"Employer is holding back the most valuable {holdbackPicks} of {sortedSalvage.Count} items.");
-
+            int rawPicks = (int)Math.Ceiling(sortedSalvage.Count * LootMagnet.Config.HoldbackPicksGreed);
+            int picksModifier = LootMagnet.Config.HoldbackPicksModifier[FactionCfgIdx()];
+            int holdbackPicks = rawPicks + picksModifier;
+            LootMagnet.Logger.Log($"Employer is holding back: {holdbackPicks} picks = {rawPicks} (raw picks) + {picksModifier} (modifier)");
+            
             List<SalvageDef> heldbackItems = new List<SalvageDef>();
             foreach (SalvageDef sDef in sortedSalvage) {
                 if (holdbackPicks > 0) {
-                    LootMagnet.Logger.Log($"Employer is holding back item:{sDef.Description.Name}.");
-                    heldbackItems.Add(sDef);
-                    holdbackPicks--;
-                } else if (sDef.Type != SalvageDef.SalvageType.COMPONENT && LootMagnet.Config.AlwaysHoldbackMechs) {
-                    // If a mechpart and we're in holdbackalwaysForMechs, try to hold back each and every mech part
-                    int roll = LootMagnet.Random.Next(100);
-                    if (roll <= holdbackChance) {
-                        LootMagnet.Logger.Log($"Roll:{roll} <= holdback%:{holdbackChance}. Employer is holding back mechPart:{sDef.Description.Name}.");
+                    if (sDef.Type == SalvageDef.SalvageType.COMPONENT) {
+                        // If we're not a mechpart, hold back all items in the bundle
+                        LootMagnet.Logger.Log($"Employer is holding back {sDef.Count} items of type:{sDef.Description.Name} as one pick.");
                         heldbackItems.Add(sDef);
                         holdbackPicks--;
                     } else {
-                        LootMagnet.Logger.LogIfDebug($"Roll:{roll} > holdback%:{holdbackChance}. Player retains mechPart:{sDef.Description.Name}");
-                        postHoldbackSalvage.Add(sDef);
+                        // If we are a mechpart, each part counts as one item for holdback purposes
+                        if (sDef.Count >= holdbackPicks) {
+                            sDef.Count = sDef.Count - holdbackPicks;
+                            LootMagnet.Logger.Log($"Employer is holding back {holdbackPicks} mech parts/chassis of type:{sDef.Description.Name} as {sDef.Count} picks.");
+                            if (sDef.Count == 0) {
+                                heldbackItems.Add(sDef);
+                            }
+                            holdbackPicks = 0;
+                        } else {
+                            LootMagnet.Logger.Log($"Employer is holding back {sDef.Count} mech parts/chassis of type:{sDef.Description.Name} as {sDef.Count} picks.");
+                            heldbackItems.Add(sDef);
+                            holdbackPicks = holdbackPicks - sDef.Count;
+                        }
                     }
                 } else {
                     LootMagnet.Logger.LogIfDebug($"Player retains item:{sDef.Description.Name}");
@@ -132,7 +127,9 @@ namespace LootMagnet {
                     $"<b>I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii...</b>\n\n" +
                     $"A contract dispute has withheld the following items:\n\n{names}"                    
                     )
-                    .AddButton("Continue")
+                    .AddButton("Accept") // accept holdback, gain slight reputation boost
+                    .AddButton("Dispute") // dispute with MSRB, greater chance based upon MSRB rating. Lose less rep, on a failed dispute lose MSRB rating as well 
+                    .AddButton("Refuse") // forcibly refuse claims, take reputation hit equal to cost
                     .Render();
             }
 

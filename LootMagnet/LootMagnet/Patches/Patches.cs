@@ -44,20 +44,28 @@ namespace LootMagnet {
         // At this point, salvage has been collapsed and grouped. For each of those that have count > 1, change their name, add them to the Dict, and set count to 1.
         public static void Postfix(Contract __instance, List<SalvageDef> __result, List<SalvageDef> ___finalPotentialSalvage) {
             if (__result != null) {
+                // The salvage list after all modifications 
+                List<SalvageDef> modifiedSalvage = new List<SalvageDef>();
 
                 // Roll up the salvage
                 float salvageThreshold = Helper.GetComponentSalvageThreshold();
                 List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(__result);
-
+                
                 // Check for holdback
-                float holdbackChance = Helper.GetHoldbackChance();
-                List<SalvageDef> postHoldbackSalvage = Helper.HoldbackSalvage(rolledUpSalvage);
+                float triggerChance = Helper.GetHoldbackTriggerChance();
+                float holdbackRoll = LootMagnet.Random.Next(101);
+                if (holdbackRoll <= triggerChance) {
+                    LootMagnet.Logger.Log($"Holdback triggered from roll:{holdbackRoll} <= triggerChance:{triggerChance}. Removing salvage.");
+                    modifiedSalvage.AddRange(Helper.HoldbackSalvage(rolledUpSalvage));
+                } else {
+                    modifiedSalvage.AddRange(rolledUpSalvage);
+                }
 
                 __result.Clear();
-                __result.AddRange(postHoldbackSalvage);
+                __result.AddRange(rolledUpSalvage);
 
                 ___finalPotentialSalvage.Clear();
-                ___finalPotentialSalvage.AddRange(postHoldbackSalvage);
+                ___finalPotentialSalvage.AddRange(rolledUpSalvage);
             }
         }
     } 
