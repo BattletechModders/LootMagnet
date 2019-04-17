@@ -56,7 +56,7 @@ namespace LootMagnet {
                 float holdbackRoll = LootMagnet.Random.Next(101);
                 if (holdbackRoll <= triggerChance) {
                     LootMagnet.Logger.Log($"Holdback triggered from roll:{holdbackRoll} <= triggerChance:{triggerChance}. Removing salvage.");
-                    modifiedSalvage.AddRange(Helper.HoldbackSalvage(rolledUpSalvage));
+                    modifiedSalvage.AddRange(Helper.HoldbackSalvage(rolledUpSalvage, __instance));
                 } else {
                     modifiedSalvage.AddRange(rolledUpSalvage);
                 }

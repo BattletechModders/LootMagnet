@@ -1,12 +1,17 @@
 ﻿using BattleTech;
 using BattleTech.UI;
+using Harmony;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using TMPro;
 
 namespace LootMagnet {
 
     class Helper {
+
+        public static bool BlockedOnInput = false;
 
         public static float GetComponentSalvageThreshold() {
             float multi = LootMagnet.Config.RollupFactionComponentMulti[FactionCfgIdx()];
@@ -80,18 +85,27 @@ namespace LootMagnet {
             }
         }
 
-        public static List<SalvageDef> HoldbackSalvage(List<SalvageDef> salvage) {
+        public static List<SalvageDef> HoldbackSalvage(List<SalvageDef> salvage, Contract contract) {
             List<SalvageDef> postHoldbackSalvage = new List<SalvageDef>();
-            
+
+            SimGameState sgs = UnityGameInstance.BattleTechGame.Simulation;
+            CombatGameState cgs = UnityGameInstance.BattleTechGame.Combat;
+            SimGameConstants sgc = UnityGameInstance.BattleTechGame.Simulation.Constants;
+
+            // Sort by cost descending
             List<SalvageDef> sortedSalvage = new List<SalvageDef>(salvage);
             sortedSalvage.Sort(new SalvageDefByCostDescendingComparer());
 
             int rawPicks = (int)Math.Ceiling(sortedSalvage.Count * LootMagnet.Config.HoldbackPicksGreed);
             int picksModifier = LootMagnet.Config.HoldbackPicksModifier[FactionCfgIdx()];
-            int holdbackPicks = rawPicks + picksModifier;
+            int holdbackPicks = Math.Max(0, rawPicks + picksModifier);
+            bool employerHeldbackItems = holdbackPicks > 0;
+
             LootMagnet.Logger.Log($"Employer is holding back: {holdbackPicks} picks = {rawPicks} (raw picks) + {picksModifier} (modifier)");
             
             List<SalvageDef> heldbackItems = new List<SalvageDef>();
+            List<string> heldbackItemsDesc = new List<string>();
+            List<int> heldbackItemsCost = new List<int>();
             foreach (SalvageDef sDef in sortedSalvage) {
                 if (holdbackPicks > 0) {
                     if (sDef.Type == SalvageDef.SalvageType.COMPONENT) {
@@ -99,6 +113,8 @@ namespace LootMagnet {
                         LootMagnet.Logger.Log($"Employer is holding back {sDef.Count} items of type:{sDef.Description.Name} as one pick.");
                         heldbackItems.Add(sDef);
                         holdbackPicks--;
+                        heldbackItemsDesc.Add($"{sDef.Description.Name} [QTY:{sDef.Count}]");
+                        heldbackItemsCost.Add(sDef.Description.Cost * sDef.Count);
                     } else {
                         // If we are a mechpart, each part counts as one item for holdback purposes
                         if (sDef.Count >= holdbackPicks) {
@@ -107,11 +123,15 @@ namespace LootMagnet {
                             if (sDef.Count == 0) {
                                 heldbackItems.Add(sDef);
                             }
+                            heldbackItemsDesc.Add($"{sDef.Description.Name} [QTY:{holdbackPicks}]");
+                            heldbackItemsCost.Add((int)Math.Ceiling((sDef.Description.Cost * holdbackPicks) / (double)sgc.Story.DefaultMechPartMax));
                             holdbackPicks = 0;
                         } else {
                             LootMagnet.Logger.Log($"Employer is holding back {sDef.Count} mech parts/chassis of type:{sDef.Description.Name} as {sDef.Count} picks.");
                             heldbackItems.Add(sDef);
                             holdbackPicks = holdbackPicks - sDef.Count;
+                            heldbackItemsDesc.Add($"{sDef.Description.Name} [QTY:{sDef.Count}]");
+                            heldbackItemsCost.Add((int)Math.Ceiling((sDef.Description.Cost * sDef.Count) / (double)sgc.Story.DefaultMechPartMax));
                         }
                     }
                 } else {
@@ -120,21 +140,86 @@ namespace LootMagnet {
                 }
             }
 
-            if (heldbackItems.Count > 0) {
-                List<string> heldbackNames = heldbackItems.Select(sd => sd.Description.Name).ToList();
-                string names = string.Join("\n<line-indent=2px>", heldbackNames.ToArray());
-                GenericPopupBuilder.Create(GenericPopupType.Info, 
+            if (employerHeldbackItems) {
+                string itemDescs = string.Join("\n<line-indent=2px> * ", heldbackItemsDesc.ToArray());
+
+                Faction employer = contract.GetTeamFaction(cgs.LocalPlayerTeamGuid);
+                
+                int acceptRepBonus = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackAcceptMulti);
+                void acceptAction() { AcceptAction(sgs, acceptRepBonus, employer); }
+                LootMagnet.Logger.LogIfDebug($"acceptRepBonus: {acceptRepBonus}");
+
+                int refuseRepPenalty = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackRefusalMulti);
+                void refuseAction() { RefuseAction(sgs, refuseRepPenalty, employer); }
+                LootMagnet.Logger.LogIfDebug($"refuseRepPenalty: {refuseRepPenalty}");
+
+                int disputeRepPenalty = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackDisputeMulti);
+                float disputeMRBModifier = LootMagnet.Config.HoldbackDisputeMRBFactor * sgs.GetCurrentMRBLevel();
+                float disputeCritChance = LootMagnet.Config.HoldbackDisputeCriticalChance;
+                float disputeSuccessChance = LootMagnet.Config.HoldbackDisputeBaseChance + disputeMRBModifier;
+                float disputeFailChance = 100f - (2f * disputeCritChance) - disputeSuccessChance;
+                int disputePayout = (int)Math.Ceiling(heldbackItemsCost.Aggregate((x, y) => x + y) * sgc.Finances.ShopSellModifier * LootMagnet.Config.HoldbackDisputePayoutFactor);
+                LootMagnet.Logger.LogIfDebug($"disputeSuccessChance {disputeSuccessChance} = base {LootMagnet.Config.HoldbackDisputeBaseChance} " +
+                    $" + MRBModifier: {disputeMRBModifier}, disputeCritChance:{disputeCritChance}, " +
+                    $"payout: {SimGameState.GetCBillString(disputePayout)}");
+                void disputeAction() { DisputeAction(sgs, refuseRepPenalty, employer, disputeSuccessChance, disputeCritChance, disputePayout); }
+
+                GenericPopup gp = GenericPopupBuilder.Create(
+                    "DISPUTED SALVAGE", 
                     $"<b>I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii...</b>\n\n" +
-                    $"A contract dispute has withheld the following items:\n\n{names}"                    
+                    $"Your employer invokes a contract clause that allows them to withhold the following items:" + 
+                    $"\n\n{itemDescs}\n\n" + 
+                    $"If you <b>Accept</b>, you may not salvage the items and <b>gain</b> {acceptRepBonus} reputation.\n" +
+                    $"If you <b>Refuse</b>, you may salvage the items but <b>lose</b> {refuseRepPenalty} reputation.\n" +
+                    $"If you <b>Dispute</b>, you lose {disputeRepPenalty} reputation with the <b>MRB</b> and have a:\n" +
+                    $"<line-indent=2px> - {disputeCritChance}% chance that you will instead lose <b>all salvage rights</b>.\n" +
+                    $"<line-indent=2px> - {disputeSuccessChance}% chance of retaining the items in the salvage pool.\n" +
+                    $"<line-indent=2px> - {disputeFailChance}% chance losing the items and being forced to pay {SimGameState.GetCBillString(disputePayout)} in legal fees\n" +
+                    $"<line-indent=2px> - {disputeCritChance}% chance that you will instead lose <b>all salvage rights</b>.\n"
                     )
-                    .AddButton("Accept") // accept holdback, gain slight reputation boost
-                    .AddButton("Dispute") // dispute with MSRB, greater chance based upon MSRB rating. Lose less rep, on a failed dispute lose MSRB rating as well 
-                    .AddButton("Refuse") // forcibly refuse claims, take reputation hit equal to cost
+                    .AddButton("Accept", acceptAction, true, null) // accept holdback, gain slight reputation boost
+                    .AddButton("Dispute", disputeAction, true, null) // dispute with MSRB, greater chance based upon MSRB rating. Lose less rep, on a failed dispute lose MSRB rating as well 
+                    .AddButton("Refuse", refuseAction, true, null) // forcibly refuse claims, take reputation hit equal to cost
                     .Render();
+
+                TextMeshProUGUI contentText = (TextMeshProUGUI)Traverse.Create(gp).Field("_contentText").GetValue();
+                contentText.alignment = TextAlignmentOptions.Left;
+
+                BlockedOnInput = true;
+
+                while (BlockedOnInput) {
+                    Thread.Sleep(50);
+                    LootMagnet.Logger.LogIfDebug($"Waiting on input from the player");
+                }
             }
 
+            LootMagnet.Logger.Log($"DEBUG: RETURNING HOLDBACK ");
             return postHoldbackSalvage;
         }
+
+        public static void AcceptAction(SimGameState simGameState, int reputationModifier, Faction employer) {
+            simGameState.AddReputation(employer, reputationModifier, false);
+            LootMagnet.Logger.Log($"Player accepted holdback. Applying {reputationModifier} reputation and removing items.");
+
+
+            BlockedOnInput = false;
+        }
+
+        public static void RefuseAction(SimGameState simGameState, int reputationModifier, Faction employer) {
+            simGameState.AddReputation(employer, reputationModifier, false);
+            LootMagnet.Logger.Log($"Player refused holdback. Applying {reputationModifier} reputation.");
+
+
+            BlockedOnInput = false;
+        }
+
+        public static void DisputeAction(SimGameState simGameState, int reputationModifier, Faction employer, float successChance, float critFailChance, int payout) {
+            simGameState.AddReputation(employer, reputationModifier, false);
+            LootMagnet.Logger.Log($"Player disputed holdback and TODO");
+
+            BlockedOnInput = false;
+        }
+
 
         public class SalvageDefByCostDescendingComparer : IComparer<SalvageDef> {
             public int Compare(SalvageDef x, SalvageDef y) {

@@ -25,17 +25,36 @@ namespace LootMagnet {
 
         // The holdback percentage for any given item. 
         // loathed, hated, disliked, indifferent, liked, friendly, allied
-        public float[] HoldbackTriggerChance = new float[] { 60f, 40f, 20f, 16f, 8f, 4f, 2f, 1f };
+        //public float[] HoldbackTriggerChance = new float[] { 60f, 40f, 20f, 16f, 8f, 4f, 2f, 1f };
+        public float[] HoldbackTriggerChance = new float[] { 99f, 99f, 99f, 99f, 99f, 99f, 99f, 99f };
 
         // The percentage of the total salvage list AFTER GROUPING that will be held back (rounded up)
-        public float HoldbackPicksGreed = 5.0f;
+        public float HoldbackPicksGreed = 0.05f;
 
         // The holdback percentage for any given item
         // loathed, hated, disliked, indifferent, liked, friendly, allied
         public int[] HoldbackPicksModifier = new int[] { +3, +2, +1, 0, -1, -2, -3 };
 
-        // If true, the employer will roll on each and every mech part
-        public bool AlwaysHoldbackMechs = false;
+        // Acceptance reputation gain is equal to the the max possible reputation of the contract times this value
+        public float HoldbackAcceptMulti = 0.5f;
+
+        // Refusal reputation loss is equal to the the max possible reputation of the contract times this value
+        public float HoldbackRefusalMulti = 2.5f;
+
+        // Dispute reputation loss is equal to the max possible reputation of the contract times this value
+        public float HoldbackDisputeMulti = 0.75f;
+
+        // In a dispute, what's the base success chance you have.
+        public float HoldbackDisputeBaseChance = 40.0f;
+
+        // For each point of MRB rating, increase the success chance by this amount
+        public float HoldbackDisputeMRBFactor = 10.0f;
+
+        // In a dispute, what's the chance of a critical failure (lose all equipment) or success (gain the items automatically)
+        public float HoldbackDisputeCriticalChance = 5.0f;
+
+        // The percentage of the total items cost that must be paid in legal fees
+        public float HoldbackDisputePayoutFactor = 0.10f;
 
         // TODO: Print multiplier values
         public override string ToString() {
@@ -46,9 +65,12 @@ namespace LootMagnet {
             string holdbackPicks = string.Join(", ", HoldbackPicksModifier.Select(v => v.ToString("0")).ToArray());
 
             return $"Debug:{Debug} DeveloperMode:{DeveloperMode}\n " +
-                $"Rollup Components MRBValues:[{rollupMRBVal}] x FactMulti:[{rollupFactComponentVal}]\n " +
-                $"Rollup Mechs MRBValues:[{rollupMRBVal}] x FactMulti:[{rollupFactMechVal}]\n " +
-                $"Holdback Chance:{holdbackTrigger} PicksGreed:{HoldbackPicksGreed} AdditionalPicks:{holdbackPicks}";
+                $"Rollup\n" +
+                $"  Components MRBValues:[{rollupMRBVal}] x FactMulti:[{rollupFactComponentVal}]\n " +
+                $"  Mechs MRBValues:[{rollupMRBVal}] x FactMulti:[{rollupFactMechVal}]\n " +
+                $"Holdback\n" +
+                $" Chance:{holdbackTrigger} PicksGreed:{HoldbackPicksGreed} AdditionalPicks:{holdbackPicks}\n" +
+                $" AcceptMulti:{HoldbackAcceptMulti} RefusalMulti:{HoldbackRefusalMulti} DisputeMulti:{HoldbackDisputeMulti}";
         }
     }
 }
