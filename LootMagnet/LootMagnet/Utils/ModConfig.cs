@@ -28,12 +28,9 @@ namespace LootMagnet {
         //public float[] HoldbackTriggerChance = new float[] { 60f, 40f, 20f, 16f, 8f, 4f, 2f, 1f };
         public float[] HoldbackTriggerChance = new float[] { 99f, 99f, 99f, 99f, 99f, 99f, 99f, 99f };
 
-        // The percentage of the total salvage list AFTER GROUPING that will be held back (rounded up)
-        public float HoldbackPicksGreed = 0.05f;
-
         // The holdback percentage for any given item
         // loathed, hated, disliked, indifferent, liked, friendly, allied
-        public int[] HoldbackPicksModifier = new int[] { +3, +2, +1, 0, -1, -2, -3 };
+        public int[] HoldbackPicks = new int[] { 6, 4, 3, 2, 2, 1, 1 };
 
         // Acceptance reputation gain is equal to the the max possible reputation of the contract times this value
         public float HoldbackAcceptMulti = 0.5f;
@@ -54,7 +51,9 @@ namespace LootMagnet {
         public float HoldbackDisputeCriticalChance = 5.0f;
 
         // The percentage of the total items cost that must be paid in legal fees
-        public float HoldbackDisputePayoutFactor = 0.10f;
+        public float HoldbackDisputePayoutMulti = 1f;
+
+        public float HoldbackDisputeCriticalPayoutMulti = 3f;
 
         // TODO: Print multiplier values
         public override string ToString() {
@@ -62,14 +61,14 @@ namespace LootMagnet {
             string rollupFactComponentVal = string.Join(", ", RollupFactionComponentMulti.Select(v => v.ToString("0.00")).ToArray());
             string rollupFactMechVal = string.Join(", ", RollupFactionMechMulti.Select(v => v.ToString("0.00")).ToArray());
             string holdbackTrigger = string.Join(", ", HoldbackTriggerChance.Select(v => v.ToString("0.00")).ToArray());
-            string holdbackPicks = string.Join(", ", HoldbackPicksModifier.Select(v => v.ToString("0")).ToArray());
+            string holdbackPicks = string.Join(", ", HoldbackPicks.Select(v => v.ToString("0")).ToArray());
 
             return $"Debug:{Debug} DeveloperMode:{DeveloperMode}\n " +
                 $"Rollup\n" +
                 $"  Components MRBValues:[{rollupMRBVal}] x FactMulti:[{rollupFactComponentVal}]\n " +
                 $"  Mechs MRBValues:[{rollupMRBVal}] x FactMulti:[{rollupFactMechVal}]\n " +
                 $"Holdback\n" +
-                $" Chance:{holdbackTrigger} PicksGreed:{HoldbackPicksGreed} AdditionalPicks:{holdbackPicks}\n" +
+                $" Chance:{holdbackTrigger} Picks:{holdbackPicks}\n" +
                 $" AcceptMulti:{HoldbackAcceptMulti} RefusalMulti:{HoldbackRefusalMulti} DisputeMulti:{HoldbackDisputeMulti}";
         }
     }

@@ -28,12 +28,13 @@ namespace LootMagnet {
             if (__instance != null && !__instance.IsArenaSkirmish) {
                 SimGameState simulation = HBS.LazySingletonBehavior<UnityGameInstance>.Instance.Game.Simulation;
 
-                Faction employerFaction = __instance.GetTeamFaction("ecc8d4f2-74b4-465d-adf6-84445e5dfc230");
-                SimGameReputation employerRep = simulation.GetReputation(employerFaction);
-                State.EmployerReputation = employerRep;
-                State.IsEmployerAlly = simulation.IsCareerFactionAlly(employerFaction);
+                State.Employer = __instance.GetTeamFaction("ecc8d4f2-74b4-465d-adf6-84445e5dfc230");
+                SimGameReputation employerRep = simulation.GetReputation(State.Employer);
+                State.EmployerRep = employerRep;
+                State.EmployerRepRaw = simulation.GetRawReputation(State.Employer);
+                State.IsEmployerAlly = simulation.IsCareerFactionAlly(State.Employer);
                 State.MRBRating = simulation.GetCurrentMRBLevel() - 1; // Normalize to 0 indexing
-                LootMagnet.Logger.Log($"At contract start, Player has MRB:{State.MRBRating} / EmployerRep:{State.EmployerReputation} / EmployerAllied:{State.IsEmployerAlly}");
+                LootMagnet.Logger.Log($"At contract start, Player has MRB:{State.MRBRating} / EmployerRep:{State.EmployerRep} / EmployerAllied:{State.IsEmployerAlly}");
             }            
         }
     }
@@ -44,22 +45,10 @@ namespace LootMagnet {
         // At this point, salvage has been collapsed and grouped. For each of those that have count > 1, change their name, add them to the Dict, and set count to 1.
         public static void Postfix(Contract __instance, List<SalvageDef> __result, List<SalvageDef> ___finalPotentialSalvage) {
             if (__result != null) {
-                // The salvage list after all modifications 
-                List<SalvageDef> modifiedSalvage = new List<SalvageDef>();
 
                 // Roll up the salvage
                 float salvageThreshold = Helper.GetComponentSalvageThreshold();
                 List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(__result);
-                
-                // Check for holdback
-                float triggerChance = Helper.GetHoldbackTriggerChance();
-                float holdbackRoll = LootMagnet.Random.Next(101);
-                if (holdbackRoll <= triggerChance) {
-                    LootMagnet.Logger.Log($"Holdback triggered from roll:{holdbackRoll} <= triggerChance:{triggerChance}. Removing salvage.");
-                    modifiedSalvage.AddRange(Helper.HoldbackSalvage(rolledUpSalvage, __instance));
-                } else {
-                    modifiedSalvage.AddRange(rolledUpSalvage);
-                }
 
                 __result.Clear();
                 __result.AddRange(rolledUpSalvage);
@@ -112,9 +101,26 @@ namespace LootMagnet {
 
         public static void Postfix(Contract __instance) {
             LootMagnet.Logger.LogIfDebug("C:FS entered.");
-            State.EmployerReputation = SimGameReputation.INDIFFERENT;
+
+            // Check for holdback
+            float triggerChance = Helper.GetHoldbackTriggerChance();
+            float holdbackRoll = LootMagnet.Random.Next(101);
+            if (holdbackRoll <= triggerChance) {
+                LootMagnet.Logger.Log($"Holdback triggered from roll:{holdbackRoll} <= triggerChance:{triggerChance}. Removing salvage.");
+                List<SalvageDef> missionSalvage = new List<SalvageDef>();
+                missionSalvage.AddRange(__instance.SalvageResults);
+
+                Helper.HoldbackSalvage(missionSalvage, __instance);                
+            }
+
+
+            // Reinitialize state
+            State.Employer = Faction.INVALID_UNSET;
+            State.EmployerRep = SimGameReputation.INDIFFERENT;
+            State.EmployerRepRaw = 0;
             State.IsEmployerAlly = false;
             State.MRBRating = 0;
+            State.HeldbackItems.Clear();
         }
     }
 

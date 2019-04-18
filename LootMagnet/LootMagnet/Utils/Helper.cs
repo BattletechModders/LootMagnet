@@ -4,14 +4,11 @@ using Harmony;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using TMPro;
 
 namespace LootMagnet {
 
     class Helper {
-
-        public static bool BlockedOnInput = false;
 
         public static float GetComponentSalvageThreshold() {
             float multi = LootMagnet.Config.RollupFactionComponentMulti[FactionCfgIdx()];
@@ -85,7 +82,13 @@ namespace LootMagnet {
             }
         }
 
-        public static List<SalvageDef> HoldbackSalvage(List<SalvageDef> salvage, Contract contract) {
+        public static void HoldbackSalvage(List<SalvageDef> salvage, Contract contract) {
+
+            if (!SimGameState.DoesFactionGainReputation(State.Employer) && State.Employer != Faction.ComStar) {
+                LootMagnet.Logger.Log($"Employer faction {State.Employer} cannot accrue reputation, skipping.");
+                return;
+            }
+
             List<SalvageDef> postHoldbackSalvage = new List<SalvageDef>();
 
             SimGameState sgs = UnityGameInstance.BattleTechGame.Simulation;
@@ -96,14 +99,10 @@ namespace LootMagnet {
             List<SalvageDef> sortedSalvage = new List<SalvageDef>(salvage);
             sortedSalvage.Sort(new SalvageDefByCostDescendingComparer());
 
-            int rawPicks = (int)Math.Ceiling(sortedSalvage.Count * LootMagnet.Config.HoldbackPicksGreed);
-            int picksModifier = LootMagnet.Config.HoldbackPicksModifier[FactionCfgIdx()];
-            int holdbackPicks = Math.Max(0, rawPicks + picksModifier);
+            int holdbackPicks = LootMagnet.Config.HoldbackPicks[FactionCfgIdx()];
+            LootMagnet.Logger.Log($"Employer is holding back: {holdbackPicks} picks");
             bool employerHeldbackItems = holdbackPicks > 0;
-
-            LootMagnet.Logger.Log($"Employer is holding back: {holdbackPicks} picks = {rawPicks} (raw picks) + {picksModifier} (modifier)");
             
-            List<SalvageDef> heldbackItems = new List<SalvageDef>();
             List<string> heldbackItemsDesc = new List<string>();
             List<int> heldbackItemsCost = new List<int>();
             foreach (SalvageDef sDef in sortedSalvage) {
@@ -111,7 +110,7 @@ namespace LootMagnet {
                     if (sDef.Type == SalvageDef.SalvageType.COMPONENT) {
                         // If we're not a mechpart, hold back all items in the bundle
                         LootMagnet.Logger.Log($"Employer is holding back {sDef.Count} items of type:{sDef.Description.Name} as one pick.");
-                        heldbackItems.Add(sDef);
+                        State.HeldbackItems.Add(sDef);
                         holdbackPicks--;
                         heldbackItemsDesc.Add($"{sDef.Description.Name} [QTY:{sDef.Count}]");
                         heldbackItemsCost.Add(sDef.Description.Cost * sDef.Count);
@@ -121,14 +120,18 @@ namespace LootMagnet {
                             sDef.Count = sDef.Count - holdbackPicks;
                             LootMagnet.Logger.Log($"Employer is holding back {holdbackPicks} mech parts/chassis of type:{sDef.Description.Name} as {sDef.Count} picks.");
                             if (sDef.Count == 0) {
-                                heldbackItems.Add(sDef);
+                                State.HeldbackItems.Add(sDef);
+                            } else {
+                                SalvageDef partialDef = new SalvageDef(sDef);
+                                partialDef.Count = holdbackPicks;
+                                State.HeldbackItems.Add(sDef);
                             }
                             heldbackItemsDesc.Add($"{sDef.Description.Name} [QTY:{holdbackPicks}]");
                             heldbackItemsCost.Add((int)Math.Ceiling((sDef.Description.Cost * holdbackPicks) / (double)sgc.Story.DefaultMechPartMax));
                             holdbackPicks = 0;
                         } else {
                             LootMagnet.Logger.Log($"Employer is holding back {sDef.Count} mech parts/chassis of type:{sDef.Description.Name} as {sDef.Count} picks.");
-                            heldbackItems.Add(sDef);
+                            State.HeldbackItems.Add(sDef);
                             holdbackPicks = holdbackPicks - sDef.Count;
                             heldbackItemsDesc.Add($"{sDef.Description.Name} [QTY:{sDef.Count}]");
                             heldbackItemsCost.Add((int)Math.Ceiling((sDef.Description.Cost * sDef.Count) / (double)sgc.Story.DefaultMechPartMax));
@@ -141,16 +144,14 @@ namespace LootMagnet {
             }
 
             if (employerHeldbackItems) {
-                string itemDescs = string.Join("\n<line-indent=2px> * ", heldbackItemsDesc.ToArray());
+                string itemDescs = string.Join("\n  - ", heldbackItemsDesc.ToArray());
 
-                Faction employer = contract.GetTeamFaction(cgs.LocalPlayerTeamGuid);
-                
                 int acceptRepBonus = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackAcceptMulti);
-                void acceptAction() { AcceptAction(sgs, acceptRepBonus, employer); }
+                void acceptAction() { AcceptAction(sgs, contract, acceptRepBonus); }
                 LootMagnet.Logger.LogIfDebug($"acceptRepBonus: {acceptRepBonus}");
 
                 int refuseRepPenalty = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackRefusalMulti);
-                void refuseAction() { RefuseAction(sgs, refuseRepPenalty, employer); }
+                void refuseAction() { RefuseAction(sgs, contract, refuseRepPenalty); }
                 LootMagnet.Logger.LogIfDebug($"refuseRepPenalty: {refuseRepPenalty}");
 
                 int disputeRepPenalty = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackDisputeMulti);
@@ -158,11 +159,13 @@ namespace LootMagnet {
                 float disputeCritChance = LootMagnet.Config.HoldbackDisputeCriticalChance;
                 float disputeSuccessChance = LootMagnet.Config.HoldbackDisputeBaseChance + disputeMRBModifier;
                 float disputeFailChance = 100f - (2f * disputeCritChance) - disputeSuccessChance;
-                int disputePayout = (int)Math.Ceiling(heldbackItemsCost.Aggregate((x, y) => x + y) * sgc.Finances.ShopSellModifier * LootMagnet.Config.HoldbackDisputePayoutFactor);
+
+                // TODO: Apply ShopModifier to mechparts but not equipment? Or multiply critical failures by some a ount?
+                int disputePayout = (int)Math.Ceiling(heldbackItemsCost.Aggregate((x, y) => x + y) * sgc.Finances.ShopSellModifier * LootMagnet.Config.HoldbackDisputePayoutMulti);
                 LootMagnet.Logger.LogIfDebug($"disputeSuccessChance {disputeSuccessChance} = base {LootMagnet.Config.HoldbackDisputeBaseChance} " +
                     $" + MRBModifier: {disputeMRBModifier}, disputeCritChance:{disputeCritChance}, " +
                     $"payout: {SimGameState.GetCBillString(disputePayout)}");
-                void disputeAction() { DisputeAction(sgs, refuseRepPenalty, employer, disputeSuccessChance, disputeCritChance, disputePayout); }
+                void disputeAction() { DisputeAction(sgs, contract, refuseRepPenalty, disputeSuccessChance, disputeCritChance, disputePayout); }
 
                 GenericPopup gp = GenericPopupBuilder.Create(
                     "DISPUTED SALVAGE", 
@@ -172,10 +175,10 @@ namespace LootMagnet {
                     $"If you <b>Accept</b>, you may not salvage the items and <b>gain</b> {acceptRepBonus} reputation.\n" +
                     $"If you <b>Refuse</b>, you may salvage the items but <b>lose</b> {refuseRepPenalty} reputation.\n" +
                     $"If you <b>Dispute</b>, you lose {disputeRepPenalty} reputation with the <b>MRB</b> and have a:\n" +
-                    $"<line-indent=2px> - {disputeCritChance}% chance that you will instead lose <b>all salvage rights</b>.\n" +
+                    $"<line-indent=2px> - {disputeCritChance}% chance that you keep the items, and gain {SimGameState.GetCBillString(disputePayout)}.\n" +
                     $"<line-indent=2px> - {disputeSuccessChance}% chance of retaining the items in the salvage pool.\n" +
-                    $"<line-indent=2px> - {disputeFailChance}% chance losing the items and being forced to pay {SimGameState.GetCBillString(disputePayout)} in legal fees\n" +
-                    $"<line-indent=2px> - {disputeCritChance}% chance that you will instead lose <b>all salvage rights</b>.\n"
+                    $"<line-indent=2px> - {disputeFailChance}% chance of losing the items and must pay {SimGameState.GetCBillString(disputePayout)} for legal fees\n" +
+                    $"<line-indent=2px> - {disputeCritChance}% chance of losing <b>all</b> salvage and must pay {SimGameState.GetCBillString(disputePayout)} for legal fees.\n"
                     )
                     .AddButton("Accept", acceptAction, true, null) // accept holdback, gain slight reputation boost
                     .AddButton("Dispute", disputeAction, true, null) // dispute with MSRB, greater chance based upon MSRB rating. Lose less rep, on a failed dispute lose MSRB rating as well 
@@ -185,39 +188,59 @@ namespace LootMagnet {
                 TextMeshProUGUI contentText = (TextMeshProUGUI)Traverse.Create(gp).Field("_contentText").GetValue();
                 contentText.alignment = TextAlignmentOptions.Left;
 
-                BlockedOnInput = true;
-
-                while (BlockedOnInput) {
-                    Thread.Sleep(50);
-                    LootMagnet.Logger.LogIfDebug($"Waiting on input from the player");
-                }
             }
 
-            LootMagnet.Logger.Log($"DEBUG: RETURNING HOLDBACK ");
-            return postHoldbackSalvage;
+            return;
         }
 
-        public static void AcceptAction(SimGameState simGameState, int reputationModifier, Faction employer) {
-            simGameState.AddReputation(employer, reputationModifier, false);
-            LootMagnet.Logger.Log($"Player accepted holdback. Applying {reputationModifier} reputation and removing items.");
+        public static void AcceptAction(SimGameState simGameState, Contract contract, int reputationModifier) {
+            int repBefore = simGameState.GetRawReputation(State.Employer);
+            simGameState.AddReputation(State.Employer, reputationModifier, false);
+            State.EmployerRepRaw = simGameState.GetRawReputation(State.Employer);
+            LootMagnet.Logger.Log($"Player accepted holdback. {State.Employer} reputation {repBefore} + {reputationModifier} modifier = {State.EmployerRepRaw}.");
 
-
-            BlockedOnInput = false;
+            // Remove the disputed items
+            List<SalvageDef> finalPotentialSalvage = (List<SalvageDef>)Traverse.Create(contract).Field("finalPotentialSalvage").GetValue();
+            foreach (SalvageDef salvageDef in State.HeldbackItems) {
+                SalvageDef sdef1 = finalPotentialSalvage.Find((SalvageDef x) => x.Description.Id == salvageDef.Description.Id);
+                finalPotentialSalvage.Remove(sdef1);
+                
+                SalvageDef sdef2 = contract.SalvageResults.Find((SalvageDef x) => x.Description.Id == salvageDef.Description.Id);
+                contract.SalvageResults.Remove(sdef2);
+            }
         }
 
-        public static void RefuseAction(SimGameState simGameState, int reputationModifier, Faction employer) {
-            simGameState.AddReputation(employer, reputationModifier, false);
-            LootMagnet.Logger.Log($"Player refused holdback. Applying {reputationModifier} reputation.");
+        public static void RefuseAction(SimGameState simGameState, Contract contract, int reputationModifier) {
+            int repBefore = simGameState.GetRawReputation(State.Employer);
+            simGameState.AddReputation(State.Employer, reputationModifier, false);
+            State.EmployerRepRaw = simGameState.GetRawReputation(State.Employer);
+            LootMagnet.Logger.Log($"Player refused holdback. {State.Employer} reputation {repBefore} + {reputationModifier} modifier = {State.EmployerRepRaw}.");
 
-
-            BlockedOnInput = false;
         }
 
-        public static void DisputeAction(SimGameState simGameState, int reputationModifier, Faction employer, float successChance, float critFailChance, int payout) {
-            simGameState.AddReputation(employer, reputationModifier, false);
-            LootMagnet.Logger.Log($"Player disputed holdback and TODO");
+        public static void DisputeAction(SimGameState simGameState, Contract contract, int reputationModifier, float successChance, float criticalChance, int payout) {
+            int repBefore = simGameState.GetRawReputation(Faction.MercenaryReviewBoard);
+            simGameState.AddReputation(Faction.MercenaryReviewBoard, reputationModifier, false);
+            int repAfter = simGameState.GetRawReputation(Faction.MercenaryReviewBoard);
+            LootMagnet.Logger.Log($"Player refused holdback. {Faction.MercenaryReviewBoard} reputation {repBefore} + {reputationModifier} modifier = {repAfter}.");
 
-            BlockedOnInput = false;
+            float roll = LootMagnet.Random.Next(101);
+            if (roll >= (100f - criticalChance)) {
+                // Critical success
+                LootMagnet.Logger.Log($"Critical success on dispute from roll {roll}. Player gains {SimGameState.GetCBillString(payout)}");
+            } else if (roll >= (100f - criticalChance - successChance)) {
+                // Normal success
+                LootMagnet.Logger.Log($"Successful dispute from roll {roll}. No impact");                
+            } else if (roll <= criticalChance) {
+                // Critical failure
+                LootMagnet.Logger.Log($"Critical failure on dispute from roll {roll}. Player loses {SimGameState.GetCBillString(payout)}");
+            } else {
+                // Regular failure
+                LootMagnet.Logger.Log($"Failure during dispute from roll {roll}. Player loses {SimGameState.GetCBillString(payout)}");
+            }
+
+            // Remove the disputed items
+            List<SalvageDef> finalPotentialSalvage = (List<SalvageDef>)Traverse.Create(contract).Field("finalPotentialSalvage").GetValue();
         }
 
 
@@ -262,7 +285,7 @@ namespace LootMagnet {
 
         private static int FactionCfgIdx() {
             int cfgIdx = 0;
-            switch (State.EmployerReputation) {
+            switch (State.EmployerRep) {
                 case SimGameReputation.LOATHED:
                     cfgIdx = 0;
                     break;
