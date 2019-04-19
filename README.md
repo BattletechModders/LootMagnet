@@ -74,19 +74,22 @@ Once holdback has been triggered, the employer determines how *greedy* they are.
 
 Not every employer has an army of attorneys and a fleet of warships ready to enforce their will. Angry mercenaries in BattleMechs have significant negotiating power, though this can sour future dealings with that faction. The player can make one of three choices in the face of unreasonable demands:
 
-You can **Accept** the employer's terms, and let them keep the disputed salvage. The employer rewards you with a small bonus to faction reputation.
+You can **Accept** the employer's terms, and let them keep the disputed salvage. The employer rewards you with a small bonus to faction reputation, but you're unlikely to recover your self-respect.
 
 You can **Refuse** the employer's terms, power up the PPCs, and renegotiate with extreme prejudice. You keep the items, but your faction reputation will take a big hit. Nobody likes having a gun pointed at them!
 
-You can get the lawyers involved and **Dispute** the claims with the Mercenary Review Board. You lose a small mount of MRB reputation (bureaucrats don't like work) and a random check determines the outcome:
-   * On a **critical success**, you retain the items **and** receive a c-bills *payout* for your trouble. You win, your laywers win, everybody wins - except your employer.  
+You can **Dispute** the claims with the Mercenary Review Board. You lose a small amount of MRB reputation (bureaucrats don't like work) and put your trust in the lawyers. A second check determines the outcome:
+
+   * On a **critical success**, you retain the items **and** receive a c-bills *payout* for your trouble. You win, your lawyers win, everybody wins - except your employer.  
    * On a **success**, you retain the items and your employer gets nothing. Your working relationship isn't strained and everybody walks away grumbling.
-   * On a **failure**, you lose the items and must *payout* the legal fees of your employers.
+   * On a **failure**, you lose the items **and** must *payout* the legal fees of your employers.
    * On a **critical failure** you lost **all** salvage **and** *payout* a significant c-bill fee to your employer. That's what you get for bringing lawyers to a mech fight.
+
+You don't lose faction reputation during a dispute. Nobody likes getting the lawyers involved, but once they are, it becomes an impersonal and dispassionate affair.
 
 **HoldbackDisputeCriticalChance** (in *mod.json*) defines the chance of both a critical success and critical failure (default: 5%). **HoldbackDisputeBaseChance** defines the base success rate (default: 40%). This is modified by the **HoldbackDisputeMRBFactor** (default: 10%) which determines how much success you get for each *level* of MRB rating you currently posses. Using default values, your success rate at MRB level 2 would be 40% + 2 * 10% = 60%. You have 5% for a critical success, 5% for a critical failure, and 30% for a failure.
 
-The **payout** amount is calculated from the cost of the items that would be heldback, modified by the shop selling price, and then controlled by some configuration values. The formula used is given as:
+The **payout** amount is calculated from the selling cost of the items that would be held-back. The more expensive the salvage, the more likely the faction will fight to retain it. This value is modified by some configuration values to allow tweaking, and uses the following formula:
 
 ```
 Sum([item.Description.Cost]) * SimGameConstants.Finances.ShopSellModifier * HoldbackDisputePayoutMulti
