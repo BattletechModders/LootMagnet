@@ -39,7 +39,7 @@ Your rating with a particular faction determines your companies negotiating powe
 These values are controlled through the **mod.json** values *RollupMRBValue* and *RollupFactionComponentMulti*. Default values have been set to reflect a vanilla BattleTech experience, but you should feel free to customize them as you see fit.
 
 ###  Mech Rollup
-Mech parts may also be rolled up, if your faction rating is good enough. The _RollupFactionMechMulti_ value in `mod.json` defines the multipliers to the base MRB threshold used for mech parts. Mech parts are priced at the **full market value** of the Mech, typically making each of them valued at 3-12 milliion c-bills. The default value applies a 
+Mech parts may also be rolled up, if your faction rating is good enough. The _RollupFactionMechMulti_ value in `mod.json` defines the multipliers to the base MRB threshold used for mech parts. Mech parts are priced at the **full market value** of the Mech, typically making each of them valued at 3-12 milliion c-bills. The default value applies a
 20x multiplier at friendly, 30x at honored, and 180x at allied.
 
 | MRB Rating | Indifferent | Liked | Friendly | Honored | Allied |
@@ -53,27 +53,46 @@ Mech parts may also be rolled up, if your faction rating is good enough. The _Ro
 
 ## Salvage Holdback
 
-Players are mercenaries, and mercenaries are contract workers. Even friendly employers that see you getting ready to cart LosTech off the field may invoke hidden contractual clauses and hold back items they really want. This was extremely common in the early days of the Clan Invasion and anytime rare technology comes into play.
+Mercenaries are contract workers. Even friendly employers hesitate when they notice LosTech or rare Battlemechs being carted off the field by a temporary 'friend'.  Hidden clauses and fine print are the weapons Inner Sphere lawyers use to **hold back** items they desperately desire. In lore, this was very common when salvage included Star League or Clan technology.
 
-> Employer: I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii clearly covers the exemption clauses for material deemed 'critical to the war effort'. That bit of salvage falls under the clause, and thus out of your grubby hands. We'll be retaining it. You should be thankful we're honoring the terms of agreement in the first place, mercenary.
+> Employer: I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii clearly covers the exemption clauses for material deemed 'critical to the war effort'. That bit of salvage falls under the clause, and thus we'll be retaining it.
 
-This mod replicates this effect by giving employers an opportunity to remove one or more pieces of salvage from the salvage pool before the player ever sees it. The employer faction rating determines how strong this effect is, and how many items the employer will try to remove. 
+This mod gives contract employers an opportunity to prevent the player from claiming one or more pieces from the salvage pool. Once the player chooses  their priority salvage and random salvage is assigned, the employer has an opportunity to demand some of the player's salvage.
 
-Mechanically what happens is the employer makes one holdback roll for each item in the salvage pool. For each roll that's a success, they gain one **holdback pick**. The salvage pool is then rolled up and sorted by cost. The employer then removes a number of items from the list equal to their total holdback picks. They remove the most rare and valuable ones first, leaving the scraps for the mercenaries.
+The employer makes a random roll to determine if they attempt to holdback an item. This threshold is determined by the player's rating with the employing faction. Factions that dislike the player are more likely to trigger a holdback, but even friendly factions have a small chance as well. The chance for a holdback is given by the table below, and defined by  **HoldbackTriggerChance** (in *mod.json*).
 
-The chance for a holdback is given by the table below. These values are controlled by the *HoldbackFactionValue* and *HoldbackMRBMulti* values in **mod.json**.
+| Value | Loathed | Hated | Disliked | Indifferent | Liked | Friendly | Honored | Allied |
+| -- | -- | -- | -- | -- | -- | -- | -- | -- |
+| Trigger | 60% | 40% | 20% | 16% | 8% | 4% | 2% | 1% |
+| Greed | 3-7 | 3-5 | 2-4 | 1-3 | 1-2 | 1-1 | 1-1 | 1-1 |
 
-| Faction Rating | MRB 0 | MRB 1 | MRB 2 | MRB 3 | MRB 4 | MRB 5 |
-| -- | -- | -- | -- | -- | -- | -- |
-| Loathed | 60.00% |52.50% | 45.00% | 37.50% | 30.00% | 22.50% |
-| Hated | 40.00% | 35.00% | 30.00% | 25.00% | 20.00% | 15.00% |
-| Disliked | 20.00% | 17.50% | 15.00% | 12.50% | 10.00% | 7.50% |
-| Indifferent | 10.00% |8.75% | 7.50%| 6.25% | 5.00% | 3.75% |
-| Liked | 5.00% | 4.38% | 3.75% | 3.13% | 2.50% | 1.88% |
-| Friendly | 2.50% | 2.19% | 1.88% | 1.56% | 1.25% | 0.94% |
-| Honored | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
-| Allied  | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
+Once holdback has been triggered, the employer determines how *greedy* they are. A random roll is made against the bounds defined as **HoldbackGreed** (in *mod.json*). The result of this roll determines how many items will be held back. The employer will pick the most expensive items first, which naturally biases towards mech chassis and mech parts.
 
-### Optional Mech Holdback
+### Negotiation
 
-If the option *AlwaysHoldbackMechs* in **mod.json** is set to true (defaults to false), then the employer will attempt to holdback each and every mech part in the salvage pool. This is appropriate for players wanting a more lore-based experience, as salvage rights for mechs were hotly debated and often a sore point in negotiations.
+> Every day's a negotiation and sometimes it's done with guns. - Joss Whedon
+
+Not every employer has an army of attorneys and a fleet of warships ready to enforce their will. Angry mercenaries in BattleMechs have significant negotiating power, though this can sour future dealings with that faction. The player can make one of three choices in the face of unreasonable demands:
+
+You can **Accept** the employer's terms, and let them keep the disputed salvage. The employer rewards you with a small bonus to faction reputation, but you're unlikely to recover your self-respect.
+
+You can **Refuse** the employer's terms, power up the PPCs, and renegotiate with extreme prejudice. You keep the items, but your faction reputation will take a big hit. Nobody likes having a gun pointed at them!
+
+You can **Dispute** the claims with the Mercenary Review Board. You lose a small amount of MRB reputation (bureaucrats don't like work) and put your trust in the lawyers. A second check determines the outcome:
+
+   * On a **critical success**, you retain the items **and** receive a c-bills *payout* for your trouble. You win, your lawyers win, everybody wins - except your employer.  
+   * On a **success**, you retain the items and your employer gets nothing. Your working relationship isn't strained and everybody walks away grumbling.
+   * On a **failure**, you lose the items **and** must *payout* the legal fees of your employers.
+   * On a **critical failure** you lost **all** salvage **and** *payout* a significant c-bill fee to your employer. That's what you get for bringing lawyers to a mech fight.
+
+You don't lose faction reputation during a dispute. Nobody likes getting the lawyers involved, but once they are, it becomes an impersonal and dispassionate affair.
+
+**HoldbackDisputeCriticalChance** (in *mod.json*) defines the chance of both a critical success and critical failure (default: 5%). **HoldbackDisputeBaseChance** defines the base success rate (default: 40%). This is modified by the **HoldbackDisputeMRBFactor** (default: 10%) which determines how much success you get for each *level* of MRB rating you currently posses. Using default values, your success rate at MRB level 2 would be 40% + 2 * 10% = 60%. You have 5% for a critical success, 5% for a critical failure, and 30% for a failure.
+
+The **payout** amount is calculated from the selling cost of the items that would be held-back. The more expensive the salvage, the more likely the faction will fight to retain it. This value is modified by some configuration values to allow tweaking, and uses the following formula:
+
+```
+Sum([item.Description.Cost]) * SimGameConstants.Finances.ShopSellModifier * HoldbackDisputePayoutMulti
+```
+
+** ShopSellModifier** is defined in *FIXME*, while **HoldbackDisputePayoutMulti** is defined in *mod.json*. Critical successes and failures multiply the payout amount by **HoldbackDisputeCriticalPayoutMulti** (in *mod.json*) which defaults to a x3 multiplier.
