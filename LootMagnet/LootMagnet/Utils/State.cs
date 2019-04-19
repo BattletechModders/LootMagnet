@@ -10,6 +10,16 @@ namespace LootMagnet {
         public static bool IsEmployerAlly = false;
         public static int MRBRating = 0;
         public static List<SalvageDef> HeldbackItems = new List<SalvageDef>();
+
+        public static void Reset() {
+            // Reinitialize state
+            State.Employer = Faction.INVALID_UNSET;
+            State.EmployerRep = SimGameReputation.INDIFFERENT;
+            State.EmployerRepRaw = 0;
+            State.IsEmployerAlly = false;
+            State.MRBRating = 0;
+            State.HeldbackItems.Clear();
+        }
     }
 
 }

@@ -101,26 +101,23 @@ namespace LootMagnet {
 
         public static void Postfix(Contract __instance) {
             LootMagnet.Logger.LogIfDebug("C:FS entered.");
+        }
+    }
+
+
+    [HarmonyPatch(typeof(AAR_SalvageScreen), "SalvageConfirmed")]
+    public static class AAR_SalvageScreen_SalvageConfirmed {
+
+        public static void Postfix(AAR_SalvageScreen __instance, Contract ___contract) {
+            LootMagnet.Logger.LogIfDebug("AAR_SS:SC entered.");
 
             // Check for holdback
             float triggerChance = Helper.GetHoldbackTriggerChance();
             float holdbackRoll = LootMagnet.Random.Next(101);
             if (holdbackRoll <= triggerChance) {
                 LootMagnet.Logger.Log($"Holdback triggered from roll:{holdbackRoll} <= triggerChance:{triggerChance}. Removing salvage.");
-                List<SalvageDef> missionSalvage = new List<SalvageDef>();
-                missionSalvage.AddRange(__instance.SalvageResults);
-
-                Helper.HoldbackSalvage(missionSalvage, __instance);                
+                Helper.HoldbackSalvage(___contract, __instance);
             }
-
-
-            // Reinitialize state
-            State.Employer = Faction.INVALID_UNSET;
-            State.EmployerRep = SimGameReputation.INDIFFERENT;
-            State.EmployerRepRaw = 0;
-            State.IsEmployerAlly = false;
-            State.MRBRating = 0;
-            State.HeldbackItems.Clear();
         }
     }
 

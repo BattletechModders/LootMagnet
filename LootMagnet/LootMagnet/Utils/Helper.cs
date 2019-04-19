@@ -82,7 +82,7 @@ namespace LootMagnet {
             }
         }
 
-        public static void HoldbackSalvage(List<SalvageDef> salvage, Contract contract) {
+        public static void HoldbackSalvage(Contract contract, AAR_SalvageScreen salvageScreen) {
 
             if (!SimGameState.DoesFactionGainReputation(State.Employer) && State.Employer != Faction.ComStar) {
                 LootMagnet.Logger.Log($"Employer faction {State.Employer} cannot accrue reputation, skipping.");
@@ -96,7 +96,8 @@ namespace LootMagnet {
             SimGameConstants sgc = UnityGameInstance.BattleTechGame.Simulation.Constants;
 
             // Sort by cost descending
-            List<SalvageDef> sortedSalvage = new List<SalvageDef>(salvage);
+            List<SalvageDef> sortedSalvage = new List<SalvageDef>();
+            sortedSalvage.AddRange(contract.SalvageResults);
             sortedSalvage.Sort(new SalvageDefByCostDescendingComparer());
 
             int holdbackPicks = LootMagnet.Config.HoldbackPicks[FactionCfgIdx()];
@@ -147,11 +148,11 @@ namespace LootMagnet {
                 string itemDescs = string.Join("\n  - ", heldbackItemsDesc.ToArray());
 
                 int acceptRepBonus = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackAcceptMulti);
-                void acceptAction() { AcceptAction(sgs, contract, acceptRepBonus); }
+                void acceptAction() { AcceptAction(sgs, contract, salvageScreen, acceptRepBonus); }
                 LootMagnet.Logger.LogIfDebug($"acceptRepBonus: {acceptRepBonus}");
 
                 int refuseRepPenalty = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackRefusalMulti);
-                void refuseAction() { RefuseAction(sgs, contract, refuseRepPenalty); }
+                void refuseAction() { RefuseAction(sgs, contract, salvageScreen, refuseRepPenalty); }
                 LootMagnet.Logger.LogIfDebug($"refuseRepPenalty: {refuseRepPenalty}");
 
                 int disputeRepPenalty = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackDisputeMulti);
@@ -162,10 +163,11 @@ namespace LootMagnet {
 
                 // TODO: Apply ShopModifier to mechparts but not equipment? Or multiply critical failures by some a ount?
                 int disputePayout = (int)Math.Ceiling(heldbackItemsCost.Aggregate((x, y) => x + y) * sgc.Finances.ShopSellModifier * LootMagnet.Config.HoldbackDisputePayoutMulti);
+                int criticalPayout = (int)Math.Ceiling(disputePayout * LootMagnet.Config.HoldbackDisputeCriticalPayoutMulti);
                 LootMagnet.Logger.LogIfDebug($"disputeSuccessChance {disputeSuccessChance} = base {LootMagnet.Config.HoldbackDisputeBaseChance} " +
                     $" + MRBModifier: {disputeMRBModifier}, disputeCritChance:{disputeCritChance}, " +
                     $"payout: {SimGameState.GetCBillString(disputePayout)}");
-                void disputeAction() { DisputeAction(sgs, contract, refuseRepPenalty, disputeSuccessChance, disputeCritChance, disputePayout); }
+                void disputeAction() { DisputeAction(sgs, contract, salvageScreen, refuseRepPenalty, disputeSuccessChance, disputeCritChance, disputePayout); }
 
                 GenericPopup gp = GenericPopupBuilder.Create(
                     "DISPUTED SALVAGE", 
@@ -175,10 +177,10 @@ namespace LootMagnet {
                     $"If you <b>Accept</b>, you may not salvage the items and <b>gain</b> {acceptRepBonus} reputation.\n" +
                     $"If you <b>Refuse</b>, you may salvage the items but <b>lose</b> {refuseRepPenalty} reputation.\n" +
                     $"If you <b>Dispute</b>, you lose {disputeRepPenalty} reputation with the <b>MRB</b> and have a:\n" +
-                    $"<line-indent=2px> - {disputeCritChance}% chance that you keep the items, and gain {SimGameState.GetCBillString(disputePayout)}.\n" +
+                    $"<line-indent=2px> - {disputeCritChance}% chance that you keep the items, and gain {SimGameState.GetCBillString(criticalPayout)}.\n" +
                     $"<line-indent=2px> - {disputeSuccessChance}% chance of retaining the items in the salvage pool.\n" +
                     $"<line-indent=2px> - {disputeFailChance}% chance of losing the items and must pay {SimGameState.GetCBillString(disputePayout)} for legal fees\n" +
-                    $"<line-indent=2px> - {disputeCritChance}% chance of losing <b>all</b> salvage and must pay {SimGameState.GetCBillString(disputePayout)} for legal fees.\n"
+                    $"<line-indent=2px> - {disputeCritChance}% chance of losing <b>all</b> salvage and must pay {SimGameState.GetCBillString(criticalPayout)} for legal fees.\n"
                     )
                     .AddButton("Accept", acceptAction, true, null) // accept holdback, gain slight reputation boost
                     .AddButton("Dispute", disputeAction, true, null) // dispute with MSRB, greater chance based upon MSRB rating. Lose less rep, on a failed dispute lose MSRB rating as well 
@@ -193,7 +195,7 @@ namespace LootMagnet {
             return;
         }
 
-        public static void AcceptAction(SimGameState simGameState, Contract contract, int reputationModifier) {
+        public static void AcceptAction(SimGameState simGameState, Contract contract, AAR_SalvageScreen salvageScreen, int reputationModifier) {
             int repBefore = simGameState.GetRawReputation(State.Employer);
             simGameState.AddReputation(State.Employer, reputationModifier, false);
             State.EmployerRepRaw = simGameState.GetRawReputation(State.Employer);
@@ -207,18 +209,24 @@ namespace LootMagnet {
                 
                 SalvageDef sdef2 = contract.SalvageResults.Find((SalvageDef x) => x.Description.Id == salvageDef.Description.Id);
                 contract.SalvageResults.Remove(sdef2);
+
+                salvageScreen.RemoveFromSalvageSelection(salvageDef);
             }
+
+            State.Reset();
+            salvageScreen.OnCompleted();
         }
 
-        public static void RefuseAction(SimGameState simGameState, Contract contract, int reputationModifier) {
+        public static void RefuseAction(SimGameState simGameState, Contract contract, AAR_SalvageScreen salvageScreen, int reputationModifier) {
             int repBefore = simGameState.GetRawReputation(State.Employer);
             simGameState.AddReputation(State.Employer, reputationModifier, false);
             State.EmployerRepRaw = simGameState.GetRawReputation(State.Employer);
             LootMagnet.Logger.Log($"Player refused holdback. {State.Employer} reputation {repBefore} + {reputationModifier} modifier = {State.EmployerRepRaw}.");
 
+            State.Reset();
         }
 
-        public static void DisputeAction(SimGameState simGameState, Contract contract, int reputationModifier, float successChance, float criticalChance, int payout) {
+        public static void DisputeAction(SimGameState simGameState, Contract contract, AAR_SalvageScreen salvageScreen, int reputationModifier, float successChance, float criticalChance, int payout) {
             int repBefore = simGameState.GetRawReputation(Faction.MercenaryReviewBoard);
             simGameState.AddReputation(Faction.MercenaryReviewBoard, reputationModifier, false);
             int repAfter = simGameState.GetRawReputation(Faction.MercenaryReviewBoard);
@@ -241,8 +249,9 @@ namespace LootMagnet {
 
             // Remove the disputed items
             List<SalvageDef> finalPotentialSalvage = (List<SalvageDef>)Traverse.Create(contract).Field("finalPotentialSalvage").GetValue();
-        }
 
+            State.Reset();
+        }
 
         public class SalvageDefByCostDescendingComparer : IComparer<SalvageDef> {
             public int Compare(SalvageDef x, SalvageDef y) {
