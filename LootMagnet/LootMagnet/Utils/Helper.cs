@@ -37,26 +37,26 @@ namespace LootMagnet {
             int maxMoney = contract.InitialContractValue;
             LootMagnet.Logger.Log($"Disputing contract: ({contract.Name}) - maximumReputation:{maxRep} maxMoney:{SimGameState.GetCBillString(maxMoney)}");
 
-            this.MRBFees = (int)Math.Ceiling(maxMoney * LootMagnet.Config.DisputeMRBFeeFactor);
-            this.MRBRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.DisputeMRBRepPenalty);
+            this.MRBFees = (int)Math.Ceiling(maxMoney * LootMagnet.Config.Holdback.DisputeMRBFeeFactor);
+            this.MRBRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.Holdback.RepMultiDisputeMRB);
             LootMagnet.Logger.Log($"  MRB fees:{SimGameState.GetCBillString(MRBFees)} repPenalty:{MRBRepPenalty}");
 
-            this.CriticalChance = LootMagnet.Config.DisputeCritChance;
-            float rawSuccessChance = LootMagnet.Config.DisputeSuccessBase + LootMagnet.Config.DisputeMRBSuccessFactor;
-            float successRand = LootMagnet.Random.Next(LootMagnet.Config.DisputeSuccessRandomBound + 1);
+            this.CriticalChance = LootMagnet.Config.Holdback.DisputeCritChance;
+            float rawSuccessChance = LootMagnet.Config.Holdback.DisputeSuccessBase + LootMagnet.Config.Holdback.DisputeMRBSuccessFactor * Helper.MRBCfgIdx();
+            float successRand = LootMagnet.Random.Next(LootMagnet.Config.Holdback.DisputeSuccessRandomBound + 1);
             this.SuccessChance = rawSuccessChance - successRand;
             this.FailChance = 100f - (2f * this.CriticalChance) - this.SuccessChance;
             LootMagnet.Logger.Log($"  CritSuccess:{CriticalChance}%  Success:{SuccessChance}% Failure:{FailChance}% CritFailure:{CriticalChance}%");
 
-            this.SuccessRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.DisputeSuccessRepPenaltyFactor);
+            this.SuccessRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.Holdback.RepMultiDisputeSuccess);
             LootMagnet.Logger.Log($"  Success repPenalty:{SuccessRepPenalty}");
 
-            this.FailPayout = (int)Math.Ceiling(maxMoney * LootMagnet.Config.DisputeFailPayoutFactor);
-            this.FailRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.DisputeFailRepPenaltyFactor);
+            this.FailPayout = (int)Math.Ceiling(maxMoney * LootMagnet.Config.Holdback.DisputeFailPayoutFactor);
+            this.FailRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.Holdback.RepMultiDisputeSuccess);
             LootMagnet.Logger.Log($"  Failure payout:{SimGameState.GetCBillString(FailPayout)} repPenalty:{FailRepPenalty}");
 
-            this.CritFailPayout = (int)Math.Ceiling(maxMoney * LootMagnet.Config.DisputeCritFailPayoutFactor);
-            this.CritFailRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.DisputeCritFailRepPenaltyFactor);
+            this.CritFailPayout = (int)Math.Ceiling(maxMoney * LootMagnet.Config.Holdback.DisputeCritFailPayoutFactor);
+            this.CritFailRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.Holdback.RepMultiDisputeSuccess);
             LootMagnet.Logger.Log($"  Critical Failure payout:{SimGameState.GetCBillString(CritFailPayout)} repPenalty:{CritFailRepPenalty}");
         }
 
@@ -81,25 +81,20 @@ namespace LootMagnet {
 
     public class Helper {
 
-        public static float GetComponentSalvageThreshold() {
-            float multi = LootMagnet.Config.RollupFactionComponentMulti[FactionCfgIdx()];
-            return GetSalvageThreshold(multi);
-        }
+        public static float GetSalvageThreshold(bool forMech=false) {
+            RepCfg repCfg = LootMagnet.Config.Reputation.Find(r => r.Reputation == (Rep)FactionCfgIdx());
+            float multi = forMech ? repCfg.RollupMultiMech : repCfg.RollupMultiComponent;
 
-        public static float GetMechSalvageThreshold() {
-            float multi = LootMagnet.Config.RollupFactionMechMulti[FactionCfgIdx()];
-            return GetSalvageThreshold(multi);
-        }
-
-        private static float GetSalvageThreshold(float factionMulti) {
             float rollup = LootMagnet.Config.RollupMRBValue[MRBCfgIdx()];
-            float result = (float)Math.Floor(rollup * factionMulti);
-            LootMagnet.Logger.LogIfDebug($"rollup:{rollup} x multi:{factionMulti} = result:{result}");
+            float result = (float)Math.Floor(rollup * multi);
+
+            LootMagnet.Logger.LogIfDebug($"rollup:{rollup} x multi:{multi} = result:{result}");
             return result;
         }
 
         public static float GetHoldbackTriggerChance() {
-            return LootMagnet.Config.HoldbackTriggerChance[FactionCfgIdx()];
+            RepCfg repCfg = LootMagnet.Config.Reputation.Find(r => r.Reputation == (Rep)FactionCfgIdx());
+            return repCfg.HoldbackTrigger;
         }
 
         // Rollup the salvage into buckets
@@ -109,8 +104,8 @@ namespace LootMagnet {
             List<SalvageDef> toRollup = rawSalvage.Where(sd => sd.Count > 1 && sd?.Description?.Cost != 0 && sd.Type != SalvageDef.SalvageType.CHASSIS).ToList();
             List<SalvageDef> rolledUpSalvage = rawSalvage.Except(toRollup).ToList();
 
-            float componentThreshold = LootMagnet.Config.DeveloperMode ? 999999999f : GetComponentSalvageThreshold();
-            float mechThreshold = LootMagnet.Config.DeveloperMode ? 999999999f : GetMechSalvageThreshold();
+            float componentThreshold = LootMagnet.Config.DeveloperMode ? 999999999f : GetSalvageThreshold(false);
+            float mechThreshold = LootMagnet.Config.DeveloperMode ? 999999999f : GetSalvageThreshold(true);
             foreach (SalvageDef rawDef in toRollup) {
                 LootMagnet.Logger.LogIfDebug($"Found {rawDef.Count} of salvage:'{rawDef?.Description?.Name}' / '{rawDef?.Description.Id}' with rewardId:'{rawDef?.RewardID}'");
 
@@ -171,7 +166,7 @@ namespace LootMagnet {
             sortedSalvage.AddRange(contract.SalvageResults);
             sortedSalvage.Sort(new SalvageDefByCostDescendingComparer());
 
-            int holdbackPicks = LootMagnet.Random.Next(LootMagnet.Config.HoldbackPickRange[0], LootMagnet.Config.HoldbackPickRange[1] + 1);
+            int holdbackPicks = LootMagnet.Random.Next(LootMagnet.Config.Holdback.PickRange[0], LootMagnet.Config.Holdback.PickRange[1] + 1);
             LootMagnet.Logger.Log($"Employer is holding back: {holdbackPicks} picks");
             bool employerHeldbackItems = holdbackPicks > 0;
             
@@ -218,11 +213,11 @@ namespace LootMagnet {
             if (employerHeldbackItems) {
                 string itemDescs = string.Join("\n  - ", heldbackItemsDesc.ToArray());
 
-                int acceptRepBonus = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackAcceptRepMulti);
+                int acceptRepBonus = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.Holdback.RepMultiAccept);
                 void acceptAction() { AcceptAction(sgs, contract, salvageScreen, acceptRepBonus); }
                 LootMagnet.Logger.LogIfDebug($"acceptRepBonus: {acceptRepBonus}");
 
-                int refuseRepPenalty = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackRefuseRepMulti);
+                int refuseRepPenalty = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.Holdback.RepMultiRefuse);
                 void refuseAction() { RefuseAction(sgs, contract, salvageScreen, refuseRepPenalty); }
                 LootMagnet.Logger.LogIfDebug($"refuseRepPenalty: {refuseRepPenalty}");
 
@@ -236,11 +231,11 @@ namespace LootMagnet {
                     $"\n\n{itemDescs}\n\n" + 
                     $"If you <b>Accept</b>, you lose the disputed salvage but <b>gain</b> <color=#00FF00>{acceptRepBonus:+0}</color> rep.\n" +
                     $"If you <b>Refuse</b>, you keep the disputed salvage but <b>lose</b> <color=#FF0000>{refuseRepPenalty}</color> rep.\n" +
-                    $"If you <b>Dispute</b>, you pay <color=#FF0000>{dispute.MRBRepPenalty}</color> MRB rep, {SimGameState.GetCBillString(dispute.MRBFees)}, and have:\n" +
+                    $"If you <b>Dispute</b>, you pay <color=#FF0000>{dispute.MRBRepPenalty}</color> MRB rep, <color=#FF0000>{SimGameState.GetCBillString(dispute.MRBFees)}</color>, and have:\n" +
                     $"<line-indent=2px> - {dispute.CriticalChance}% to keep the disputed salvage.\n" +
                     $"<line-indent=2px> - {dispute.SuccessChance}% to keep the disputed salvage, but lose <color=#FF0000>{dispute.SuccessRepPenalty}</color> faction rep.\n" +
-                    $"<line-indent=2px> - {dispute.FailChance}% to lose the disputed salvage, <color=#FF0000>{dispute.FailRepPenalty}</color> faction rep, and {SimGameState.GetCBillString(dispute.FailPayout)}.\n" +
-                    $"<line-indent=2px> - {dispute.CriticalChance}% to lose <b>ALL</b> salvage, <color=#FF0000>{dispute.CritFailRepPenalty}</color> faction rep, and {SimGameState.GetCBillString(dispute.CritFailPayout)}.\n"
+                    $"<line-indent=2px> - {dispute.FailChance}% to lose the disputed salvage, <color=#FF0000>{dispute.FailRepPenalty}</color> faction rep, and <color=#FF0000>{SimGameState.GetCBillString(dispute.FailPayout)}</color>.\n" +
+                    $"<line-indent=2px> - {dispute.CriticalChance}% to lose <b>ALL</b> salvage, <color=#FF0000>{dispute.CritFailRepPenalty}</color> faction rep, and <color=#FF0000>{SimGameState.GetCBillString(dispute.CritFailPayout)}</color>.\n"
                     )
                     .AddButton("Accept", acceptAction, true, null) // accept holdback, gain slight reputation boost
                     .AddButton("Dispute", disputeAction, true, null) // dispute with MSRB, greater chance based upon MSRB rating. Lose less rep, on a failed dispute lose MSRB rating as well 
@@ -408,7 +403,7 @@ namespace LootMagnet {
             return newDef;
         }
 
-        private static int FactionCfgIdx() {
+        public static int FactionCfgIdx() {
             int cfgIdx = 0;
             switch (State.EmployerRep) {
                 case SimGameReputation.LOATHED:
@@ -443,7 +438,7 @@ namespace LootMagnet {
             return cfgIdx;
         }
 
-        private static int MRBCfgIdx() {
+        public static int MRBCfgIdx() {
             if (State.MRBRating <= 0) {
                 return 0;
             } else if (State.MRBRating >= 5) {
