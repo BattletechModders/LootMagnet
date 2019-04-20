@@ -8,7 +8,78 @@ using TMPro;
 
 namespace LootMagnet {
 
-    class Helper {
+    public class Dispute {
+
+        public enum Outcome {
+            CRITICAL_SUCCESS,
+            SUCCESS,
+            FAILURE,
+            CRITICAL_FAILURE
+        }
+
+        public float CriticalChance;
+        public float SuccessChance;
+        public float FailChance;
+
+        public int MRBFees;
+        public int MRBRepPenalty;
+
+        public int SuccessRepPenalty;
+
+        public int FailPayout;
+        public int FailRepPenalty;
+
+        public int CritFailPayout;
+        public int CritFailRepPenalty;
+
+        public Dispute(Contract contract, SimGameConstants sgc) {
+            int maxRep = contract.GetMaxPossibleReputation(sgc);
+            int maxMoney = contract.InitialContractValue;
+            LootMagnet.Logger.Log($"Disputing contract: ({contract.Name}) - maximumReputation:{maxRep} maxMoney:{SimGameState.GetCBillString(maxMoney)}");
+
+            this.MRBFees = (int)Math.Ceiling(maxMoney * LootMagnet.Config.DisputeMRBFeeFactor);
+            this.MRBRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.DisputeMRBRepPenalty);
+            LootMagnet.Logger.Log($"  MRB fees:{SimGameState.GetCBillString(MRBFees)} repPenalty:{MRBRepPenalty}");
+
+            this.CriticalChance = LootMagnet.Config.DisputeCritChance;
+            float rawSuccessChance = LootMagnet.Config.DisputeSuccessBase + LootMagnet.Config.DisputeMRBSuccessFactor;
+            float successRand = LootMagnet.Random.Next(LootMagnet.Config.DisputeSuccessRandomBound + 1);
+            this.SuccessChance = rawSuccessChance - successRand;
+            this.FailChance = 100f - (2f * this.CriticalChance) - this.SuccessChance;
+            LootMagnet.Logger.Log($"  CritSuccess:{CriticalChance}%  Success:{SuccessChance}% Failure:{FailChance}% CritFailure:{CriticalChance}%");
+
+            this.SuccessRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.DisputeSuccessRepPenaltyFactor);
+            LootMagnet.Logger.Log($"  Success repPenalty:{SuccessRepPenalty}");
+
+            this.FailPayout = (int)Math.Ceiling(maxMoney * LootMagnet.Config.DisputeFailPayoutFactor);
+            this.FailRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.DisputeFailRepPenaltyFactor);
+            LootMagnet.Logger.Log($"  Failure payout:{SimGameState.GetCBillString(FailPayout)} repPenalty:{FailRepPenalty}");
+
+            this.CritFailPayout = (int)Math.Ceiling(maxMoney * LootMagnet.Config.DisputeCritFailPayoutFactor);
+            this.CritFailRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.DisputeCritFailRepPenaltyFactor);
+            LootMagnet.Logger.Log($"  Critical Failure payout:{SimGameState.GetCBillString(CritFailPayout)} repPenalty:{CritFailRepPenalty}");
+        }
+
+        public Outcome GetOutcome() {
+            float roll = LootMagnet.Random.Next(100);
+            if (roll < CriticalChance) {
+                LootMagnet.Logger.Log($"Roll {roll} < {CriticalChance}, yields critical failure.");
+                return Outcome.CRITICAL_FAILURE;
+            } else if (roll >= 99 - CriticalChance) {
+                LootMagnet.Logger.Log($"Roll {roll} >= {99 - CriticalChance}, yields critical success.");
+                return Outcome.CRITICAL_SUCCESS;
+            } else if (roll >= 99 - CriticalChance - SuccessChance) {
+                LootMagnet.Logger.Log($"Roll {roll} >= {99 - CriticalChance - SuccessChance}, yields success.");
+                return Outcome.SUCCESS;
+            } else {
+                LootMagnet.Logger.Log($"Roll {roll} yields failure.");
+                return Outcome.FAILURE;
+            }
+        }
+    }
+
+
+    public class Helper {
 
         public static float GetComponentSalvageThreshold() {
             float multi = LootMagnet.Config.RollupFactionComponentMulti[FactionCfgIdx()];
@@ -147,40 +218,29 @@ namespace LootMagnet {
             if (employerHeldbackItems) {
                 string itemDescs = string.Join("\n  - ", heldbackItemsDesc.ToArray());
 
-                int acceptRepBonus = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackAcceptMulti);
+                int acceptRepBonus = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackAcceptRepMulti);
                 void acceptAction() { AcceptAction(sgs, contract, salvageScreen, acceptRepBonus); }
                 LootMagnet.Logger.LogIfDebug($"acceptRepBonus: {acceptRepBonus}");
 
-                int refuseRepPenalty = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackRefusalMulti);
+                int refuseRepPenalty = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackRefuseRepMulti);
                 void refuseAction() { RefuseAction(sgs, contract, salvageScreen, refuseRepPenalty); }
                 LootMagnet.Logger.LogIfDebug($"refuseRepPenalty: {refuseRepPenalty}");
 
-                int disputeRepPenalty = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.HoldbackDisputeMulti);
-                float disputeMRBModifier = LootMagnet.Config.HoldbackDisputeMRBFactor * sgs.GetCurrentMRBLevel();
-                float disputeCritChance = LootMagnet.Config.HoldbackDisputeCriticalChance;
-                float disputeSuccessChance = LootMagnet.Config.HoldbackDisputeBaseChance + disputeMRBModifier;
-                float disputeFailChance = 100f - (2f * disputeCritChance) - disputeSuccessChance;
-
-                // TODO: Apply ShopModifier to mechparts but not equipment? Or multiply critical failures by some a ount?
-                int disputePayout = (int)Math.Ceiling(heldbackItemsCost.Aggregate((x, y) => x + y) * sgc.Finances.ShopSellModifier * LootMagnet.Config.HoldbackDisputePayoutMulti);
-                int criticalPayout = (int)Math.Ceiling(disputePayout * LootMagnet.Config.HoldbackDisputeCriticalPayoutMulti);
-                LootMagnet.Logger.LogIfDebug($"disputeSuccessChance {disputeSuccessChance} = base {LootMagnet.Config.HoldbackDisputeBaseChance} " +
-                    $" + MRBModifier: {disputeMRBModifier}, disputeCritChance:{disputeCritChance}, " +
-                    $"payout: {SimGameState.GetCBillString(disputePayout)}");
-                void disputeAction() { DisputeAction(sgs, contract, salvageScreen, refuseRepPenalty, disputeSuccessChance, disputeCritChance, disputePayout); }
+                Dispute dispute = new Dispute(contract, sgc);
+                void disputeAction() { DisputeAction(sgs, contract, salvageScreen, dispute); }
 
                 GenericPopup gp = GenericPopupBuilder.Create(
                     "DISPUTED SALVAGE", 
                     $"<b>I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii...</b>\n\n" +
                     $"Your employer invokes a contract clause that allows them to withhold the following items:" + 
                     $"\n\n{itemDescs}\n\n" + 
-                    $"If you <b>Accept</b>, you may not salvage the items and <b>gain</b> {acceptRepBonus} reputation.\n" +
+                    $"If you <b>Accept</b>, you may not salvage the items but <b>gain</b> {acceptRepBonus} reputation.\n" +
                     $"If you <b>Refuse</b>, you may salvage the items but <b>lose</b> {refuseRepPenalty} reputation.\n" +
-                    $"If you <b>Dispute</b>, you lose {disputeRepPenalty} reputation with the <b>MRB</b> and have a:\n" +
-                    $"<line-indent=2px> - {disputeCritChance}% chance that you keep the items, and gain {SimGameState.GetCBillString(criticalPayout)}.\n" +
-                    $"<line-indent=2px> - {disputeSuccessChance}% chance of retaining the items in the salvage pool.\n" +
-                    $"<line-indent=2px> - {disputeFailChance}% chance of losing the items and must pay {SimGameState.GetCBillString(disputePayout)} for legal fees\n" +
-                    $"<line-indent=2px> - {disputeCritChance}% chance of losing <b>all</b> salvage and must pay {SimGameState.GetCBillString(criticalPayout)} for legal fees.\n"
+                    $"If you <b>Dispute</b>, you lose {dispute.MRBRepPenalty} reputation with the <b>MRB</b>, must pay {SimGameState.GetCBillString(dispute.MRBFees)} in legal fees, and have a:\n" +
+                    $"<line-indent=2px> - {dispute.CriticalChance}% chance to retain the disputed salvage, with no loss to your faction reputation.\n" +
+                    $"<line-indent=2px> - {dispute.SuccessChance}% chance to retain the disputed salvage, but lose {dispute.SuccessRepPenalty} faction reputation.\n" +
+                    $"<line-indent=2px> - {dispute.FailChance}% chance to lose the disputed salvage, {dispute.FailRepPenalty} faction reputation, and {SimGameState.GetCBillString(dispute.FailPayout)} in legal damages.\n" +
+                    $"<line-indent=2px> - {dispute.CriticalChance}% chance to lose <b>all</b> salvage, {dispute.CritFailRepPenalty} faction reputation, and {SimGameState.GetCBillString(dispute.CritFailPayout)} in legal damages.\n"
                     )
                     .AddButton("Accept", acceptAction, true, null) // accept holdback, gain slight reputation boost
                     .AddButton("Dispute", disputeAction, true, null) // dispute with MSRB, greater chance based upon MSRB rating. Lose less rep, on a failed dispute lose MSRB rating as well 
@@ -203,18 +263,12 @@ namespace LootMagnet {
 
             // Remove the disputed items
             List<SalvageDef> finalPotentialSalvage = (List<SalvageDef>)Traverse.Create(contract).Field("finalPotentialSalvage").GetValue();
+            AAR_SalvageChosen salvageChosen = (AAR_SalvageChosen)Traverse.Create(salvageScreen).Field("salvageChosen").GetValue();
             foreach (SalvageDef salvageDef in State.HeldbackItems) {
-                SalvageDef sdef1 = finalPotentialSalvage.Find((SalvageDef x) => x.Description.Id == salvageDef.Description.Id);
-                finalPotentialSalvage.Remove(sdef1);
-                
-                SalvageDef sdef2 = contract.SalvageResults.Find((SalvageDef x) => x.Description.Id == salvageDef.Description.Id);
-                contract.SalvageResults.Remove(sdef2);
-
-                salvageScreen.RemoveFromSalvageSelection(salvageDef);
+                RemoveSalvage(contract, salvageScreen, salvageChosen, finalPotentialSalvage, salvageDef);
             }
 
             State.Reset();
-            salvageScreen.OnCompleted();
         }
 
         public static void RefuseAction(SimGameState simGameState, Contract contract, AAR_SalvageScreen salvageScreen, int reputationModifier) {
@@ -226,31 +280,96 @@ namespace LootMagnet {
             State.Reset();
         }
 
-        public static void DisputeAction(SimGameState simGameState, Contract contract, AAR_SalvageScreen salvageScreen, int reputationModifier, float successChance, float criticalChance, int payout) {
-            int repBefore = simGameState.GetRawReputation(Faction.MercenaryReviewBoard);
-            simGameState.AddReputation(Faction.MercenaryReviewBoard, reputationModifier, false);
-            int repAfter = simGameState.GetRawReputation(Faction.MercenaryReviewBoard);
-            LootMagnet.Logger.Log($"Player refused holdback. {Faction.MercenaryReviewBoard} reputation {repBefore} + {reputationModifier} modifier = {repAfter}.");
+        public static void DisputeAction(SimGameState simGameState, Contract contract, AAR_SalvageScreen salvageScreen, Dispute dispute) {
+            int MRBRepPre = simGameState.GetRawReputation(Faction.MercenaryReviewBoard);
+            simGameState.AddReputation(Faction.MercenaryReviewBoard, dispute.MRBRepPenalty, false);
+            int MRPRepPost = simGameState.GetRawReputation(Faction.MercenaryReviewBoard);
+            LootMagnet.Logger.Log($"Player refused holdback. {Faction.MercenaryReviewBoard} reputation {MRBRepPre} + {dispute.MRBRepPenalty} modifier = {MRPRepPost}.");
+            simGameState.AddFunds(dispute.MRBFees, $"MRB Legal Fees re: {contract.Name}");
 
-            float roll = LootMagnet.Random.Next(101);
-            if (roll >= (100f - criticalChance)) {
-                // Critical success
-                LootMagnet.Logger.Log($"Critical success on dispute from roll {roll}. Player gains {SimGameState.GetCBillString(payout)}");
-            } else if (roll >= (100f - criticalChance - successChance)) {
-                // Normal success
-                LootMagnet.Logger.Log($"Successful dispute from roll {roll}. No impact");                
-            } else if (roll <= criticalChance) {
-                // Critical failure
-                LootMagnet.Logger.Log($"Critical failure on dispute from roll {roll}. Player loses {SimGameState.GetCBillString(payout)}");
-            } else {
-                // Regular failure
-                LootMagnet.Logger.Log($"Failure during dispute from roll {roll}. Player loses {SimGameState.GetCBillString(payout)}");
+            Dispute.Outcome outcome = dispute.GetOutcome();
+            if (outcome == Dispute.Outcome.CRITICAL_SUCCESS) {
+                LootMagnet.Logger.Log($"Critical success, player keeps disputed salvage, no further effects.");
+            } else if (outcome == Dispute.Outcome.SUCCESS) {
+                int factionRepPre = simGameState.GetRawReputation(State.Employer);
+                simGameState.AddReputation(State.Employer, dispute.SuccessRepPenalty, false);
+                int factionRepPost = simGameState.GetRawReputation(State.Employer);
+                LootMagnet.Logger.Log($"Success, player keeps disputed salvage but loses {dispute.SuccessRepPenalty}. Faction rep drops from {factionRepPre} to {factionRepPost}");
+            } else if (outcome == Dispute.Outcome.CRITICAL_FAILURE) {
+                int factionRepPre = simGameState.GetRawReputation(State.Employer);
+                simGameState.AddReputation(State.Employer, dispute.SuccessRepPenalty, false);
+                int factionRepPost = simGameState.GetRawReputation(State.Employer);
+
+                // Remove the disputed items
+                RemoveAllSalvage(contract, salvageScreen);
+
+                LootMagnet.Logger.Log($"Success, player ALL disputed salvage, loses {SimGameState.GetCBillString(dispute.CritFailPayout)}, loses {dispute.CritFailRepPenalty}. Faction rep drops from {factionRepPre} to {factionRepPost}");
+
+            } else if (outcome == Dispute.Outcome.FAILURE) {
+                int factionRepPre = simGameState.GetRawReputation(State.Employer);
+                simGameState.AddReputation(State.Employer, dispute.SuccessRepPenalty, false);
+                int factionRepPost = simGameState.GetRawReputation(State.Employer);
+
+                // Remove the disputed items
+                List<SalvageDef> finalPotentialSalvage = (List<SalvageDef>)Traverse.Create(contract).Field("finalPotentialSalvage").GetValue();
+                AAR_SalvageChosen salvageChosen = (AAR_SalvageChosen)Traverse.Create(salvageScreen).Field("salvageChosen").GetValue();
+                foreach (SalvageDef salvageDef in State.HeldbackItems) {
+                    RemoveSalvage(contract, salvageScreen, salvageChosen, finalPotentialSalvage, salvageDef);
+                }
+
+                LootMagnet.Logger.Log($"Success, player loses disputed salvage, loses {SimGameState.GetCBillString(dispute.FailPayout)}, loses {dispute.FailRepPenalty}. Faction rep drops from {factionRepPre} to {factionRepPost}");
+
             }
 
-            // Remove the disputed items
-            List<SalvageDef> finalPotentialSalvage = (List<SalvageDef>)Traverse.Create(contract).Field("finalPotentialSalvage").GetValue();
 
             State.Reset();
+        }
+
+        public static void RemoveSalvage(Contract contract, AAR_SalvageScreen salvageScreen, AAR_SalvageChosen salvageChosen, List<SalvageDef> finalPotentialSalvage, SalvageDef salvageDef) {
+            SalvageDef sdef1 = finalPotentialSalvage.Find((SalvageDef x) => x.Description.Id == salvageDef.Description.Id);
+            finalPotentialSalvage.Remove(sdef1);
+
+            SalvageDef sdef2 = contract.SalvageResults.Find((SalvageDef x) => x.Description.Id == salvageDef.Description.Id);
+            contract.SalvageResults.Remove(sdef2);
+
+            LootMagnet.Logger.Log($"Searching for inventory widget with Id: {salvageDef.Description.Id}");            
+            foreach (InventoryItemElement_NotListView iie in salvageChosen.PriorityInventory) {
+                if (iie.controller != null && iie.controller.salvageDef != null && iie.controller.salvageDef.Description.Id == salvageDef.Description.Id) {
+                    LootMagnet.Logger.Log($"Removing priority salvage: {salvageDef.Description.Id}");
+                    iie.gameObject.SetActive(false);
+                    break;
+                }
+            }
+
+            foreach (InventoryItemElement_NotListView iie in salvageChosen.LeftoverInventory) {
+                if (iie.controller != null && iie.controller.salvageDef != null && iie.controller.salvageDef.Description.Id == salvageDef.Description.Id) {
+                    LootMagnet.Logger.Log($"Removing leftover salvage: {salvageDef.Description.Id}");
+                    iie.gameObject.SetActive(false);
+                    break;
+                }
+            }
+
+        }
+
+        public static void RemoveAllSalvage(Contract contract, AAR_SalvageScreen salvageScreen) {
+            List<SalvageDef> finalPotentialSalvage = (List<SalvageDef>)Traverse.Create(contract).Field("finalPotentialSalvage").GetValue();
+            AAR_SalvageChosen salvageChosen = (AAR_SalvageChosen)Traverse.Create(salvageScreen).Field("salvageChosen").GetValue();
+
+            LootMagnet.Logger.Log($"Removing all player salvage!");
+            finalPotentialSalvage.Clear();
+            contract.SalvageResults.Clear();
+
+            foreach (InventoryItemElement_NotListView iie in salvageChosen.PriorityInventory) {
+                if (iie.controller != null && iie.controller.salvageDef != null) {
+                    iie.gameObject.SetActive(false);
+                }
+            }
+
+            foreach (InventoryItemElement_NotListView iie in salvageChosen.LeftoverInventory) {
+                if (iie.controller != null && iie.controller.salvageDef != null) {
+                    iie.gameObject.SetActive(false);
+                }
+            }
         }
 
         public class SalvageDefByCostDescendingComparer : IComparer<SalvageDef> {

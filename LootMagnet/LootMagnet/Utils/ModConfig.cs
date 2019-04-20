@@ -29,31 +29,32 @@ namespace LootMagnet {
         public float[] HoldbackTriggerChance = new float[] { 99f, 99f, 99f, 99f, 99f, 99f, 99f, 99f };
 
         // The holdback percentage for any given item
-        // loathed, hated, disliked, indifferent, liked, friendly, allied
-        public int[] HoldbackPicks = new int[] { 6, 4, 3, 2, 2, 1, 1 };
+        public int[] HoldbackPicks = new int[] { 2, 6 };
 
         // Acceptance reputation gain is equal to the the max possible reputation of the contract times this value
-        public float HoldbackAcceptMulti = 0.5f;
+        public float HoldbackAcceptRepMulti = 0.5f;
 
         // Refusal reputation loss is equal to the the max possible reputation of the contract times this value
-        public float HoldbackRefusalMulti = 2.5f;
+        public float HoldbackRefuseRepMulti = -2.5f;
 
-        // Dispute reputation loss is equal to the max possible reputation of the contract times this value
-        public float HoldbackDisputeMulti = 0.75f;
+        public float DisputeSuccessBase = 40.0f;
+        public float DisputeCritChance = 5.0f;
 
-        // In a dispute, what's the base success chance you have.
-        public float HoldbackDisputeBaseChance = 40.0f;
+        public float DisputeMRBSuccessFactor = 10.0f;
+        public int DisputeSuccessRandomBound = 10;
+        public float DisputePayoutRandomBound = 0.7f;
 
-        // For each point of MRB rating, increase the success chance by this amount
-        public float HoldbackDisputeMRBFactor = 10.0f;
+        public float DisputeMRBFeeFactor = -0.2f;
+        public float DisputeMRBRepPenalty = -0.3f;
 
-        // In a dispute, what's the chance of a critical failure (lose all equipment) or success (gain the items automatically)
-        public float HoldbackDisputeCriticalChance = 5.0f;
+        public float DisputeSuccessRepPenaltyFactor = -0.8f;
 
-        // The percentage of the total items cost that must be paid in legal fees
-        public float HoldbackDisputePayoutMulti = 1f;
+        public float DisputeFailRepPenaltyFactor = -0.3f;
+        public float DisputeFailPayoutFactor = -0.5f;
 
-        public float HoldbackDisputeCriticalPayoutMulti = 3f;
+        public float DisputeCritFailRepPenaltyFactor = -0.1f;
+        public float DisputeCritFailPayoutFactor = -1.5f;
+
 
         // TODO: Print multiplier values
         public override string ToString() {
@@ -69,7 +70,7 @@ namespace LootMagnet {
                 $"  Mechs MRBValues:[{rollupMRBVal}] x FactMulti:[{rollupFactMechVal}]\n " +
                 $"Holdback\n" +
                 $" Chance:{holdbackTrigger} Picks:{holdbackPicks}\n" +
-                $" AcceptMulti:{HoldbackAcceptMulti} RefusalMulti:{HoldbackRefusalMulti} DisputeMulti:{HoldbackDisputeMulti}";
+                $" AcceptMulti:{HoldbackAcceptRepMulti} RefusalMulti:{HoldbackRefuseRepMulti}";
         }
     }
 }
