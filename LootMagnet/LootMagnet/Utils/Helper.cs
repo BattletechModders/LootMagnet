@@ -171,7 +171,7 @@ namespace LootMagnet {
             sortedSalvage.AddRange(contract.SalvageResults);
             sortedSalvage.Sort(new SalvageDefByCostDescendingComparer());
 
-            int holdbackPicks = LootMagnet.Config.HoldbackPicks[FactionCfgIdx()];
+            int holdbackPicks = LootMagnet.Random.Next(LootMagnet.Config.HoldbackPickRange[0], LootMagnet.Config.HoldbackPickRange[1] + 1);
             LootMagnet.Logger.Log($"Employer is holding back: {holdbackPicks} picks");
             bool employerHeldbackItems = holdbackPicks > 0;
             
@@ -234,13 +234,13 @@ namespace LootMagnet {
                     $"<b>I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii...</b>\n\n" +
                     $"Your employer invokes a contract clause that allows them to withhold the following items:" + 
                     $"\n\n{itemDescs}\n\n" + 
-                    $"If you <b>Accept</b>, you may not salvage the items but <b>gain</b> {acceptRepBonus} reputation.\n" +
-                    $"If you <b>Refuse</b>, you may salvage the items but <b>lose</b> {refuseRepPenalty} reputation.\n" +
-                    $"If you <b>Dispute</b>, you lose {dispute.MRBRepPenalty} reputation with the <b>MRB</b>, must pay {SimGameState.GetCBillString(dispute.MRBFees)} in legal fees, and have a:\n" +
-                    $"<line-indent=2px> - {dispute.CriticalChance}% chance to retain the disputed salvage, with no loss to your faction reputation.\n" +
-                    $"<line-indent=2px> - {dispute.SuccessChance}% chance to retain the disputed salvage, but lose {dispute.SuccessRepPenalty} faction reputation.\n" +
-                    $"<line-indent=2px> - {dispute.FailChance}% chance to lose the disputed salvage, {dispute.FailRepPenalty} faction reputation, and {SimGameState.GetCBillString(dispute.FailPayout)} in legal damages.\n" +
-                    $"<line-indent=2px> - {dispute.CriticalChance}% chance to lose <b>all</b> salvage, {dispute.CritFailRepPenalty} faction reputation, and {SimGameState.GetCBillString(dispute.CritFailPayout)} in legal damages.\n"
+                    $"If you <b>Accept</b>, you lose the disputed salvage but <b>gain</b> <color=#00FF00>{acceptRepBonus:+0}</color> rep.\n" +
+                    $"If you <b>Refuse</b>, you keep the disputed salvage but <b>lose</b> <color=#FF0000>{refuseRepPenalty}</color> rep.\n" +
+                    $"If you <b>Dispute</b>, you pay <color=#FF0000>{dispute.MRBRepPenalty}</color> MRB rep, {SimGameState.GetCBillString(dispute.MRBFees)}, and have:\n" +
+                    $"<line-indent=2px> - {dispute.CriticalChance}% to keep the disputed salvage.\n" +
+                    $"<line-indent=2px> - {dispute.SuccessChance}% to keep the disputed salvage, but lose <color=#FF0000>{dispute.SuccessRepPenalty}</color> faction rep.\n" +
+                    $"<line-indent=2px> - {dispute.FailChance}% to lose the disputed salvage, <color=#FF0000>{dispute.FailRepPenalty}</color> faction rep, and {SimGameState.GetCBillString(dispute.FailPayout)}.\n" +
+                    $"<line-indent=2px> - {dispute.CriticalChance}% to lose <b>ALL</b> salvage, <color=#FF0000>{dispute.CritFailRepPenalty}</color> faction rep, and {SimGameState.GetCBillString(dispute.CritFailPayout)}.\n"
                     )
                     .AddButton("Accept", acceptAction, true, null) // accept holdback, gain slight reputation boost
                     .AddButton("Dispute", disputeAction, true, null) // dispute with MSRB, greater chance based upon MSRB rating. Lose less rep, on a failed dispute lose MSRB rating as well 
@@ -249,7 +249,6 @@ namespace LootMagnet {
 
                 TextMeshProUGUI contentText = (TextMeshProUGUI)Traverse.Create(gp).Field("_contentText").GetValue();
                 contentText.alignment = TextAlignmentOptions.Left;
-
             }
 
             return;
@@ -318,9 +317,7 @@ namespace LootMagnet {
                 }
 
                 LootMagnet.Logger.Log($"Success, player loses disputed salvage, loses {SimGameState.GetCBillString(dispute.FailPayout)}, loses {dispute.FailRepPenalty}. Faction rep drops from {factionRepPre} to {factionRepPost}");
-
             }
-
 
             State.Reset();
         }

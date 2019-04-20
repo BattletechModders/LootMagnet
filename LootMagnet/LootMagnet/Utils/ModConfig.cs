@@ -29,7 +29,7 @@ namespace LootMagnet {
         public float[] HoldbackTriggerChance = new float[] { 99f, 99f, 99f, 99f, 99f, 99f, 99f, 99f };
 
         // The holdback percentage for any given item
-        public int[] HoldbackPicks = new int[] { 2, 6 };
+        public int[] HoldbackPickRange = new int[] { 2, 6 };
 
         // Acceptance reputation gain is equal to the the max possible reputation of the contract times this value
         public float HoldbackAcceptRepMulti = 0.5f;
@@ -44,7 +44,7 @@ namespace LootMagnet {
         public int DisputeSuccessRandomBound = 10;
         public float DisputePayoutRandomBound = 0.7f;
 
-        public float DisputeMRBFeeFactor = -0.2f;
+        public float DisputeMRBFeeFactor = -0.1f;
         public float DisputeMRBRepPenalty = -0.3f;
 
         public float DisputeSuccessRepPenaltyFactor = -0.8f;
@@ -62,7 +62,7 @@ namespace LootMagnet {
             string rollupFactComponentVal = string.Join(", ", RollupFactionComponentMulti.Select(v => v.ToString("0.00")).ToArray());
             string rollupFactMechVal = string.Join(", ", RollupFactionMechMulti.Select(v => v.ToString("0.00")).ToArray());
             string holdbackTrigger = string.Join(", ", HoldbackTriggerChance.Select(v => v.ToString("0.00")).ToArray());
-            string holdbackPicks = string.Join(", ", HoldbackPicks.Select(v => v.ToString("0")).ToArray());
+            string holdbackPicks = string.Join(", ", HoldbackPickRange.Select(v => v.ToString("0")).ToArray());
 
             return $"Debug:{Debug} DeveloperMode:{DeveloperMode}\n " +
                 $"Rollup\n" +
