@@ -237,9 +237,9 @@ namespace LootMagnet {
                     $"<line-indent=2px> - {dispute.FailChance}% to lose the disputed salvage, <color=#FF0000>{dispute.FailRepPenalty}</color> faction rep, and <color=#FF0000>{SimGameState.GetCBillString(dispute.FailPayout)}</color>.\n" +
                     $"<line-indent=2px> - {dispute.CriticalChance}% to lose <b>ALL</b> salvage, <color=#FF0000>{dispute.CritFailRepPenalty}</color> faction rep, and <color=#FF0000>{SimGameState.GetCBillString(dispute.CritFailPayout)}</color>.\n"
                     )
-                    .AddButton("Accept", acceptAction, true, null) // accept holdback, gain slight reputation boost
-                    .AddButton("Dispute", disputeAction, true, null) // dispute with MSRB, greater chance based upon MSRB rating. Lose less rep, on a failed dispute lose MSRB rating as well 
-                    .AddButton("Refuse", refuseAction, true, null) // forcibly refuse claims, take reputation hit equal to cost
+                    .AddButton("Accept", acceptAction, true, null)
+                    .AddButton("Refuse", refuseAction, true, null)
+                    .AddButton("Dispute", disputeAction, true, null)
                     .Render();
 
                 TextMeshProUGUI contentText = (TextMeshProUGUI)Traverse.Create(gp).Field("_contentText").GetValue();
@@ -290,7 +290,7 @@ namespace LootMagnet {
                     "CRITICAL SUCCESS",
                     $"<b>If the glove fits, you must acquit!</b>\n\n" + 
                     $"Your hired laywer dazzled the MRB, who unanimously accepted your claim.  Meanwhile politicing by Darius convinced the {State.Employer} rep to " +
-                    $"leave this incident out of the company's employment record. You can't ask for better outcome... for {simGameState.CompanyName} at least. " +
+                    $"leave this incident out of the company's employment record. You can't ask for better outcome... for <b>{simGameState.CompanyName}</b> at least. " +
                     $"Maybe Darius really does deserve that raise he's been yammering on about."
                 )
                 .AddButton("OK") 
@@ -304,8 +304,8 @@ namespace LootMagnet {
                 GenericPopup gp = GenericPopupBuilder.Create(
                     "SUCCESS",
                     $"<b>Cause 193 of the standard mercenary contract clearly states...</b>\n\n" +
-                    $"Your laywer was able to defend your claim with the MRB. Unfortunately an off-hand remark by Sumire inflamed the already antagonistic {State.Employer} rep." +
-                    $"You keep the salvage, but {simGameState.CompanyName} reputation with {State.Employer} has been damaged and a permenant black mark added to the employer's records. "
+                    $"Your laywer was able to defend your claim with the MRB. Unfortunately an off-hand remark by Sumire inflamed the already antagonistic {State.Employer} rep. " +
+                    $"You keep the salvage, but <b>{simGameState.CompanyName}</b> reputation with {State.Employer} has been damaged and a permenant black mark added to the employer's records. "
                 )
                 .AddButton("OK")
                 .Render();
