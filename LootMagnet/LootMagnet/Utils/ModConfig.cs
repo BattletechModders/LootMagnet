@@ -25,24 +25,43 @@ namespace LootMagnet {
     public class HoldbackCfg {
         public int[] PickRange = new int[] { 2, 6 };
 
-        // Acceptance reputation gain is equal to the the max possible reputation of the contract times this value
+        // Faction reputation gain is you accept a dispute
         public float RepMultiAccept = 0.5f;
 
-        // Refusal reputation loss is equal to the the max possible reputation of the contract times this value
+        // Faction reputation loss if you refuse a dispute
         public float RepMultiRefuse = -2.5f;
 
+        // MRB Reputation loss when demanding a dispute
         public float RepMultiDisputeMRB = -0.3f;
+
+        // Reptuation loss if the dispute succeeded
         public float RepMultiDisputeSuccess = -0.8f;
+
+        // Reptuation loss if the dispute failed
         public float RepMultiDisputeFail = -0.3f;
+
+        // Reptuation loss if the dispute critically failed
         public float RepMultiDisputeCriticalFail = -0.1f;
 
+        // The base % success rate for a dispute
         public float DisputeSuccessBase = 40.0f;
+
+        // The critical fail/success rate for a dispute
         public float DisputeCritChance = 5.0f;
+
+        // How much your MRB rating (from 0-5) impacts your dispute success
         public float DisputeMRBSuccessFactor = 10.0f;
+
+        // A random amount that reduces your success chances
         public int DisputeSuccessRandomBound = 10;
 
+        // How much of a fee you have to pay to dispute a contract
         public float DisputeMRBFeeFactor = -0.1f;
+
+        // How much of a fee you pay in a failed dispute
         public float DisputeFailPayoutFactor = -0.5f;
+
+        // How much of a fee you pay in a critically failed dispute
         public float DisputeCritFailPayoutFactor = -1.5f;
     }
 
