@@ -52,11 +52,11 @@ namespace LootMagnet {
             LootMagnet.Logger.Log($"  Success repPenalty:{SuccessRepPenalty}");
 
             this.FailPayout = (int)Math.Ceiling(maxMoney * LootMagnet.Config.Holdback.DisputeFailPayoutFactor);
-            this.FailRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.Holdback.RepMultiDisputeSuccess);
+            this.FailRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.Holdback.RepMultiDisputeFail);
             LootMagnet.Logger.Log($"  Failure payout:{SimGameState.GetCBillString(FailPayout)} repPenalty:{FailRepPenalty}");
 
             this.CritFailPayout = (int)Math.Ceiling(maxMoney * LootMagnet.Config.Holdback.DisputeCritFailPayoutFactor);
-            this.CritFailRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.Holdback.RepMultiDisputeSuccess);
+            this.CritFailRepPenalty = (int)Math.Ceiling(maxRep * LootMagnet.Config.Holdback.RepMultiDisputeCriticalFail);
             LootMagnet.Logger.Log($"  Critical Failure payout:{SimGameState.GetCBillString(CritFailPayout)} repPenalty:{CritFailRepPenalty}");
         }
 
