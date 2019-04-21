@@ -66,7 +66,7 @@ The employer makes a random roll to determine if they attempt to holdback an ite
 | Trigger | 60% | 40% | 20% | 16% | 8% | 4% | 2% | 1% |
 | Greed | 3-7 | 3-5 | 2-4 | 1-3 | 1-2 | 1-1 | 1-1 | 1-1 |
 
-Once holdback has been triggered, the employer determines how *greedy* they are. A random roll is made against the bounds defined as **HoldbackGreed** (in *mod.json*). The result of this roll determines how many items will be held back. The employer will pick the most expensive items first, which naturally biases towards mech chassis and mech parts.
+Once holdback has been triggered, the employer determines how greedy they will be. A random roll is made against the bounds defined as **PickRange** (in *mod.json*). The result of this roll determines how many items will be held back. The employer will pick the most expensive items first, which naturally biases towards mech chassis and parts.
 
 ### Negotiation
 

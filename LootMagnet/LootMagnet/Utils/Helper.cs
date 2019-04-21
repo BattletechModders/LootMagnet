@@ -110,10 +110,10 @@ namespace LootMagnet {
                 LootMagnet.Logger.LogIfDebug($"Found {rawDef.Count} of salvage:'{rawDef?.Description?.Name}' / '{rawDef?.Description.Id}' with rewardId:'{rawDef?.RewardID}'");
 
                 if (rawDef.Type == SalvageDef.SalvageType.COMPONENT && componentThreshold > 0 ) {
-                    LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of component salvage:'{rawDef?.Description?.Name}' with threshold:{componentThreshold.ToString("0")}");
+                    LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of component salvage:'{rawDef?.Description?.Name}' with value:{rawDef.Description.Cost} threshold:{componentThreshold.ToString("0")}");
                     RollupSalvageDef(rawDef, componentThreshold, rolledUpSalvage);
                 } else if (rawDef.Type == SalvageDef.SalvageType.MECH_PART && mechThreshold > 0) {
-                    LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of mech part salvage:'{rawDef?.Description?.Name}' with threshold:{mechThreshold.ToString("0")}");
+                    LootMagnet.Logger.Log($"Rolling up {rawDef.Count} of mech part salvage:'{rawDef?.Description?.Name}' with value:{rawDef.Description.Cost} threshold:{mechThreshold.ToString("0")}");
                     RollupSalvageDef(rawDef, mechThreshold, rolledUpSalvage);
                 } else {
                     rolledUpSalvage.Add(rawDef);
@@ -211,7 +211,7 @@ namespace LootMagnet {
             }
 
             if (employerHeldbackItems) {
-                string itemDescs = string.Join("\n  - ", heldbackItemsDesc.ToArray());
+                string itemDescs = " -" + string.Join("\n -", heldbackItemsDesc.ToArray());
 
                 int acceptRepBonus = (int)Math.Ceiling(contract.GetMaxPossibleReputation(sgc) * LootMagnet.Config.Holdback.RepMultiAccept);
                 void acceptAction() { AcceptAction(sgs, contract, salvageScreen, acceptRepBonus); }
@@ -278,17 +278,37 @@ namespace LootMagnet {
             int MRBRepPre = simGameState.GetRawReputation(Faction.MercenaryReviewBoard);
             simGameState.AddReputation(Faction.MercenaryReviewBoard, dispute.MRBRepPenalty, false);
             int MRPRepPost = simGameState.GetRawReputation(Faction.MercenaryReviewBoard);
-            LootMagnet.Logger.Log($"Player refused holdback. {Faction.MercenaryReviewBoard} reputation {MRBRepPre} + {dispute.MRBRepPenalty} modifier = {MRPRepPost}.");
-            simGameState.AddFunds(dispute.MRBFees, $"MRB Legal Fees re: {contract.Name}");
+            LootMagnet.Logger.Log($"Player disputed holdback. {Faction.MercenaryReviewBoard} reputation {MRBRepPre} + {dispute.MRBRepPenalty} modifier = {MRPRepPost}.");
+
+            LootMagnet.Logger.Log($"Dispute legal fees:{dispute.MRBFees}");
+            simGameState.AddFunds(dispute.MRBFees, $"MRB Legal Fees re: {contract.Name}", false);
 
             Dispute.Outcome outcome = dispute.GetOutcome();
             if (outcome == Dispute.Outcome.CRITICAL_SUCCESS) {
                 LootMagnet.Logger.Log($"Critical success, player keeps disputed salvage, no further effects.");
+                GenericPopup gp = GenericPopupBuilder.Create(
+                    "CRITICAL SUCCESS",
+                    $"<b>If the glove fits, you must acquit!</b>\n\n" + 
+                    $"Your hired laywer dazzled the MRB, who unanimously accepted your claim.  Meanwhile politicing by Darius convinced the {State.Employer} rep to " +
+                    $"leave this incident out of the company's employment record. You can't ask for better outcome... for {simGameState.CompanyName} at least. " +
+                    $"Maybe Darius really does deserve that raise he's been yammering on about."
+                )
+                .AddButton("OK") 
+                .Render();
             } else if (outcome == Dispute.Outcome.SUCCESS) {
                 int factionRepPre = simGameState.GetRawReputation(State.Employer);
                 simGameState.AddReputation(State.Employer, dispute.SuccessRepPenalty, false);
                 int factionRepPost = simGameState.GetRawReputation(State.Employer);
+
                 LootMagnet.Logger.Log($"Success, player keeps disputed salvage but loses {dispute.SuccessRepPenalty}. Faction rep drops from {factionRepPre} to {factionRepPost}");
+                GenericPopup gp = GenericPopupBuilder.Create(
+                    "SUCCESS",
+                    $"<b>Cause 193 of the standard mercenary contract clearly states...</b>\n\n" +
+                    $"Your laywer was able to defend your claim with the MRB. Unfortunately an off-hand remark by Sumire inflamed the already antagonistic {State.Employer} rep." +
+                    $"You keep the salvage, but {simGameState.CompanyName} reputation with {State.Employer} has been damaged and a permenant black mark added to the employer's records. "
+                )
+                .AddButton("OK")
+                .Render();
             } else if (outcome == Dispute.Outcome.CRITICAL_FAILURE) {
                 int factionRepPre = simGameState.GetRawReputation(State.Employer);
                 simGameState.AddReputation(State.Employer, dispute.SuccessRepPenalty, false);
@@ -297,8 +317,18 @@ namespace LootMagnet {
                 // Remove the disputed items
                 RemoveAllSalvage(contract, salvageScreen);
 
-                LootMagnet.Logger.Log($"Success, player ALL disputed salvage, loses {SimGameState.GetCBillString(dispute.CritFailPayout)}, loses {dispute.CritFailRepPenalty}. Faction rep drops from {factionRepPre} to {factionRepPost}");
+                // Pay the fee
+                simGameState.AddFunds(dispute.CritFailPayout, $"Contract {contract.Name} dispute critical failure payout", false);
 
+                LootMagnet.Logger.Log($"Success, player ALL disputed salvage, loses {SimGameState.GetCBillString(dispute.CritFailPayout)}, loses {dispute.CritFailRepPenalty}. Faction rep drops from {factionRepPre} to {factionRepPost}");
+                GenericPopup gp = GenericPopupBuilder.Create(
+                    "CRITICAL FAILURE",
+                    $"<b>I know a guy... who knows a guy.</b>\n\n" +
+                    $"When you choose an attorney from a strip mall, you shouldn't expect much. Your lawyer was completely trounched by {State.Employer}'s legal team, with the worst contract penalties being applied." +
+                    $"You lose all the battlefield salvage, as well as {SimGameState.GetCBillString(dispute.CritFailPayout)}, but on the bright side your reputation with {State.Employer} barely changes. They're too busy laughing all the way to the bank. "
+                )
+                .AddButton("OK")
+                .Render();
             } else if (outcome == Dispute.Outcome.FAILURE) {
                 int factionRepPre = simGameState.GetRawReputation(State.Employer);
                 simGameState.AddReputation(State.Employer, dispute.SuccessRepPenalty, false);
@@ -311,8 +341,19 @@ namespace LootMagnet {
                     RemoveSalvage(contract, salvageScreen, salvageChosen, finalPotentialSalvage, salvageDef);
                 }
 
+                // Pay the fee
+                simGameState.AddFunds(dispute.FailPayout, $"Contract {contract.Name} dispute failure payout", false);
+
                 LootMagnet.Logger.Log($"Success, player loses disputed salvage, loses {SimGameState.GetCBillString(dispute.FailPayout)}, loses {dispute.FailRepPenalty}. Faction rep drops from {factionRepPre} to {factionRepPost}");
-            }
+                GenericPopup gp = GenericPopupBuilder.Create(
+                    "FAILURE",
+                    $"<b>This court finds against the claimants...</b>\n\n" +
+                    $"{State.Employer}'s lawyer mounted a spirited attack that your counsel never recovered from. You lose the disputed salvage, as well as {SimGameState.GetCBillString(dispute.FailPayout)}." +
+                    $"Having the case go their way makes the dispute less bitter for {State.Employer}, and there's little reputation loss with them for {simGameState.CompanyName}."
+                )
+                .AddButton("OK")
+                .Render();
+                            }
 
             State.Reset();
         }

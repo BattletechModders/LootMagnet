@@ -34,7 +34,7 @@ namespace LootMagnet {
                 State.EmployerRepRaw = simulation.GetRawReputation(State.Employer);
                 State.IsEmployerAlly = simulation.IsCareerFactionAlly(State.Employer);
                 State.MRBRating = simulation.GetCurrentMRBLevel() - 1; // Normalize to 0 indexing
-                LootMagnet.Logger.Log($"At contract start, Player has MRB:{State.MRBRating} / EmployerRep:{State.EmployerRep} / EmployerAllied:{State.IsEmployerAlly}");
+                LootMagnet.Logger.Log($"At contract start, Player has MRB:{State.MRBRating}  Employer:({State.Employer}) EmployerRep:{State.EmployerRep} / EmployerAllied:{State.IsEmployerAlly}");
             }            
         }
     }

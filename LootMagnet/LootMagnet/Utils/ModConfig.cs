@@ -56,18 +56,24 @@ namespace LootMagnet {
         // The values used to define the base amounts for rollup
         public float[] RollupMRBValue = new float[] { 40000f, 60000f, 90000f, 130000f, 180000f, 240000f };
 
-        public List<RepCfg> Reputation = new List<RepCfg>() {
-            new RepCfg{ Reputation = Rep.LOATHED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 60f },
-            new RepCfg{ Reputation = Rep.HATED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 48f },
-            new RepCfg{ Reputation = Rep.DISLIKED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 32f },
-            new RepCfg{ Reputation = Rep.INDIFFERENT, RollupMultiComponent = 1f, RollupMultiMech = 0f, HoldbackTrigger = 16f },
-            new RepCfg{ Reputation = Rep.LIKED, RollupMultiComponent = 5f, RollupMultiMech = 0f, HoldbackTrigger = 8f },
-            new RepCfg{ Reputation = Rep.FRIENDLY, RollupMultiComponent = 9f, RollupMultiMech = 20f, HoldbackTrigger = 4f },
-            new RepCfg{ Reputation = Rep.HONORED, RollupMultiComponent = 13f, RollupMultiMech = 30f, HoldbackTrigger = 2f },
-            new RepCfg{ Reputation = Rep.ALLIED, RollupMultiComponent = 21f, RollupMultiMech = 180f, HoldbackTrigger = 1f },
-        };
+        public List<RepCfg> Reputation = new List<RepCfg>() {};
 
         public HoldbackCfg Holdback = new HoldbackCfg();
+
+        public void InitDefaultReputation() {
+            if (Reputation.Count == 0) {
+                Reputation = new List<RepCfg>() {
+                    new RepCfg{ Reputation = Rep.LOATHED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 60f },
+                    new RepCfg{ Reputation = Rep.HATED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 48f },
+                    new RepCfg{ Reputation = Rep.DISLIKED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 32f },
+                    new RepCfg{ Reputation = Rep.INDIFFERENT, RollupMultiComponent = 1f, RollupMultiMech = 0f, HoldbackTrigger = 16f },
+                    new RepCfg{ Reputation = Rep.LIKED, RollupMultiComponent = 5f, RollupMultiMech = 0f, HoldbackTrigger = 8f },
+                    new RepCfg{ Reputation = Rep.FRIENDLY, RollupMultiComponent = 9f, RollupMultiMech = 20f, HoldbackTrigger = 4f },
+                    new RepCfg{ Reputation = Rep.HONORED, RollupMultiComponent = 13f, RollupMultiMech = 30f, HoldbackTrigger = 2f },
+                    new RepCfg{ Reputation = Rep.ALLIED, RollupMultiComponent = 21f, RollupMultiMech = 180f, HoldbackTrigger = 1f },
+                };
+            }
+        }
 
         public void LogConfig() {
             LootMagnet.Logger.Log("=== MOD CONFIG BEGIN ===");
@@ -77,13 +83,12 @@ namespace LootMagnet {
             string rollupMRBVal = string.Join(", ", RollupMRBValue.Select(v => v.ToString("0.00")).ToArray());
             LootMagnet.Logger.Log($"  MRB Rollup Values: {rollupMRBVal}");
 
-            LootMagnet.Logger.Log($"  -- Faction Reputation Values --");
+            LootMagnet.Logger.Log($"FACTION REPUTATION VALUES");
             foreach (RepCfg factionCfg in Reputation) {
                 LootMagnet.Logger.Log($"  Reputation:{factionCfg.Reputation} ComponentRollup:{factionCfg.RollupMultiComponent} MechRollup:{factionCfg.RollupMultiMech} HoldbackTrigger:{factionCfg.HoldbackTrigger}%");
             }
-            LootMagnet.Logger.Log($"");
 
-            LootMagnet.Logger.Log($"  -- Holdback Values --");
+            LootMagnet.Logger.Log($"HOLDBACK VALUES");
             LootMagnet.Logger.Log($"  Holdback Picks: {Holdback.PickRange[0]} to {Holdback.PickRange[1]}");
 
             LootMagnet.Logger.Log($"  Reputation ACCEPT:x{Holdback.RepMultiAccept} REFUSE:x{Holdback.RepMultiRefuse} DISPUTE_MRB:x{Holdback.RepMultiDisputeMRB}");

@@ -18,12 +18,13 @@ namespace LootMagnet {
         public static void Init(string modDirectory, string settingsJSON) {
             ModDir = modDirectory;
 
-            Exception settingsE;
+            Exception settingsE = null;
             try {
                 LootMagnet.Config = JsonConvert.DeserializeObject<ModConfig>(settingsJSON);
             } catch (Exception e) {
                 settingsE = e;
                 LootMagnet.Config = new ModConfig();
+                Config.InitDefaultReputation();
             }
 
             Logger = new Logger(modDirectory, "loot_magnet");
@@ -35,6 +36,12 @@ namespace LootMagnet {
             Logger.LogIfDebug($"ModDir is:{modDirectory}");
             Logger.LogIfDebug($"mod.json settings are:({settingsJSON})");
             LootMagnet.Config.LogConfig();
+
+            if (settingsE != null) {
+                Logger.Log($"ERROR reading settings file! Error was: {settingsE}");
+            } else {
+                Logger.Log($"INFO: No errors reading settings file.");
+            }
 
             var harmony = HarmonyInstance.Create(HarmonyPackage);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
