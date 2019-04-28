@@ -9,7 +9,10 @@ namespace LootMagnet {
         public static int EmployerRepRaw = 0;
         public static bool IsEmployerAlly = false;
         public static int MRBRating = 0;
-        public static List<SalvageDef> HeldbackItems = new List<SalvageDef>();
+
+        public static double Compensation = 0;
+        public static List<SalvageDef> HeldbackParts = new List<SalvageDef>();
+        public static List<SalvageDef> CompensationParts = new List<SalvageDef>();
 
         public static void Reset() {
             // Reinitialize state
@@ -18,7 +21,10 @@ namespace LootMagnet {
             State.EmployerRepRaw = 0;
             State.IsEmployerAlly = false;
             State.MRBRating = 0;
-            State.HeldbackItems.Clear();
+
+            State.Compensation = 0;
+            State.HeldbackParts.Clear();
+            State.CompensationParts.Clear();
         }
     }
 

@@ -1,10 +1,13 @@
 ﻿using BattleTech;
 using BattleTech.UI;
+using BattleTech.UI.Tooltips;
 using Harmony;
 using Localize;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using TMPro;
 
 namespace LootMagnet {
 
@@ -46,9 +49,24 @@ namespace LootMagnet {
         public static void Postfix(Contract __instance, List<SalvageDef> __result, List<SalvageDef> ___finalPotentialSalvage) {
             if (__result != null) {
 
-                // Roll up the salvage
+                // Sort by price, since other functions depend on it
+                __result.Sort(new Helper.SalvageDefByCostDescendingComparer());
+
+                // Roll up any remaining salvage
                 float salvageThreshold = Helper.GetSalvageThreshold(false);
                 List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(__result);
+
+                // Check for holdback
+                bool hasMechParts = __result.FirstOrDefault(sd => sd.Type != SalvageDef.SalvageType.COMPONENT) != null;
+                bool canHoldback = SimGameState.DoesFactionGainReputation(State.Employer) && State.Employer != Faction.ComStar;
+                float triggerChance = Helper.GetHoldbackTriggerChance();
+                float holdbackRoll = LootMagnet.Random.Next(101);
+                LootMagnet.Logger.Log($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
+                if (canHoldback && hasMechParts && holdbackRoll <= triggerChance) {
+                    LootMagnet.Logger.Log($"Holdback triggered, determining disputed mech parts.");
+                    Helper.CalculateHoldback(rolledUpSalvage);
+                    Helper.CalculateCompensation(rolledUpSalvage);
+                }
 
                 __result.Clear();
                 __result.AddRange(rolledUpSalvage);
@@ -105,18 +123,29 @@ namespace LootMagnet {
     }
 
 
-    [HarmonyPatch(typeof(AAR_SalvageScreen), "SalvageConfirmed")]
-    public static class AAR_SalvageScreen_SalvageConfirmed {
+    [HarmonyPatch(typeof(AAR_SalvageScreen), "CalculateAndAddAvailableSalvage")]
+    public static class AAR_SalvageScreen_CalculateAndAddAvailableSalvage {
 
         public static void Postfix(AAR_SalvageScreen __instance, Contract ___contract) {
-            LootMagnet.Logger.LogIfDebug("AAR_SS:SC entered.");
+            LootMagnet.Logger.LogIfDebug("AAR_SS:CAAAS entered.");
 
-            // Check for holdback
-            float triggerChance = Helper.GetHoldbackTriggerChance();
-            float holdbackRoll = LootMagnet.Random.Next(101);
-            if (holdbackRoll <= triggerChance) {
-                LootMagnet.Logger.Log($"Holdback triggered from roll:{holdbackRoll} <= triggerChance:{triggerChance}. Removing salvage.");
-                Helper.HoldbackSalvage(___contract, __instance);
+            if (State.HeldbackParts.Count > 0) {
+                UIHelper.ShowHoldbackDialog(___contract, __instance);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(TooltipPrefab_Weapon), "SetData")]
+    public static class TooltipPrefab_Weapon_SetData {
+
+        public static void Postfix(TooltipPrefab_Weapon __instance, object data, TextMeshProUGUI ___rangeType, TextMeshProUGUI ___damage) {
+            LootMagnet.Logger.LogIfDebug("TP_W:SD entered.");
+
+            ___rangeType.enabled = false;
+            WeaponDef weaponDef = (WeaponDef)data;
+            if (weaponDef != null) {
+                float totalDamage = weaponDef.Damage * weaponDef.ShotsWhenFired * weaponDef.ProjectilesPerShot;
+                ___damage.SetText($"{weaponDef.Damage.ToString()}x({weaponDef.ShotsWhenFired.ToString()}s)x({weaponDef.ProjectilesPerShot.ToString()}p)={totalDamage}");
             }
         }
     }

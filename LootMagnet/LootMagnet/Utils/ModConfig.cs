@@ -20,49 +20,29 @@ namespace LootMagnet {
         public float RollupMultiComponent = 0f;
         public float RollupMultiMech = 0f;
         public float HoldbackTrigger = 0f;
+        public float HoldbackValueCapMulti = 0f;
     }
 
     public class HoldbackCfg {
-        public int[] PickRange = new int[] { 2, 6 };
 
-        // Faction reputation gain is you accept a dispute
-        public float RepMultiAccept = 0.5f;
+        public int[] MechParts = new int[] { 1, 6 };
 
-        // Faction reputation loss if you refuse a dispute
-        public float RepMultiRefuse = -2.5f;
+        public int[] ReputationRange = new int[] { 2, 6 };
 
-        // MRB Reputation loss when demanding a dispute
-        public float RepMultiDisputeMRB = -0.3f;
-
-        // Reptuation loss if the dispute succeeded
-        public float RepMultiDisputeSuccess = -0.8f;
-
-        // Reptuation loss if the dispute failed
-        public float RepMultiDisputeFail = -0.3f;
-
-        // Reptuation loss if the dispute critically failed
-        public float RepMultiDisputeCriticalFail = -0.1f;
+        public int[] DisputePicks = new int[] { 1, 6 };
 
         // The base % success rate for a dispute
-        public float DisputeSuccessBase = 40.0f;
-
-        // The critical fail/success rate for a dispute
-        public float DisputeCritChance = 5.0f;
+        public float DisputeSuccessBase = 50.0f;
 
         // How much your MRB rating (from 0-5) impacts your dispute success
         public float DisputeMRBSuccessFactor = 10.0f;
 
-        // A random amount that reduces your success chances
-        public int DisputeSuccessRandomBound = 10;
+        // The factor that randomly modifies your success
+        public float DisputeSuccessRandomBound = 0.2f;
 
         // How much of a fee you have to pay to dispute a contract
         public float DisputeMRBFeeFactor = -0.1f;
 
-        // How much of a fee you pay in a failed dispute
-        public float DisputeFailPayoutFactor = -0.5f;
-
-        // How much of a fee you pay in a critically failed dispute
-        public float DisputeCritFailPayoutFactor = -1.5f;
     }
 
     public class ModConfig {
@@ -82,14 +62,14 @@ namespace LootMagnet {
         public void InitDefaultReputation() {
             if (Reputation.Count == 0) {
                 Reputation = new List<RepCfg>() {
-                    new RepCfg{ Reputation = Rep.LOATHED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 60f },
-                    new RepCfg{ Reputation = Rep.HATED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 48f },
-                    new RepCfg{ Reputation = Rep.DISLIKED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 32f },
-                    new RepCfg{ Reputation = Rep.INDIFFERENT, RollupMultiComponent = 1f, RollupMultiMech = 0f, HoldbackTrigger = 16f },
-                    new RepCfg{ Reputation = Rep.LIKED, RollupMultiComponent = 5f, RollupMultiMech = 0f, HoldbackTrigger = 8f },
-                    new RepCfg{ Reputation = Rep.FRIENDLY, RollupMultiComponent = 9f, RollupMultiMech = 20f, HoldbackTrigger = 4f },
-                    new RepCfg{ Reputation = Rep.HONORED, RollupMultiComponent = 13f, RollupMultiMech = 30f, HoldbackTrigger = 2f },
-                    new RepCfg{ Reputation = Rep.ALLIED, RollupMultiComponent = 21f, RollupMultiMech = 180f, HoldbackTrigger = 1f },
+                    new RepCfg{ Reputation = Rep.LOATHED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 60f, HoldbackValueCapMulti = 0.2f },
+                    new RepCfg{ Reputation = Rep.HATED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 48f, HoldbackValueCapMulti = 0.3f },
+                    new RepCfg{ Reputation = Rep.DISLIKED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 32f, HoldbackValueCapMulti = 0.4f },
+                    new RepCfg{ Reputation = Rep.INDIFFERENT, RollupMultiComponent = 1f, RollupMultiMech = 0f, HoldbackTrigger = 16f, HoldbackValueCapMulti = 0.6f },
+                    new RepCfg{ Reputation = Rep.LIKED, RollupMultiComponent = 5f, RollupMultiMech = 0f, HoldbackTrigger = 8f, HoldbackValueCapMulti = 0.8f },
+                    new RepCfg{ Reputation = Rep.FRIENDLY, RollupMultiComponent = 9f, RollupMultiMech = 20f, HoldbackTrigger = 4f, HoldbackValueCapMulti = 1f },
+                    new RepCfg{ Reputation = Rep.HONORED, RollupMultiComponent = 13f, RollupMultiMech = 30f, HoldbackTrigger = 2f, HoldbackValueCapMulti = 1.25f },
+                    new RepCfg{ Reputation = Rep.ALLIED, RollupMultiComponent = 21f, RollupMultiMech = 180f, HoldbackTrigger = 1f, HoldbackValueCapMulti = 2f },
                 };
             }
         }
@@ -108,15 +88,15 @@ namespace LootMagnet {
             }
 
             LootMagnet.Logger.Log($"HOLDBACK VALUES");
-            LootMagnet.Logger.Log($"  Holdback Picks: {Holdback.PickRange[0]} to {Holdback.PickRange[1]}");
+            //LootMagnet.Logger.Log($"  Holdback Picks: {Holdback.PickRange[0]} to {Holdback.PickRange[1]}");
 
-            LootMagnet.Logger.Log($"  Reputation ACCEPT:x{Holdback.RepMultiAccept} REFUSE:x{Holdback.RepMultiRefuse} DISPUTE_MRB:x{Holdback.RepMultiDisputeMRB}");
-            LootMagnet.Logger.Log($"  Reputation DISPUTE_SUCCESS:x{Holdback.RepMultiDisputeSuccess} DISPUTE_FAIL:x{Holdback.RepMultiDisputeFail} DISPUTE_CRIT_FAIL:x{Holdback.RepMultiDisputeCriticalFail}");
+            //LootMagnet.Logger.Log($"  Reputation ACCEPT:x{Holdback.RepMultiAccept} REFUSE:x{Holdback.RepMultiRefuse} DISPUTE_MRB:x{Holdback.RepMultiDisputeMRB}");
+            //LootMagnet.Logger.Log($"  Reputation DISPUTE_SUCCESS:x{Holdback.RepMultiDisputeSuccess} DISPUTE_FAIL:x{Holdback.RepMultiDisputeFail} DISPUTE_CRIT_FAIL:x{Holdback.RepMultiDisputeCriticalFail}");
 
-            LootMagnet.Logger.Log($"  Dispute Chance BASE:{Holdback.DisputeSuccessBase}% CRIT_CHANCE:{Holdback.DisputeCritChance}% " +
-                $"MRB_FACTOR:{Holdback.DisputeMRBSuccessFactor}% RANDOM:{Holdback.DisputeSuccessRandomBound}%");
+            //LootMagnet.Logger.Log($"  Dispute Chance BASE:{Holdback.DisputeSuccessBase}% CRIT_CHANCE:{Holdback.DisputeCritChance}% " +
+            //    $"MRB_FACTOR:{Holdback.DisputeMRBSuccessFactor}% RANDOM:{Holdback.DisputeSuccessRandomBound}%");
 
-            LootMagnet.Logger.Log($"  MRB_Fees:x{Holdback.DisputeMRBFeeFactor} FAIL_PAYOUT:x{Holdback.DisputeFailPayoutFactor} CRIT_FAIL_PAYOUT:X{Holdback.DisputeCritFailPayoutFactor}");
+            //LootMagnet.Logger.Log($"  MRB_Fees:x{Holdback.DisputeMRBFeeFactor} FAIL_PAYOUT:x{Holdback.DisputeFailPayoutFactor} CRIT_FAIL_PAYOUT:X{Holdback.DisputeCritFailPayoutFactor}");
 
             LootMagnet.Logger.Log("=== MOD CONFIG END ===");
         }

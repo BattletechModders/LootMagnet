@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="LootMagnet.cs" />
+    <Compile Include="Utils\UIHelper.cs" />
     <Compile Include="Utils\Logger.cs" />
     <Compile Include="Utils\ModConfig.cs" />
     <Compile Include="Patches\Patches.cs" />
