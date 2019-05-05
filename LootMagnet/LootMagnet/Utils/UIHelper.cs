@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using static LootMagnet.LootMagnet;
 
 namespace LootMagnet {
 
@@ -25,10 +26,10 @@ namespace LootMagnet {
             }
             string compDescs = " -" + string.Join("\n -", compItemsDesc.ToArray());
 
-            int acceptRepMod = LootMagnet.Random.Next(LootMagnet.Config.Holdback.ReputationRange[0], LootMagnet.Config.Holdback.ReputationRange[1]);
-            int refuseRepMod = LootMagnet.Random.Next(LootMagnet.Config.Holdback.ReputationRange[0], LootMagnet.Config.Holdback.ReputationRange[1]);
-            int disputeRepMod = LootMagnet.Random.Next(LootMagnet.Config.Holdback.ReputationRange[0], LootMagnet.Config.Holdback.ReputationRange[1]);
-            LootMagnet.Logger.LogIfDebug($"Reputation modifiers - accept:{acceptRepMod} refuse:{refuseRepMod} dispute:{disputeRepMod}");
+            int acceptRepMod = LootMagnet.Random.Next(Mod.Config.Holdback.ReputationRange[0], Mod.Config.Holdback.ReputationRange[1]);
+            int refuseRepMod = LootMagnet.Random.Next(Mod.Config.Holdback.ReputationRange[0], Mod.Config.Holdback.ReputationRange[1]);
+            int disputeRepMod = LootMagnet.Random.Next(Mod.Config.Holdback.ReputationRange[0], Mod.Config.Holdback.ReputationRange[1]);
+            Mod.Logger.Debug($"Reputation modifiers - accept:{acceptRepMod} refuse:{refuseRepMod} dispute:{disputeRepMod}");
 
             Dispute dispute = new Dispute(contract);
             void acceptAction() { AcceptAction(contract, salvageScreen, acceptRepMod); }
@@ -49,9 +50,9 @@ namespace LootMagnet {
                   $"you gain <b>gain</b> <color=#00FF00>{acceptRepMod:+0}</color> rep.\n" +
                 $"<b>Dispute</b>: you pay <color=#FF0000>{SimGameState.GetCBillString(dispute.MRBFees)}</color> in legal fees, and have:\n" +
                     $"<line-indent=2px> - {dispute.SuccessChance}% to keep the disputed salvage, and " +
-                      $"gain {LootMagnet.Config.Holdback.DisputePicks[0]}-{LootMagnet.Config.Holdback.DisputePicks[1]} from the compensation offer.\n" +
+                      $"gain {Mod.Config.Holdback.DisputePicks[0]}-{Mod.Config.Holdback.DisputePicks[1]} from the compensation offer.\n" +
                     $"<line-indent=2px> - {100 - dispute.SuccessChance}% to lose the disputed salvage, but also " +
-                      $"lose an additional {LootMagnet.Config.Holdback.DisputePicks[0]}-{LootMagnet.Config.Holdback.DisputePicks[1]} components.\n"
+                      $"lose an additional {Mod.Config.Holdback.DisputePicks[0]}-{Mod.Config.Holdback.DisputePicks[1]} components.\n"
                 )
                 .AddButton("Refuse", refuseAction, true, null)
                 .AddButton("Accept", acceptAction, true, null)
@@ -69,13 +70,28 @@ namespace LootMagnet {
             int repBefore = sgs.GetRawReputation(State.Employer);
             sgs.AddReputation(State.Employer, reputationModifier, false);
             State.EmployerRepRaw = sgs.GetRawReputation(State.Employer);
-            LootMagnet.Logger.Log($"Player accepted holdback. {State.Employer} reputation {repBefore} + {reputationModifier} modifier = {State.EmployerRepRaw}.");
+            Mod.Logger.Info($"Player accepted holdback. {State.Employer} reputation {repBefore} + {reputationModifier} modifier = {State.EmployerRepRaw}.");
 
             // Remove the disputed items
             List<SalvageDef> finalPotentialSalvage = (List<SalvageDef>)Traverse.Create(contract).Field("finalPotentialSalvage").GetValue();
             AAR_SalvageSelection salvageSelection = (AAR_SalvageSelection)Traverse.Create(salvageScreen).Field("salvageSelection").GetValue();
-            foreach (SalvageDef salvageDef in State.HeldbackParts) {
-                Helper.RemoveSalvage(salvageDef, contract, salvageScreen, salvageSelection, finalPotentialSalvage);
+            foreach (SalvageDef sDef in State.HeldbackParts) {
+                Helper.RemoveSalvage(sDef, contract, salvageScreen, salvageSelection, finalPotentialSalvage);
+                Mod.Logger.Info($"Removing salvageDef:{sDef.Description.Name} with quantity:{sDef.Count}");
+            }
+
+            // Update quantities of compensation parts
+            Mod.Logger.Info("Updating quantities on compensation parts.");
+            foreach (SalvageDef sDef in contract.SalvageResults) {
+                Mod.Logger.Info($" result salvageDef:{sDef.Description.Name} with quantity:{sDef.Count}");
+                foreach (SalvageDef compSDef in State.CompensationParts) {
+                    Mod.Logger.Info($" compensation salvageDef:{compSDef.Description.Name} with quantity:{compSDef.Count}");
+                    if (compSDef.RewardID == sDef.RewardID) {
+                        Mod.Logger.Info($" Matched results, updating quantity to: {compSDef.Count + sDef.Count}");
+                        sDef.Count = sDef.Count + compSDef.Count;
+                        break;
+                    }
+                }
             }
 
             State.Reset();
@@ -87,21 +103,21 @@ namespace LootMagnet {
             int repBefore = sgs.GetRawReputation(State.Employer);
             sgs.AddReputation(State.Employer, reputationModifier, false);
             State.EmployerRepRaw = sgs.GetRawReputation(State.Employer);
-            LootMagnet.Logger.Log($"Player refused holdback. {State.Employer} reputation {repBefore} + {reputationModifier} modifier = {State.EmployerRepRaw}.");
+            Mod.Logger.Info($"Player refused holdback. {State.Employer} reputation {repBefore} + {reputationModifier} modifier = {State.EmployerRepRaw}.");
 
             State.Reset();
         }
 
         public static void DisputeAction(Contract contract, AAR_SalvageScreen salvageScreen, Dispute dispute) {
-            LootMagnet.Logger.Log($"Player disputed holdback.");
+            Mod.Logger.Info($"Player disputed holdback.");
 
             SimGameState sgs = UnityGameInstance.BattleTechGame.Simulation;
-            LootMagnet.Logger.Log($"Dispute legal fees:{dispute.MRBFees}");
+            Mod.Logger.Info($"Dispute legal fees:{dispute.MRBFees}");
             sgs.AddFunds(dispute.MRBFees, $"MRB Legal Fees re: {contract.Name}", false);
 
             Dispute.Outcome outcome = dispute.GetOutcome();
             if (outcome == Dispute.Outcome.SUCCESS) {
-                LootMagnet.Logger.Log($"DISPUTE SUCCESS: Player keeps disputed salvage and gains {dispute.Picks} items from compensation pool.");
+                Mod.Logger.Info($"DISPUTE SUCCESS: Player keeps disputed salvage and gains {dispute.Picks} items from compensation pool.");
                 GenericPopup gp = GenericPopupBuilder.Create(
                     "SUCCESSFUL DISPUTE",
                     $"<b>Cause 193 of the standard mercenary contract clearly states...</b>\n\n" +
@@ -111,7 +127,7 @@ namespace LootMagnet {
                 .AddButton("OK")
                 .Render();
             } else {
-                LootMagnet.Logger.Log($"DISPUTE FAILURE: Player loses disputed items, but {dispute.Picks} items from the salvage pool.");
+                Mod.Logger.Info($"DISPUTE FAILURE: Player loses disputed items, but {dispute.Picks} items from the salvage pool.");
                 GenericPopup gp = GenericPopupBuilder.Create(
                     "FAILED DISPUTE",
                     $"<b>I know a guy... who knows a guy.</b>\n\n" +

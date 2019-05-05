@@ -1,13 +1,12 @@
 ﻿using BattleTech;
 using BattleTech.UI;
-using BattleTech.UI.Tooltips;
 using Harmony;
 using Localize;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using TMPro;
+using static LootMagnet.LootMagnet;
 
 namespace LootMagnet {
 
@@ -20,7 +19,7 @@ namespace LootMagnet {
         }
 
         public static void Prefix(Contract __instance) {
-            LootMagnet.Logger.Log($"== Resolving salvage for contract:'{__instance.Name}' / '{__instance.GUID}' with result:{__instance.TheMissionResult}");
+            Mod.Logger.Info($"== Resolving salvage for contract:'{__instance.Name}' / '{__instance.GUID}' with result:{__instance.TheMissionResult}");
         }
     }
 
@@ -37,7 +36,7 @@ namespace LootMagnet {
                 State.EmployerRepRaw = simulation.GetRawReputation(State.Employer);
                 State.IsEmployerAlly = simulation.IsCareerFactionAlly(State.Employer);
                 State.MRBRating = simulation.GetCurrentMRBLevel() - 1; // Normalize to 0 indexing
-                LootMagnet.Logger.Log($"At contract start, Player has MRB:{State.MRBRating}  Employer:({State.Employer}) EmployerRep:{State.EmployerRep} / EmployerAllied:{State.IsEmployerAlly}");
+                Mod.Logger.Info($"At contract start, Player has MRB:{State.MRBRating}  Employer:({State.Employer}) EmployerRep:{State.EmployerRep} / EmployerAllied:{State.IsEmployerAlly}");
             }            
         }
     }
@@ -61,9 +60,9 @@ namespace LootMagnet {
                 bool canHoldback = SimGameState.DoesFactionGainReputation(State.Employer) && State.Employer != Faction.ComStar;
                 float triggerChance = Helper.GetHoldbackTriggerChance();
                 float holdbackRoll = LootMagnet.Random.Next(101);
-                LootMagnet.Logger.Log($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
+                Mod.Logger.Info($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
                 if (canHoldback && hasMechParts && holdbackRoll <= triggerChance) {
-                    LootMagnet.Logger.Log($"Holdback triggered, determining disputed mech parts.");
+                    Mod.Logger.Info($"Holdback triggered, determining disputed mech parts.");
                     Helper.CalculateHoldback(rolledUpSalvage);
                     Helper.CalculateCompensation(rolledUpSalvage);
                 }
@@ -81,12 +80,12 @@ namespace LootMagnet {
     [HarmonyPatch(new Type[] { typeof(InventoryItemElement_NotListView) })]
     public static class ListElementController_SalvageMechPart_RefreshInfoOnWidget {
         public static void Postfix(ListElementController_SalvageMechPart_NotListView __instance, InventoryItemElement_NotListView theWidget, MechDef ___mechDef, SalvageDef ___salvageDef) {
-            LootMagnet.Logger.LogIfDebug($"LEC_SMP_NLV:RIOW - entered");
+            Mod.Logger.Debug($"LEC_SMP_NLV:RIOW - entered");
             if (___salvageDef.RewardID != null && ___salvageDef.RewardID.Contains("_qty")) {
                 int qtyIdx = ___salvageDef.RewardID.IndexOf("_qty");
                 string countS = ___salvageDef.RewardID.Substring(qtyIdx + 4);
                 int count = int.Parse(countS);
-                LootMagnet.Logger.LogIfDebug($"LEC_SMP_NLV:RIOW - found quantity {count}, changing mechdef");
+                Mod.Logger.Debug($"LEC_SMP_NLV:RIOW - found quantity {count}, changing mechdef");
 
                 DescriptionDef currentDesc = ___mechDef.Chassis.Description;
                 string newUIName = $"{currentDesc.UIName} <lowercase>[QTY:{count}]</lowercase>";
@@ -106,7 +105,7 @@ namespace LootMagnet {
                 if (def.RewardID != null && def.RewardID.Contains("_qty")) {
                     int qtyIdx = def.RewardID.IndexOf("_qty");
                     string countS = def.RewardID.Substring(qtyIdx + 4);
-                    LootMagnet.Logger.LogIfDebug($"Salvage {def.Description.Name} with rewardID:{def.RewardID} will be given count: {countS}");
+                    Mod.Logger.Debug($"Salvage {def.Description.Name} with rewardID:{def.RewardID} will be given count: {countS}");
                     int count = int.Parse(countS);
                     def.Count = count;
                 }
@@ -115,10 +114,10 @@ namespace LootMagnet {
     }
 
     [HarmonyPatch(typeof(Contract), "FinalizeSalvage")]
-    public static class Contract_FinalizeSalvage {
+    public static class Contract_FinalizeSalvage { 
 
         public static void Postfix(Contract __instance) {
-            LootMagnet.Logger.LogIfDebug("C:FS entered.");
+            Mod.Logger.Debug("C:FS entered.");
         }
     }
 
@@ -127,7 +126,7 @@ namespace LootMagnet {
     public static class AAR_SalvageScreen_CalculateAndAddAvailableSalvage {
 
         public static void Postfix(AAR_SalvageScreen __instance, Contract ___contract) {
-            LootMagnet.Logger.LogIfDebug("AAR_SS:CAAAS entered.");
+            Mod.Logger.Debug("AAR_SS:CAAAS entered.");
 
             if (State.HeldbackParts.Count > 0) {
                 UIHelper.ShowHoldbackDialog(___contract, __instance);
@@ -135,19 +134,5 @@ namespace LootMagnet {
         }
     }
 
-    [HarmonyPatch(typeof(TooltipPrefab_Weapon), "SetData")]
-    public static class TooltipPrefab_Weapon_SetData {
-
-        public static void Postfix(TooltipPrefab_Weapon __instance, object data, TextMeshProUGUI ___rangeType, TextMeshProUGUI ___damage) {
-            LootMagnet.Logger.LogIfDebug("TP_W:SD entered.");
-
-            ___rangeType.enabled = false;
-            WeaponDef weaponDef = (WeaponDef)data;
-            if (weaponDef != null) {
-                float totalDamage = weaponDef.Damage * weaponDef.ShotsWhenFired * weaponDef.ProjectilesPerShot;
-                ___damage.SetText($"{weaponDef.Damage.ToString()}x({weaponDef.ShotsWhenFired.ToString()}s)x({weaponDef.ProjectilesPerShot.ToString()}p)={totalDamage}");
-            }
-        }
-    }
 
 }

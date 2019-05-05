@@ -1,6 +1,7 @@
 ﻿
 using System.Collections.Generic;
 using System.Linq;
+using static LootMagnet.LootMagnet;
 
 namespace LootMagnet {
 
@@ -75,30 +76,30 @@ namespace LootMagnet {
         }
 
         public void LogConfig() {
-            LootMagnet.Logger.Log("=== MOD CONFIG BEGIN ===");
+            Mod.Logger.Info("=== MOD CONFIG BEGIN ===");
 
-            LootMagnet.Logger.Log($"  DEBUG: {this.Debug}");
+            Mod.Logger.Info($"  DEBUG: {this.Debug}");
 
             string rollupMRBVal = string.Join(", ", RollupMRBValue.Select(v => v.ToString("0.00")).ToArray());
-            LootMagnet.Logger.Log($"  MRB Rollup Values: {rollupMRBVal}");
+            Mod.Logger.Info($"  MRB Rollup Values: {rollupMRBVal}");
 
-            LootMagnet.Logger.Log($"FACTION REPUTATION VALUES");
+            Mod.Logger.Info($"FACTION REPUTATION VALUES");
             foreach (RepCfg factionCfg in Reputation) {
-                LootMagnet.Logger.Log($"  Reputation:{factionCfg.Reputation} ComponentRollup:{factionCfg.RollupMultiComponent} MechRollup:{factionCfg.RollupMultiMech} HoldbackTrigger:{factionCfg.HoldbackTrigger}%");
+                Mod.Logger.Info($"  Reputation:{factionCfg.Reputation} ComponentRollup:{factionCfg.RollupMultiComponent} MechRollup:{factionCfg.RollupMultiMech} HoldbackTrigger:{factionCfg.HoldbackTrigger}%");
             }
 
-            LootMagnet.Logger.Log($"HOLDBACK VALUES");
-            //LootMagnet.Logger.Log($"  Holdback Picks: {Holdback.PickRange[0]} to {Holdback.PickRange[1]}");
+            Mod.Logger.Info($"HOLDBACK VALUES");
+            //Mod.Logger.Log($"  Holdback Picks: {Holdback.PickRange[0]} to {Holdback.PickRange[1]}");
 
-            //LootMagnet.Logger.Log($"  Reputation ACCEPT:x{Holdback.RepMultiAccept} REFUSE:x{Holdback.RepMultiRefuse} DISPUTE_MRB:x{Holdback.RepMultiDisputeMRB}");
-            //LootMagnet.Logger.Log($"  Reputation DISPUTE_SUCCESS:x{Holdback.RepMultiDisputeSuccess} DISPUTE_FAIL:x{Holdback.RepMultiDisputeFail} DISPUTE_CRIT_FAIL:x{Holdback.RepMultiDisputeCriticalFail}");
+            //Mod.Logger.Log($"  Reputation ACCEPT:x{Holdback.RepMultiAccept} REFUSE:x{Holdback.RepMultiRefuse} DISPUTE_MRB:x{Holdback.RepMultiDisputeMRB}");
+            //Mod.Logger.Log($"  Reputation DISPUTE_SUCCESS:x{Holdback.RepMultiDisputeSuccess} DISPUTE_FAIL:x{Holdback.RepMultiDisputeFail} DISPUTE_CRIT_FAIL:x{Holdback.RepMultiDisputeCriticalFail}");
 
-            //LootMagnet.Logger.Log($"  Dispute Chance BASE:{Holdback.DisputeSuccessBase}% CRIT_CHANCE:{Holdback.DisputeCritChance}% " +
+            //Mod.Logger.Log($"  Dispute Chance BASE:{Holdback.DisputeSuccessBase}% CRIT_CHANCE:{Holdback.DisputeCritChance}% " +
             //    $"MRB_FACTOR:{Holdback.DisputeMRBSuccessFactor}% RANDOM:{Holdback.DisputeSuccessRandomBound}%");
 
-            //LootMagnet.Logger.Log($"  MRB_Fees:x{Holdback.DisputeMRBFeeFactor} FAIL_PAYOUT:x{Holdback.DisputeFailPayoutFactor} CRIT_FAIL_PAYOUT:X{Holdback.DisputeCritFailPayoutFactor}");
+            //Mod.Logger.Log($"  MRB_Fees:x{Holdback.DisputeMRBFeeFactor} FAIL_PAYOUT:x{Holdback.DisputeFailPayoutFactor} CRIT_FAIL_PAYOUT:X{Holdback.DisputeCritFailPayoutFactor}");
 
-            LootMagnet.Logger.Log("=== MOD CONFIG END ===");
+            Mod.Logger.Info("=== MOD CONFIG END ===");
         }
     }
 }
