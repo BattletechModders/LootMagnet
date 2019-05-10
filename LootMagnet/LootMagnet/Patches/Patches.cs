@@ -19,7 +19,7 @@ namespace LootMagnet {
         }
 
         public static void Prefix(Contract __instance) {
-            Mod.Logger.Info($"== Resolving salvage for contract:'{__instance.Name}' / '{__instance.GUID}' with result:{__instance.TheMissionResult}");
+            Mod.Log.Info($"== Resolving salvage for contract:'{__instance.Name}' / '{__instance.GUID}' with result:{__instance.TheMissionResult}");
         }
     }
 
@@ -36,56 +36,41 @@ namespace LootMagnet {
                 State.EmployerRepRaw = simulation.GetRawReputation(State.Employer);
                 State.IsEmployerAlly = simulation.IsCareerFactionAlly(State.Employer);
                 State.MRBRating = simulation.GetCurrentMRBLevel() - 1; // Normalize to 0 indexing
-                Mod.Logger.Info($"At contract start, Player has MRB:{State.MRBRating}  Employer:({State.Employer}) EmployerRep:{State.EmployerRep} / EmployerAllied:{State.IsEmployerAlly}");
+                Mod.Log.Info($"At contract start, Player has MRB:{State.MRBRating}  Employer:({State.Employer}) EmployerRep:{State.EmployerRep} / EmployerAllied:{State.IsEmployerAlly}");
             }            
         }
     }
 
-    [HarmonyPatch(typeof(Contract), "GetPotentialSalvage")]
-    public static class Contract_GetPotentialSalvage {
+    //[HarmonyPatch(typeof(Contract), "GetPotentialSalvage")]
+    //public static class Contract_GetPotentialSalvage {
 
-        // At this point, salvage has been collapsed and grouped. For each of those that have count > 1, change their name, add them to the Dict, and set count to 1.
-        public static void Postfix(Contract __instance, List<SalvageDef> __result, List<SalvageDef> ___finalPotentialSalvage) {
-            if (__result != null) {
+    //    // At this point, salvage has been collapsed and grouped. For each of those that have count > 1, change their name, add them to the Dict, and set count to 1.
+    //    public static void Postfix(Contract __instance, List<SalvageDef> __result) {
+    //        if (__result != null) {
 
-                // Sort by price, since other functions depend on it
-                __result.Sort(new Helper.SalvageDefByCostDescendingComparer());
+    //            // Sort by price, since other functions depend on it
+    //            __result.Sort(new Helper.SalvageDefByCostDescendingComparer());
 
-                // Roll up any remaining salvage
-                float salvageThreshold = Helper.GetSalvageThreshold(false);
-                List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(__result);
+    //            // Roll up any remaining salvage
+    //            List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(__result);
 
-                // Check for holdback
-                bool hasMechParts = __result.FirstOrDefault(sd => sd.Type != SalvageDef.SalvageType.COMPONENT) != null;
-                bool canHoldback = SimGameState.DoesFactionGainReputation(State.Employer) && State.Employer != Faction.ComStar;
-                float triggerChance = Helper.GetHoldbackTriggerChance();
-                float holdbackRoll = LootMagnet.Random.Next(101);
-                Mod.Logger.Info($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
-                if (canHoldback && hasMechParts && holdbackRoll <= triggerChance) {
-                    Mod.Logger.Info($"Holdback triggered, determining disputed mech parts.");
-                    Helper.CalculateHoldback(rolledUpSalvage);
-                    Helper.CalculateCompensation(rolledUpSalvage);
-                }
-
-                __result.Clear();
-                __result.AddRange(rolledUpSalvage);
-
-                ___finalPotentialSalvage.Clear();
-                ___finalPotentialSalvage.AddRange(rolledUpSalvage);
-            }
-        }
-    } 
+    //            // Update the result that will be returned 
+    //            __result.Clear();
+    //            __result.AddRange(rolledUpSalvage);
+    //        }
+    //    }
+    //} 
 
     [HarmonyPatch(typeof(ListElementController_SalvageMechPart_NotListView), "RefreshInfoOnWidget")]
     [HarmonyPatch(new Type[] { typeof(InventoryItemElement_NotListView) })]
     public static class ListElementController_SalvageMechPart_RefreshInfoOnWidget {
         public static void Postfix(ListElementController_SalvageMechPart_NotListView __instance, InventoryItemElement_NotListView theWidget, MechDef ___mechDef, SalvageDef ___salvageDef) {
-            Mod.Logger.Debug($"LEC_SMP_NLV:RIOW - entered");
+            Mod.Log.Debug($"LEC_SMP_NLV:RIOW - entered");
             if (___salvageDef.RewardID != null && ___salvageDef.RewardID.Contains("_qty")) {
                 int qtyIdx = ___salvageDef.RewardID.IndexOf("_qty");
                 string countS = ___salvageDef.RewardID.Substring(qtyIdx + 4);
                 int count = int.Parse(countS);
-                Mod.Logger.Debug($"LEC_SMP_NLV:RIOW - found quantity {count}, changing mechdef");
+                Mod.Log.Debug($"LEC_SMP_NLV:RIOW - found quantity {count}, changing mechdef");
 
                 DescriptionDef currentDesc = ___mechDef.Chassis.Description;
                 string newUIName = $"{currentDesc.UIName} <lowercase>[QTY:{count}]</lowercase>";
@@ -105,7 +90,7 @@ namespace LootMagnet {
                 if (def.RewardID != null && def.RewardID.Contains("_qty")) {
                     int qtyIdx = def.RewardID.IndexOf("_qty");
                     string countS = def.RewardID.Substring(qtyIdx + 4);
-                    Mod.Logger.Debug($"Salvage {def.Description.Name} with rewardID:{def.RewardID} will be given count: {countS}");
+                    Mod.Log.Debug($"Salvage {def.Description.Name} with rewardID:{def.RewardID} will be given count: {countS}");
                     int count = int.Parse(countS);
                     def.Count = count;
                 }
@@ -117,7 +102,7 @@ namespace LootMagnet {
     public static class Contract_FinalizeSalvage { 
 
         public static void Postfix(Contract __instance) {
-            Mod.Logger.Debug("C:FS entered.");
+            Mod.Log.Debug("C:FS entered.");
         }
     }
 
@@ -125,12 +110,37 @@ namespace LootMagnet {
     [HarmonyPatch(typeof(AAR_SalvageScreen), "CalculateAndAddAvailableSalvage")]
     public static class AAR_SalvageScreen_CalculateAndAddAvailableSalvage {
 
-        public static void Postfix(AAR_SalvageScreen __instance, Contract ___contract) {
-            Mod.Logger.Debug("AAR_SS:CAAAS entered.");
+        public static bool Prefix(AAR_SalvageScreen __instance, Contract ___contract) {
+            Mod.Log.Debug("AAR_SS:CAAAS entered.");
+
+            // Calculate potential salvage, which will be rolled up at this point (including mechs!)
+            State.PotentialSalvage = ___contract.GetPotentialSalvage();
+
+            // Sort by price, since other functions depend on it
+            State.PotentialSalvage.Sort(new Helper.SalvageDefByCostDescendingComparer());
+
+            // Check for holdback
+            bool hasMechParts = State.PotentialSalvage.FirstOrDefault(sd => sd.Type != SalvageDef.SalvageType.COMPONENT) != null;
+            bool canHoldback = SimGameState.DoesFactionGainReputation(State.Employer) && State.Employer != Faction.ComStar;
+            float triggerChance = Helper.GetHoldbackTriggerChance();
+            float holdbackRoll = LootMagnet.Random.Next(101);
+            Mod.Log.Info($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
+
+            if (canHoldback && hasMechParts && holdbackRoll <= triggerChance) {
+                Mod.Log.Info($"Holdback triggered, determining disputed mech parts.");
+                Helper.CalculateHoldback(State.PotentialSalvage);
+                Helper.CalculateCompensation(State.PotentialSalvage);
+            }
 
             if (State.HeldbackParts.Count > 0) {
                 UIHelper.ShowHoldbackDialog(___contract, __instance);
+            } else {
+                // Roll up any remaining salvage and widget-ize it
+                List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(State.PotentialSalvage);
+                Helper.CalculateAndAddAvailableSalvage(__instance, rolledUpSalvage);
             }
+
+            return false;
         }
     }
 

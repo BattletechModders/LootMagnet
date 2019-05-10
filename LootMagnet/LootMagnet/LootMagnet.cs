@@ -8,7 +8,7 @@ namespace LootMagnet {
     public static class LootMagnet {
 
         public class Mod {
-            public static Logger Logger;
+            public static Logger Log;
             public static string ModDir;
             public static ModConfig Config;
         }
@@ -30,20 +30,20 @@ namespace LootMagnet {
                 Mod.Config.InitDefaultReputation();
             }
 
-            Mod.Logger = new Logger(modDirectory, LogName);
+            Mod.Log = new Logger(modDirectory, LogName);
 
-            Assembly asm = Assembly.GetExecutingAssembly();
-            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(asm.Location);
-            Mod.Logger.Info($"Assembly version: {fvi.ProductVersion}");
+            //Assembly asm = Assembly.GetExecutingAssembly();
+            //FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(asm.Location);
+            //Mod.Log.Info($"Assembly version: {fvi.ProductVersion}");
 
-            Mod.Logger.Debug($"ModDir is:{modDirectory}");
-            Mod.Logger.Debug($"mod.json settings are:({settingsJSON})");
+            Mod.Log.Debug($"ModDir is:{modDirectory}");
+            Mod.Log.Debug($"mod.json settings are:({settingsJSON})");
             Mod.Config.LogConfig();
 
             if (settingsE != null) {
-                Mod.Logger.Info($"ERROR reading settings file! Error was: {settingsE}");
+                Mod.Log.Info($"ERROR reading settings file! Error was: {settingsE}");
             } else {
-                Mod.Logger.Info($"INFO: No errors reading settings file.");
+                Mod.Log.Info($"INFO: No errors reading settings file.");
             }
 
             var harmony = HarmonyInstance.Create(HarmonyPackage);

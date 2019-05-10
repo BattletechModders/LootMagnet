@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using BattleTech.UI;
+using Harmony;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,25 +22,25 @@ namespace LootMagnet {
         public Dispute(Contract contract) {
             int maxMoney = contract.InitialContractValue;
             this.MRBFees = (int)Math.Ceiling(maxMoney * Mod.Config.Holdback.DisputeMRBFeeFactor);
-            Mod.Logger.Info($"Disputing contract: ({contract.Name}) - maxMoney:{maxMoney} MRB Fees:{MRBFees}");
+            Mod.Log.Info($"Disputing contract: ({contract.Name}) - maxMoney:{maxMoney} MRB Fees:{MRBFees}");
 
             float rawSuccess = Mod.Config.Holdback.DisputeSuccessBase + Mod.Config.Holdback.DisputeMRBSuccessFactor * Helper.MRBCfgIdx();
             int randBound = (int)Math.Ceiling(rawSuccess * Mod.Config.Holdback.DisputeSuccessRandomBound);
             float successRand = LootMagnet.Random.Next(randBound);
             this.SuccessChance = rawSuccess - successRand;
-            Mod.Logger.Info($"  rawSuccess:{rawSuccess} randBound:{randBound} rand:{successRand} finalSuccess:{this.SuccessChance}%");
+            Mod.Log.Info($"  rawSuccess:{rawSuccess} randBound:{randBound} rand:{successRand} finalSuccess:{this.SuccessChance}%");
 
             this.Picks = LootMagnet.Random.Next(Mod.Config.Holdback.DisputePicks[0], Mod.Config.Holdback.DisputePicks[1]);
-            Mod.Logger.Info($"  picks: {this.Picks}");
+            Mod.Log.Info($"  picks: {this.Picks}");
         }
 
         public Outcome GetOutcome() {
             float roll = LootMagnet.Random.Next(100);
             if (roll < SuccessChance) {
-                Mod.Logger.Info($"Roll {roll} vs. {SuccessChance} is a failure.");
+                Mod.Log.Info($"Roll {roll} vs. {SuccessChance} is a failure.");
                 return Outcome.FAILURE;
             } else { 
-                Mod.Logger.Info($"Roll {roll} vs. {SuccessChance} is a success.");
+                Mod.Log.Info($"Roll {roll} vs. {SuccessChance} is a success.");
                 return Outcome.SUCCESS;
             } 
         }
@@ -54,7 +55,7 @@ namespace LootMagnet {
             float rollup = Mod.Config.RollupMRBValue[MRBCfgIdx()];
             float result = (float)Math.Floor(rollup * multi);
 
-            Mod.Logger.Debug($"rollup:{rollup} x multi:{multi} = result:{result}");
+            Mod.Log.Debug($"rollup:{rollup} x multi:{multi} = result:{result}");
             return result;
         }
 
@@ -73,13 +74,13 @@ namespace LootMagnet {
             float componentThreshold = Mod.Config.DeveloperMode ? 999999999f : GetSalvageThreshold(false);
             float mechThreshold = Mod.Config.DeveloperMode ? 999999999f : GetSalvageThreshold(true);
             foreach (SalvageDef rawDef in toRollup) {
-                Mod.Logger.Debug($"Found {rawDef.Count} of salvage:'{rawDef?.Description?.Name}' / '{rawDef?.Description.Id}' with rewardId:'{rawDef?.RewardID}'");
+                Mod.Log.Debug($"Found {rawDef.Count} of salvage:'{rawDef?.Description?.Name}' / '{rawDef?.Description.Id}' with rewardId:'{rawDef?.RewardID}'");
 
                 if (rawDef.Type == SalvageDef.SalvageType.COMPONENT && componentThreshold > 0 ) {
-                    Mod.Logger.Info($"  Rolling up {rawDef.Count} of component salvage:'{rawDef?.Description?.Name}' with value:{rawDef.Description.Cost} threshold:{componentThreshold.ToString("0")}");
+                    Mod.Log.Info($"  Rolling up {rawDef.Count} of component salvage:'{rawDef?.Description?.Name}' with value:{rawDef.Description.Cost} threshold:{componentThreshold.ToString("0")}");
                     RollupSalvageDef(rawDef, componentThreshold, rolledUpSalvage);
                 } else if (rawDef.Type == SalvageDef.SalvageType.MECH_PART && mechThreshold > 0) {
-                    Mod.Logger.Info($"  Rolling up {rawDef.Count} of mech part salvage:'{rawDef?.Description?.Name}' with value:{rawDef.Description.Cost} threshold:{mechThreshold.ToString("0")}");
+                    Mod.Log.Info($"  Rolling up {rawDef.Count} of mech part salvage:'{rawDef?.Description?.Name}' with value:{rawDef.Description.Cost} threshold:{mechThreshold.ToString("0")}");
                     RollupSalvageDef(rawDef, mechThreshold, rolledUpSalvage);
                 } else {
                     rolledUpSalvage.Add(rawDef);
@@ -91,12 +92,12 @@ namespace LootMagnet {
 
         private static void RollupSalvageDef(SalvageDef salvageDef, float threshold, List<SalvageDef> salvage) {
             int rollupCount = (int)Math.Ceiling(threshold / salvageDef.Description.Cost);
-            Mod.Logger.Debug($"threshold:{threshold.ToString("0")} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
+            Mod.Log.Debug($"threshold:{threshold.ToString("0")} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
 
             if (rollupCount > 1) {
                 int buckets = (int)Math.Floor(salvageDef.Count / (double)rollupCount);
                 int remainder = salvageDef.Count % rollupCount;
-                Mod.Logger.Debug($"count:{salvageDef.Count} / limit:{rollupCount} = buckets:{buckets}, remainder:{remainder}");
+                Mod.Log.Debug($"count:{salvageDef.Count} / limit:{rollupCount} = buckets:{buckets}, remainder:{remainder}");
 
                 int i = 0;
                 for (i = 0; i < buckets; i++) {
@@ -120,7 +121,7 @@ namespace LootMagnet {
             // Filter to mech parts only
             List<SalvageDef> allMechParts = potentialSalvage.Where(sd => sd.Type != SalvageDef.SalvageType.COMPONENT).ToList();
             int mechPartsToHoldback = LootMagnet.Random.Next(Mod.Config.Holdback.MechParts[0], Mod.Config.Holdback.MechParts[1]);
-            Mod.Logger.Info($"Holding back up to {mechPartsToHoldback} mech parts.");
+            Mod.Log.Info($"Holding back up to {mechPartsToHoldback} mech parts.");
 
             foreach (SalvageDef salvageDef in allMechParts) {
                 if (mechPartsToHoldback == 0) {
@@ -128,14 +129,14 @@ namespace LootMagnet {
                 } else if (mechPartsToHoldback >= salvageDef.Count) {
                     State.HeldbackParts.Add(salvageDef);
                     mechPartsToHoldback -= salvageDef.Count;
-                    Mod.Logger.Info($"Holding back all {mechPartsToHoldback} parts of mech:({salvageDef.Description.Name}).");
+                    Mod.Log.Info($"Holding back all {mechPartsToHoldback} parts of mech:({salvageDef.Description.Name}).");
                 } else if (mechPartsToHoldback < salvageDef.Count) {
                     SalvageDef partialDef = new SalvageDef(salvageDef) {
                         Count = mechPartsToHoldback
                     };
                     State.HeldbackParts.Add(partialDef);
                     mechPartsToHoldback = 0;
-                    Mod.Logger.Info($"Holding back {mechPartsToHoldback} parts of mech:({salvageDef.Description.Name}), leaving {salvageDef.Count} parts.");
+                    Mod.Log.Info($"Holding back {mechPartsToHoldback} parts of mech:({salvageDef.Description.Name}), leaving {salvageDef.Count} parts.");
                 }
             }
         }
@@ -150,25 +151,25 @@ namespace LootMagnet {
                 int adjustedCost = (int)Math.Ceiling(mechPart.Description.Cost / (double)mechPartsForAssembly);
                 if (adjustedCost >= valueCap) { valueCap = adjustedCost; }
                 compensation += adjustedCost;
-                Mod.Logger.Info($"Mech part:({mechPart.Description.Id}::{mechPart.Description.Name}) has " +
+                Mod.Log.Info($"Mech part:({mechPart.Description.Id}::{mechPart.Description.Name}) has " +
                     $"raw cost:{mechPart.Description.Cost} / {mechPartsForAssembly} = {adjustedCost}");
             }
 
             RepCfg repCfg = Mod.Config.Reputation.Find(r => r.Reputation == (Rep)FactionCfgIdx());
             double adjValueCap = Math.Ceiling(valueCap * repCfg.HoldbackValueCapMulti);
-            Mod.Logger.Info($"Total compensation: {compensation} valueCap:{valueCap} adjValueCap:{adjValueCap}");
+            Mod.Log.Info($"Total compensation: {compensation} valueCap:{valueCap} adjValueCap:{adjValueCap}");
 
             // Filter to components only
             List<SalvageDef> allComponents = potentialSalvage.Where(sd => sd.Type == SalvageDef.SalvageType.COMPONENT).ToList();
             foreach (SalvageDef compSDef in allComponents) {
-                Mod.Logger.Info($"   Component:{compSDef.Description.Id}::{compSDef.Description.Name}");
+                Mod.Log.Info($"   Component:{compSDef.Description.Id}::{compSDef.Description.Name}");
                 if (compSDef.Description.Cost > adjValueCap) {
-                    Mod.Logger.Info($"   cost:{compSDef.Description.Cost} greater than cap, skipping.");
+                    Mod.Log.Info($"   cost:{compSDef.Description.Cost} greater than cap, skipping.");
                 } else if (compSDef.Description.Cost > compensation) {
-                    Mod.Logger.Info($"   remaining compensation:{compensation} less than cost:{compSDef.Description.Cost}, skipping.");
+                    Mod.Log.Info($"   remaining compensation:{compensation} less than cost:{compSDef.Description.Cost}, skipping.");
                 } else {
                     int available = (int)Math.Floor(compensation / compSDef.Description.Cost);
-                    Mod.Logger.Info($" - remaining compensation:{compensation} / cost: {compSDef.Description.Cost} = available:{available}");
+                    Mod.Log.Info($" - remaining compensation:{compensation} / cost: {compSDef.Description.Cost} = available:{available}");
 
                     // TODO: Test for too large a stack here / do div by 3 to reduce large stacks
                     int adjAvailable = (available > 10) ? (int)Math.Ceiling(available / 3.0f) : available;
@@ -177,44 +178,29 @@ namespace LootMagnet {
                         Count = compSDef.Count + adjAvailable
                     };
                     State.CompensationParts.Add(equivDef);
-                    Mod.Logger.Info($" - rawCount:{compSDef.Count} to adjCost:{equivDef.Count}");
+                    Mod.Log.Info($" - rawCount:{compSDef.Count} to adjCost:{equivDef.Count}");
 
                     // Reduce the remaining compensation
                     compensation = compensation - (compSDef.Description.Cost * adjAvailable);
                 }
             }
 
-            if (compensation != 0) {
+            if (compensation > 0) {
                 // TODO: Should this come back as cbills?
-                Mod.Logger.Info($" Compensation of {compensation} remaining and unpaid!");
+                Mod.Log.Info($" Compensation of {compensation} remaining and unpaid!");
             }
 
         }
 
-        public static void RemoveSalvage(SalvageDef holdbackDef, Contract contract, AAR_SalvageScreen salvageScreen, AAR_SalvageSelection salvageSelection, List<SalvageDef> finalPotentialSalvage) {
-            SalvageDef spSDef = finalPotentialSalvage.Find((SalvageDef x) => x.Description.Id == holdbackDef.Description.Id && x.RewardID == holdbackDef.RewardID);
+        public static void RemoveSalvage(SalvageDef holdbackDef) {
+            // TODO: Could cause an NRE, but shouldn't if the holdback logic is safe
+            SalvageDef spSDef = State.PotentialSalvage.Find((SalvageDef x) => x.Description.Id == holdbackDef.Description.Id && x.RewardID == holdbackDef.RewardID);
             if (holdbackDef.Count == spSDef.Count) {
-                finalPotentialSalvage.Remove(spSDef);
+                Mod.Log.Debug($"  Removing salvageDef:({spSDef.Description.Id}_{spSDef.Description.Name}_{spSDef.RewardID}) with count:{spSDef.Count} ");
+                State.PotentialSalvage.Remove(spSDef);
             } else {
                 spSDef.Count = spSDef.Count - holdbackDef.Count;
-            }
-
-            Mod.Logger.Info($"Searching for inventory widget with Id: {holdbackDef.Description.Id}");
-            foreach (InventoryItemElement_NotListView iie in salvageSelection.GetSalvageInventory()) {
-                if (iie.controller != null && iie.controller.salvageDef != null &&
-                    iie.controller.salvageDef.Description.Id == holdbackDef.Description.Id &&
-                    iie.controller.salvageDef.RewardID == holdbackDef.RewardID) {
-                    SalvageDef iieSDef = iie.controller.salvageDef;
-                    Mod.Logger.Info($"Removing salvage: {iieSDef.Description.Id}_{iieSDef.Description.Name}_{iieSDef.RewardID}");
-                    if (holdbackDef.Count == iieSDef.Count) {
-                        iie.gameObject.SetActive(false);
-                    } else {
-                        // TODO: Update description here?
-                        iieSDef.Count = iieSDef.Count - holdbackDef.Count;
-                    }
-
-                    break;
-                }
+                Mod.Log.Debug($"  reducing salvageDef:({spSDef.Description.Id}_{spSDef.Description.Name}_{spSDef.RewardID}) to count:{spSDef.Count} ");
             }
         }
 
@@ -300,6 +286,39 @@ namespace LootMagnet {
             } else {
                 return State.MRBRating;
             }
+        }
+
+        // Replica of HBS code used once holdback has been decided
+        public static void CalculateAndAddAvailableSalvage(AAR_SalvageScreen salvageScreen, List<SalvageDef> potentialSalvage) {
+
+            Traverse salvageScreenT = Traverse.Create(salvageScreen);
+            Mod.Log.Debug("CAAAS - created base traverse.");
+
+            Traverse salvageSelectT = salvageScreenT.Field("salvageSelection");
+            AAR_SalvageSelection salvageSelection = salvageSelectT.GetValue<AAR_SalvageSelection>();
+            Mod.Log.Debug("CAAAS - found salvage selection.");
+
+            foreach (SalvageDef item in potentialSalvage) {
+                salvageScreen.AddNewSalvageEntryToWidget(item, salvageSelection.GetInventoryWidget());
+            }
+            Mod.Log.Debug("CAAAS - added all salvage entries.");
+
+            if (salvageScreen.gameObject.activeInHierarchy) {
+                Traverse eofsT = salvageScreenT.Field("EndOfFrameSorting");
+                System.Collections.IEnumerator endOfFrameSorting = eofsT.GetValue<System.Collections.IEnumerator>();
+                Mod.Log.Debug("CAAAS - starting endofframe sorting");
+                salvageScreen.StartCoroutine(endOfFrameSorting);
+            }
+
+            Traverse allSalvageContT = salvageScreenT.Field("AllSalvageControllers");
+            List<ListElementController_BASE_NotListView> allSalvageControllers = 
+                allSalvageContT.GetValue<List<ListElementController_BASE_NotListView>>();
+            Mod.Log.Debug("CAAAS - found salvage controllers");
+
+            Traverse totalSalvageT = salvageScreenT.Field("totalSalvageMadeAvailable");
+            totalSalvageT.SetValue(allSalvageControllers.Count);
+            Mod.Log.Debug("CAAAS - updated salvageController count");
+
         }
     }
 }

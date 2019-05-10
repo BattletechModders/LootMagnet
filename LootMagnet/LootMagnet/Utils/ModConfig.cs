@@ -76,19 +76,19 @@ namespace LootMagnet {
         }
 
         public void LogConfig() {
-            Mod.Logger.Info("=== MOD CONFIG BEGIN ===");
+            Mod.Log.Info("=== MOD CONFIG BEGIN ===");
 
-            Mod.Logger.Info($"  DEBUG: {this.Debug}");
+            Mod.Log.Info($"  DEBUG: {this.Debug}");
 
             string rollupMRBVal = string.Join(", ", RollupMRBValue.Select(v => v.ToString("0.00")).ToArray());
-            Mod.Logger.Info($"  MRB Rollup Values: {rollupMRBVal}");
+            Mod.Log.Info($"  MRB Rollup Values: {rollupMRBVal}");
 
-            Mod.Logger.Info($"FACTION REPUTATION VALUES");
+            Mod.Log.Info($"FACTION REPUTATION VALUES");
             foreach (RepCfg factionCfg in Reputation) {
-                Mod.Logger.Info($"  Reputation:{factionCfg.Reputation} ComponentRollup:{factionCfg.RollupMultiComponent} MechRollup:{factionCfg.RollupMultiMech} HoldbackTrigger:{factionCfg.HoldbackTrigger}%");
+                Mod.Log.Info($"  Reputation:{factionCfg.Reputation} ComponentRollup:{factionCfg.RollupMultiComponent} MechRollup:{factionCfg.RollupMultiMech} HoldbackTrigger:{factionCfg.HoldbackTrigger}%");
             }
 
-            Mod.Logger.Info($"HOLDBACK VALUES");
+            Mod.Log.Info($"HOLDBACK VALUES");
             //Mod.Logger.Log($"  Holdback Picks: {Holdback.PickRange[0]} to {Holdback.PickRange[1]}");
 
             //Mod.Logger.Log($"  Reputation ACCEPT:x{Holdback.RepMultiAccept} REFUSE:x{Holdback.RepMultiRefuse} DISPUTE_MRB:x{Holdback.RepMultiDisputeMRB}");
@@ -99,7 +99,7 @@ namespace LootMagnet {
 
             //Mod.Logger.Log($"  MRB_Fees:x{Holdback.DisputeMRBFeeFactor} FAIL_PAYOUT:x{Holdback.DisputeFailPayoutFactor} CRIT_FAIL_PAYOUT:X{Holdback.DisputeCritFailPayoutFactor}");
 
-            Mod.Logger.Info("=== MOD CONFIG END ===");
+            Mod.Log.Info("=== MOD CONFIG END ===");
         }
     }
 }

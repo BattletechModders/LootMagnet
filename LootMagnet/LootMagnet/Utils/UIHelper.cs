@@ -29,30 +29,30 @@ namespace LootMagnet {
             int acceptRepMod = LootMagnet.Random.Next(Mod.Config.Holdback.ReputationRange[0], Mod.Config.Holdback.ReputationRange[1]);
             int refuseRepMod = LootMagnet.Random.Next(Mod.Config.Holdback.ReputationRange[0], Mod.Config.Holdback.ReputationRange[1]);
             int disputeRepMod = LootMagnet.Random.Next(Mod.Config.Holdback.ReputationRange[0], Mod.Config.Holdback.ReputationRange[1]);
-            Mod.Logger.Debug($"Reputation modifiers - accept:{acceptRepMod} refuse:{refuseRepMod} dispute:{disputeRepMod}");
+            Mod.Log.Debug($"Reputation modifiers - accept:{acceptRepMod} refuse:{refuseRepMod} dispute:{disputeRepMod}");
 
             Dispute dispute = new Dispute(contract);
-            void acceptAction() { AcceptAction(contract, salvageScreen, acceptRepMod); }
-            void refuseAction() { RefuseAction(contract, salvageScreen, refuseRepMod); }
+            void acceptAction() { AcceptAction(salvageScreen, acceptRepMod); }
+            void refuseAction() { RefuseAction(salvageScreen, refuseRepMod); }
             void disputeAction() { DisputeAction(contract, salvageScreen, dispute); }
 
             GenericPopup gp = GenericPopupBuilder.Create(
                 "DISPUTED SALVAGE",
                 $"<b>I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii...</b>\n\n" +
                 $"As the salvage crew picks over the battlefield, you are contacted by the {State.Employer} representative. " + 
-                $"They insist the contract allows them first pick on the following items:" +
+                $"They insist the contract terms allows them first rights to the following items:" +
                 $"\n\n{heldbackDescs}\n\n" +
-                $"They offer additional quantities of the following in compensation:" +
+                $"They offer to add the following to the <b>salvage pool</b> in exchange:" +
                 $"\n\n{compDescs}\n\n" +
                 $"You may choose to:\n" +
-                $"<b>Refuse</b>: the disputed salvage is retained but you <b>lose</b> <color=#FF0000>{refuseRepMod}</color> rep.\n" +
-                $"<b>Accept</b>: the disputed salvage is lost, but the exchanged items will be added and " +
+                $"<b>Refuse</b>: the disputed salvage is retained, you <b>lose</b> <color=#FF0000>{refuseRepMod}</color> rep.\n" +
+                $"<b>Accept</b>: the disputed salvage is lost, exchanged items are added to the <b>salvage pool</b>, " +
                   $"you gain <b>gain</b> <color=#00FF00>{acceptRepMod:+0}</color> rep.\n" +
                 $"<b>Dispute</b>: you pay <color=#FF0000>{SimGameState.GetCBillString(dispute.MRBFees)}</color> in legal fees, and have:\n" +
-                    $"<line-indent=2px> - {dispute.SuccessChance}% to keep the disputed salvage, and " +
-                      $"gain {Mod.Config.Holdback.DisputePicks[0]}-{Mod.Config.Holdback.DisputePicks[1]} from the compensation offer.\n" +
-                    $"<line-indent=2px> - {100 - dispute.SuccessChance}% to lose the disputed salvage, but also " +
-                      $"lose an additional {Mod.Config.Holdback.DisputePicks[0]}-{Mod.Config.Holdback.DisputePicks[1]} components.\n"
+                    $"<line-indent=2px> - {dispute.SuccessChance}% to keep the disputed salvage, and the salvage pool" +
+                      $"gains {Mod.Config.Holdback.DisputePicks[0]}-{Mod.Config.Holdback.DisputePicks[1]} from the compensation offer.\n" +
+                    $"<line-indent=2px> - {100 - dispute.SuccessChance}% to lose the disputed salvage, and " +
+                      $"an additional {Mod.Config.Holdback.DisputePicks[0]}-{Mod.Config.Holdback.DisputePicks[1]} selections in the salvage pool.\n"
                 )
                 .AddButton("Refuse", refuseAction, true, null)
                 .AddButton("Accept", acceptAction, true, null)
@@ -64,61 +64,90 @@ namespace LootMagnet {
         }
         
 
-        public static void AcceptAction(Contract contract, AAR_SalvageScreen salvageScreen, int reputationModifier) {
+        public static void AcceptAction(AAR_SalvageScreen salvageScreen, int reputationModifier) {
 
             SimGameState sgs = UnityGameInstance.BattleTechGame.Simulation;
             int repBefore = sgs.GetRawReputation(State.Employer);
             sgs.AddReputation(State.Employer, reputationModifier, false);
             State.EmployerRepRaw = sgs.GetRawReputation(State.Employer);
-            Mod.Logger.Info($"Player accepted holdback. {State.Employer} reputation {repBefore} + {reputationModifier} modifier = {State.EmployerRepRaw}.");
+            Mod.Log.Info($"Player accepted holdback. {State.Employer} reputation {repBefore} + {reputationModifier} modifier = {State.EmployerRepRaw}.");
 
             // Remove the disputed items
-            List<SalvageDef> finalPotentialSalvage = (List<SalvageDef>)Traverse.Create(contract).Field("finalPotentialSalvage").GetValue();
-            AAR_SalvageSelection salvageSelection = (AAR_SalvageSelection)Traverse.Create(salvageScreen).Field("salvageSelection").GetValue();
+            Mod.Log.Info("  -- Removing disputed items.");
             foreach (SalvageDef sDef in State.HeldbackParts) {
-                Helper.RemoveSalvage(sDef, contract, salvageScreen, salvageSelection, finalPotentialSalvage);
-                Mod.Logger.Info($"Removing salvageDef:{sDef.Description.Name} with quantity:{sDef.Count}");
+                Helper.RemoveSalvage(sDef);
             }
 
             // Update quantities of compensation parts
-            Mod.Logger.Info("Updating quantities on compensation parts.");
-            foreach (SalvageDef sDef in contract.SalvageResults) {
-                Mod.Logger.Info($" result salvageDef:{sDef.Description.Name} with quantity:{sDef.Count}");
-                foreach (SalvageDef compSDef in State.CompensationParts) {
-                    Mod.Logger.Info($" compensation salvageDef:{compSDef.Description.Name} with quantity:{compSDef.Count}");
+            Mod.Log.Info("  -- Updating quantities on compensation parts.");
+            foreach (SalvageDef compSDef in State.CompensationParts) {
+                Mod.Log.Debug($"   compensation salvageDef:{compSDef.Description.Name} with quantity:{compSDef.Count}");
+                foreach (SalvageDef sDef in State.PotentialSalvage) {
+                    Mod.Log.Debug($"   salvageDef:{sDef.Description.Name} with quantity:{sDef.Count}");
+
                     if (compSDef.RewardID == sDef.RewardID) {
-                        Mod.Logger.Info($" Matched results, updating quantity to: {compSDef.Count + sDef.Count}");
+                        Mod.Log.Info($"   Matched compensation target, updating quantity to: {compSDef.Count + sDef.Count}");
                         sDef.Count = sDef.Count + compSDef.Count;
                         break;
                     }
                 }
             }
 
+            // Roll up any remaining salvage and widget-tize it
+            List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(State.PotentialSalvage);
+            Helper.CalculateAndAddAvailableSalvage(salvageScreen, rolledUpSalvage);
+
             State.Reset();
         }
 
-        public static void RefuseAction(Contract contract, AAR_SalvageScreen salvageScreen, int reputationModifier) {
+        public static void RefuseAction(AAR_SalvageScreen salvageScreen, int reputationModifier) {
 
             SimGameState sgs = UnityGameInstance.BattleTechGame.Simulation;
             int repBefore = sgs.GetRawReputation(State.Employer);
             sgs.AddReputation(State.Employer, reputationModifier, false);
             State.EmployerRepRaw = sgs.GetRawReputation(State.Employer);
-            Mod.Logger.Info($"Player refused holdback. {State.Employer} reputation {repBefore} + {reputationModifier} modifier = {State.EmployerRepRaw}.");
+            Mod.Log.Info($"Player refused holdback. {State.Employer} reputation {repBefore} + {reputationModifier} modifier = {State.EmployerRepRaw}.");
+
+            // Roll up any remaining salvage and widget-tize it
+            List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(State.PotentialSalvage);
+            Helper.CalculateAndAddAvailableSalvage(salvageScreen, rolledUpSalvage);
 
             State.Reset();
         }
 
         public static void DisputeAction(Contract contract, AAR_SalvageScreen salvageScreen, Dispute dispute) {
-            Mod.Logger.Info($"Player disputed holdback.");
+            Mod.Log.Info($"Player disputed holdback.");
 
             SimGameState sgs = UnityGameInstance.BattleTechGame.Simulation;
-            Mod.Logger.Info($"Dispute legal fees:{dispute.MRBFees}");
+            Mod.Log.Info($"  Dispute legal fees:{dispute.MRBFees}");
             sgs.AddFunds(dispute.MRBFees, $"MRB Legal Fees re: {contract.Name}", false);
 
             Dispute.Outcome outcome = dispute.GetOutcome();
             if (outcome == Dispute.Outcome.SUCCESS) {
-                Mod.Logger.Info($"DISPUTE SUCCESS: Player keeps disputed salvage and gains {dispute.Picks} items from compensation pool.");
-                GenericPopup gp = GenericPopupBuilder.Create(
+                Mod.Log.Info($"DISPUTE SUCCESS: Player keeps disputed salvage and gains {dispute.Picks} items from compensation pool.");
+
+                // Update quantities of compensation parts
+                Mod.Log.Info("  -- Updating quantities on compensation parts.");
+                int loopCount = 0;
+                foreach (SalvageDef compSDef in State.CompensationParts) {
+                    if (loopCount < dispute.Picks) { loopCount++; } 
+                    else { break; }
+
+                    Mod.Log.Debug($"   compensation salvageDef:{compSDef.Description.Name} with quantity:{compSDef.Count}");
+                    foreach (SalvageDef sDef in State.PotentialSalvage) {
+                        Mod.Log.Debug($"   salvageDef:{sDef.Description.Name} with quantity:{sDef.Count}");
+
+                        if (compSDef.RewardID == sDef.RewardID) {
+                            Mod.Log.Info($"   Matched compensation target, updating quantity to: {compSDef.Count + sDef.Count}");
+                            sDef.Count = sDef.Count + compSDef.Count;
+                            break;
+                        }
+                    }
+
+                }
+
+                // Display the confirmation screen
+                GenericPopupBuilder.Create(
                     "SUCCESSFUL DISPUTE",
                     $"<b>Cause 193 of the standard mercenary contract clearly states...</b>\n\n" +
                     $"Your laywer deftly defend your claim with the MRB. You keep your salvage, and gain the following compensation items:" +
@@ -127,8 +156,31 @@ namespace LootMagnet {
                 .AddButton("OK")
                 .Render();
             } else {
-                Mod.Logger.Info($"DISPUTE FAILURE: Player loses disputed items, but {dispute.Picks} items from the salvage pool.");
-                GenericPopup gp = GenericPopupBuilder.Create(
+                Mod.Log.Info($"DISPUTE FAILURE: Player loses disputed items, and {dispute.Picks} items from the salvage pool.");
+
+                // Remove the disputed items
+                Mod.Log.Info("  -- Removing disputed items.");
+                foreach (SalvageDef sDef in State.HeldbackParts) {
+                    Helper.RemoveSalvage(sDef);
+                }
+
+                // Update quantities of compensation parts
+                Mod.Log.Info("  -- Determining dispute failure picks.");
+                List<SalvageDef> disputePicks = new List<SalvageDef>();
+                List<SalvageDef> components = State.PotentialSalvage.Where(sd => sd.Type == SalvageDef.SalvageType.COMPONENT).ToList();
+                components.Sort(new Helper.SalvageDefByCostDescendingComparer());
+                int loopCount = 0;
+                foreach (SalvageDef compDef in components) {
+                    if (loopCount < dispute.Picks) { loopCount++; }
+                    else { break; }
+
+                    Mod.Log.Debug($"   dispute fail salvageDef:{compDef.Description.Name} with quantity:{compDef.Count}");
+                    disputePicks.Add(compDef);
+                    State.PotentialSalvage.Remove(compDef);
+                }
+
+                // Display the configmration screen
+                GenericPopupBuilder.Create(
                     "FAILED DISPUTE",
                     $"<b>I know a guy... who knows a guy.</b>\n\n" +
                     $"{State.Employer}'s legal team completely ran away with the proceeding, painting {sgs.CompanyName} in the worst possible light." +
@@ -138,6 +190,10 @@ namespace LootMagnet {
                 .AddButton("OK")
                 .Render();
             }
+
+            // Roll up any remaining salvage and widget-tize it
+            List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(State.PotentialSalvage);
+            Helper.CalculateAndAddAvailableSalvage(salvageScreen, rolledUpSalvage);
 
             State.Reset();
         }
