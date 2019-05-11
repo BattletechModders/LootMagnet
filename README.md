@@ -60,12 +60,28 @@ This mod gives contract employers an opportunity to prevent the player from clai
 
 The employer makes a random roll to determine if they attempt to holdback an item. This threshold is determined by the player's rating with the employing faction. Factions that dislike the player are more likely to trigger a holdback, but even friendly factions have a small chance as well. The chance for a holdback is given by the table below, and defined by  **HoldbackTrigger** (in *mod.json*).
 
+##### Employer Holdback 
+
 | Value | Loathed | Hated | Disliked | Indifferent | Liked | Friendly | Honored | Allied |
 | -- | -- | -- | -- | -- | -- | -- | -- | -- |
 | Trigger | 72% | 48% | 32% | 16% | 8% | 4% | 2% | 1% |
 | Value Cap | 0.2 | 0.3 | 0.4 | 0.6 | 0.8 | 1 | 1.25 | 2 |
 
-Once holdback has been triggered, the employer determines how greedy they will be. A random roll is made against the bounds defined as **PickRange** (in *mod.json*). The result of this roll determines how many items will be held back. The employer will pick the most expensive items first, which naturally biases towards mech chassis and parts.
+Once holdback has been triggered, the employer determines how greedy they will be. A random roll is made against the bounds defined as **Holdback.MechParts** (in *mod.json*), and determines how many pieces of *partial mech salvage* will be heldback. The employer will take the most expensive items first. 
+
+### Compensation
+
+For each piece of partial mech salvage the employer keeps, they will offer items in compensation. These items are added to the salvage pool as normal salvage, and won't be rolled-up unless your reputation allows them to be. Compensation is generally an insincere gesture on your employer's part; they expect the parts to come right back to them because of insufficient salvage rights on your part.
+
+The employer calculates what they are willing to offer you based upon raw mech part cost (`MechDef.Description.Cost`) for each part they heldback. If a mech part was worth 750,000 c-bills, and they kept 3 of them, the employer would start with compensation of 2,250,000 c-bills. This value is then multiplied by the **Value Cap**, defined as `HoldbackValueCapMulti` in *mod.json*. This value cap varies by reputation, and is a applied as a straight multiplier to the compensation sum. See the table above for default value caps. Using the value of 2,250,000 c-bills and the INDIFFERENT value cap of 0.6, the employer would offer you `2,250,000 * 0.6 = 1,350,00` worth of items.
+
+Once the compensation sum has been determined, we iterate through all components in the salvage pool. Components are ordered by value, and if their raw cost (`MechComponentDef.Description.Cost`) is less than the compensation value, one or more of that item are added as compensation.  If the component cost is low, and the compensation is high, multiples of that item can be added to the salvage pool. 
+
+Any compensation remainder left after iterating through salvage pool is lost. Consider it graft from unreliable employers.
+
+If a component would normally add more than 10 of itself to the pool, the compensation quantity is divided by 3, and this value is added instead. This prevents any single item from dominating the pool, which provides more verisimilitude to the process.
+
+> Example: The salvage pool has a SRM-2, and the compensation sum is high enough that we'd normally add 26 copies of the SRM-2 to the pool. Because 26 > 10, we divide 26 / 3 = 8.66. We round up to 9, and add 9 copies of the SRM-2 to the salvage pool instead.
 
 ### Negotiation
 
@@ -77,28 +93,18 @@ You can **Accept** the employer's terms, and let them keep the disputed salvage.
 
 You can **Refuse** the employer's terms, power up the PPCs, and renegotiate with extreme prejudice. You keep the items, but your faction reputation will take a big hit. Nobody likes having a gun pointed at them!
 
-You can **Dispute** the claims with the Mercenary Review Board. You pay a small fee to the MRB, and lose a small amount of MRB reputation, (bureaucrats don't like work) and put your trust in the lawyers. A random check is made that determines how successful your lawyer is:
+You can **Dispute** the claims with the Mercenary Review Board. You pay a small fee to the MRB and put your trust in the lawyers. A random check is made that determines how successful your lawyer is:
 
-   * On a **critical success**, you retain the items and somehow manage to convince your employer not to be angry. You win, your lawyers win, everybody wins. 
-   * On a **success**, you retain the items and your employer gets nothing. Your working relationship is strained because you got everything and they feel cheated.
-   * On a **failure**, you lose the items **and** must pay the legal fees of your employers. You suffer a slight reputation hit, mostly for making them go through the hassle of arbitration.
-   * On a **critical failure** you lose **all** salvage **and** pay a significant c-bill fee to your employer. That's what you get for bringing lawyers to a mech fight. But on the bright side, your employer isn't angry with you at all. Why should they be? They got everything they wanted!
+   * On a **success**, you retain the items and your employer gets nothing. You also get a few items from the offered compensation pool.
+   * On a **failure**, you lose the items **and** a few additional items as legal fees. Maybe you should find a better lawyer next time!
 
-Reputation losses and legal fees are higher the more important a contract is. Don't be surprised if your priority contracts impose excessive fees and losses.
+#### Configuration
 
-**DisputeCritChance** (in *mod.json*) defines the chance of both a critical success and critical failure (default: 5%). **DisputeSuccessBase** defines the base success rate (default: 40%). This is modified by the **DisputeMRBSuccessFactor** (default: 10%) which determines how much success you get for each *level* of MRB rating you currently posses. Using default values, your success rate at MRB level 2 would be 40% + 2 * 10% = 60%. You have 5% for a critical success, 5% for a critical failure, and 30% for a failure. **DisputeSuccessRandomBound** determines a random percentage that will be removed from the success rate. It defaults to 10, which means that between 0% and 10% will be removed from the success value of each contract.
+The negotiation process has a few configuration values that influence the outcome. These are described below:
 
-The **payout** amount is calculated from the maximum C-Bill value of the contract. The more C-Bills you could have earned from the contract, the greater the payout amount. The following values in *mod.json* multiply the max contract c-bill value to determine this final cost:
+* **DisputePicks** defines how many items are used for the success and failure cases.
+* **DisputeSuccessBase** defines the base success chance as a random chance to succeed in the dispute.
+* **DisputeMRBSuccessFactor** is added to your success chance once for MRB rating level you have.
+* **DisputeSuccessRandomBound** is a modifier that reduces your total success by a random amount. If you have a success chance of 80% (base 50% + MRB 3 * SuccessFactor: 10%), then 80 * SuccessRandomBound (0.2 by default) = 16 defines the range by which your success will be randomly reduced. It could be 0, it could be 7, or could be 16. Once the random value is determined, your success rate is reduced by that amount.
+* **DisputeMRBFeeFactor** defines the cost to dispute the holdback. It's a multiplier to the total contract cost, and should be negative.
 
-* **DisputeMRBFeeFactor** determines how much legal fees have to be paid to initiate a dispute. 
-* **DisputeFailPayoutFactor** determines how much you must pay the employer in a failed dispute
-* **DisputeCriticalFailPayoutFactor** determines how much you must pay the employer in a failed dispute
-
-The reputation loss is calculated from the maximum reputation gain of the contract. The more important the contract, the greater the possible reputation gain. The following values in *mod.json* multiply the maximum contract reputation value to determine the final loss:
-
-* **RepMultiAccept** determines how much reputation you gain with the employer if you **accept** a contract dispute
-* **RepMultiRefuse** determines how much reputation you lose with the employer if you **refuse** a contract dispute
-* **RepMultiDisputeMRB** determines how much reputation you lose with the MRB if you initiate a dispute
-* **RepMultiDisputeSuccess** determines how much reputation you lose with the employer if you succeed on a dispute
-* **RepMultiDisputeFail** determines how much reputation you lose with the employer if you fail on a dispute
-* **RepMultiDisputeCriticalFail** determines how much reputation you lose with the employer if you critically fail on a dispute

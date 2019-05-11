@@ -28,7 +28,6 @@
             "DisputeSuccessBase" : 50.0,
             "DisputeMRBSuccessFactor" : 10.0,
             "DisputeSuccessRandomBound" : 0.2,
-            "DisputePayoutRandomBound" : 0.7,
             "DisputeMRBFeeFactor" : -0.1
         }
     }
