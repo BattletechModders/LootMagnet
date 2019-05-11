@@ -73,13 +73,13 @@ namespace LootMagnet {
             Mod.Log.Info($"Player accepted holdback. {State.Employer} reputation {repBefore} + {reputationModifier} modifier = {State.EmployerRepRaw}.");
 
             // Remove the disputed items
-            Mod.Log.Info("  -- Removing disputed items.");
+            Mod.Log.Debug("  -- Removing disputed items.");
             foreach (SalvageDef sDef in State.HeldbackParts) {
                 Helper.RemoveSalvage(sDef);
             }
 
             // Update quantities of compensation parts
-            Mod.Log.Info("  -- Updating quantities on compensation parts.");
+            Mod.Log.Debug("  -- Updating quantities on compensation parts.");
             foreach (SalvageDef compSDef in State.CompensationParts) {
                 Mod.Log.Debug($"   compensation salvageDef:{compSDef.Description.Name} with quantity:{compSDef.Count}");
                 foreach (SalvageDef sDef in State.PotentialSalvage) {
@@ -127,7 +127,8 @@ namespace LootMagnet {
                 Mod.Log.Info($"DISPUTE SUCCESS: Player keeps disputed salvage and gains {dispute.Picks} items from compensation pool.");
 
                 // Update quantities of compensation parts
-                Mod.Log.Info("  -- Updating quantities on compensation parts.");
+                Mod.Log.Debug("  -- Updating quantities on compensation parts.");
+                List<string> compItemsDesc = new List<string>();
                 int loopCount = 0;
                 foreach (SalvageDef compSDef in State.CompensationParts) {
                     if (loopCount < dispute.Picks) { loopCount++; } 
@@ -138,20 +139,21 @@ namespace LootMagnet {
                         Mod.Log.Debug($"   salvageDef:{sDef.Description.Name} with quantity:{sDef.Count}");
 
                         if (compSDef.RewardID == sDef.RewardID) {
-                            Mod.Log.Info($"   Matched compensation target, updating quantity to: {compSDef.Count + sDef.Count}");
+                            Mod.Log.Debug($"   Matched compensation target, updating quantity to: {compSDef.Count + sDef.Count}");
+                            compItemsDesc.Add($"{compSDef.Description.Name} [QTY:{compSDef.Count}]");
                             sDef.Count = sDef.Count + compSDef.Count;
                             break;
                         }
                     }
-
                 }
+                string compDescs = " -" + string.Join("\n -", compItemsDesc.ToArray());
 
                 // Display the confirmation screen
                 GenericPopupBuilder.Create(
                     "SUCCESSFUL DISPUTE",
-                    $"<b>Cause 193 of the standard mercenary contract clearly states...</b>\n\n" +
+                    $"<b>Cause 193 of the negotiated mercenary contract clearly states...</b>\n\n" +
                     $"Your laywer deftly defend your claim with the MRB. You keep your salvage, and gain the following compensation items:" +
-                    $"\n\nTODO\n\n"
+                    $"\n\n{compDescs}\n\n"
                 )
                 .AddButton("OK")
                 .Render();
@@ -159,13 +161,13 @@ namespace LootMagnet {
                 Mod.Log.Info($"DISPUTE FAILURE: Player loses disputed items, and {dispute.Picks} items from the salvage pool.");
 
                 // Remove the disputed items
-                Mod.Log.Info("  -- Removing disputed items.");
+                Mod.Log.Debug("  -- Removing disputed items.");
                 foreach (SalvageDef sDef in State.HeldbackParts) {
                     Helper.RemoveSalvage(sDef);
                 }
 
                 // Update quantities of compensation parts
-                Mod.Log.Info("  -- Determining dispute failure picks.");
+                Mod.Log.Debug("  -- Determining dispute failure picks.");
                 List<SalvageDef> disputePicks = new List<SalvageDef>();
                 List<SalvageDef> components = State.PotentialSalvage.Where(sd => sd.Type == SalvageDef.SalvageType.COMPONENT).ToList();
                 components.Sort(new Helper.SalvageDefByCostDescendingComparer());
@@ -179,13 +181,29 @@ namespace LootMagnet {
                     State.PotentialSalvage.Remove(compDef);
                 }
 
+                List<string> heldbackItemsDesc = new List<string>();
+                foreach (SalvageDef sDef in State.HeldbackParts) {
+                    heldbackItemsDesc.Add($"{sDef.Description.Name} [QTY:{sDef.Count}]");
+                }
+                string heldbackDescs = " -" + string.Join("\n -", heldbackItemsDesc.ToArray());
+
+                List<string> disputeDesc = new List<string>();
+                foreach (SalvageDef sDef in disputePicks) {
+                    disputeDesc.Add($"{sDef.Description.Name} [QTY:{sDef.Count}]");
+                }
+                string disputeDescs = " -" + string.Join("\n -", disputeDesc.ToArray());
+
                 // Display the configmration screen
                 GenericPopupBuilder.Create(
                     "FAILED DISPUTE",
-                    $"<b>I know a guy... who knows a guy.</b>\n\n" +
+                    $"<b>Judge</b>: Counselor, what evidence do you offer for this new plea of insanity?\n\n" +
+                    $"<b>Attorney</b>: Well, for one, they done hired me to represent them.\n\n" +
+                    $"<b>Judge</b>: Insanity plea is accepted.\n\n" +
                     $"{State.Employer}'s legal team completely ran away with the proceeding, painting {sgs.CompanyName} in the worst possible light." +
                     $"You lose salvage rights to all of the following:" +
-                    $"\n\nTODO\n\n"
+                    $"\n\n{heldbackDescs}\n\n" +
+                    $"In addition they claim the following as compensation for legal fees:" +
+                    $"\n\n{disputeDescs}\n\n"
                 )
                 .AddButton("OK")
                 .Render();

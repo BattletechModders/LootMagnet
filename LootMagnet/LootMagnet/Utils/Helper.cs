@@ -124,19 +124,22 @@ namespace LootMagnet {
             Mod.Log.Info($"Holding back up to {mechPartsToHoldback} mech parts.");
 
             foreach (SalvageDef salvageDef in allMechParts) {
+                Mod.Log.Debug($"Evaluating mech:({salvageDef.Description.Name}) with parts:{salvageDef.Count} for holdback.");
                 if (mechPartsToHoldback == 0) {
+                    Mod.Log.Info($"No more parts to holdback, skipping.");
                     break;
                 } else if (mechPartsToHoldback >= salvageDef.Count) {
                     State.HeldbackParts.Add(salvageDef);
                     mechPartsToHoldback -= salvageDef.Count;
-                    Mod.Log.Info($"Holding back all {mechPartsToHoldback} parts of mech:({salvageDef.Description.Name}).");
+                    Mod.Log.Debug($"Holding back all {mechPartsToHoldback} parts of mech:({salvageDef.Description.Name}).");
                 } else if (mechPartsToHoldback < salvageDef.Count) {
                     SalvageDef partialDef = new SalvageDef(salvageDef) {
                         Count = mechPartsToHoldback
                     };
                     State.HeldbackParts.Add(partialDef);
+                    Mod.Log.Debug($"Holding back {mechPartsToHoldback} parts of mech:({salvageDef.Description.Name}), leaving {salvageDef.Count} parts.");
                     mechPartsToHoldback = 0;
-                    Mod.Log.Info($"Holding back {mechPartsToHoldback} parts of mech:({salvageDef.Description.Name}), leaving {salvageDef.Count} parts.");
+                    break;
                 }
             }
         }
@@ -303,13 +306,6 @@ namespace LootMagnet {
             }
             Mod.Log.Debug("CAAAS - added all salvage entries.");
 
-            if (salvageScreen.gameObject.activeInHierarchy) {
-                Traverse eofsT = salvageScreenT.Field("EndOfFrameSorting");
-                System.Collections.IEnumerator endOfFrameSorting = eofsT.GetValue<System.Collections.IEnumerator>();
-                Mod.Log.Debug("CAAAS - starting endofframe sorting");
-                salvageScreen.StartCoroutine(endOfFrameSorting);
-            }
-
             Traverse allSalvageContT = salvageScreenT.Field("AllSalvageControllers");
             List<ListElementController_BASE_NotListView> allSalvageControllers = 
                 allSalvageContT.GetValue<List<ListElementController_BASE_NotListView>>();
@@ -319,6 +315,7 @@ namespace LootMagnet {
             totalSalvageT.SetValue(allSalvageControllers.Count);
             Mod.Log.Debug("CAAAS - updated salvageController count");
 
+            salvageSelection.ApplySalvageSorting();
         }
     }
 }
