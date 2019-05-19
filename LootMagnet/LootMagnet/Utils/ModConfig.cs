@@ -56,6 +56,8 @@ namespace LootMagnet {
         // The values used to define the base amounts for rollup
         public float[] RollupMRBValue = new float[] { 40000f, 60000f, 90000f, 130000f, 180000f, 240000f };
 
+        public List<string> RollupBlacklist = new List<string>();
+
         public List<RepCfg> Reputation = new List<RepCfg>() {};
 
         public HoldbackCfg Holdback = new HoldbackCfg();
@@ -82,6 +84,8 @@ namespace LootMagnet {
 
             string rollupMRBVal = string.Join(", ", RollupMRBValue.Select(v => v.ToString("0.00")).ToArray());
             Mod.Log.Info($"  MRB Rollup Values: {rollupMRBVal}");
+            string rollupBlacklistS = string.Join(", ", RollupBlacklist.ToArray<string>());
+            Mod.Log.Info($"  Rollup Blacklists: {rollupBlacklistS}");
 
             Mod.Log.Info($"FACTION REPUTATION VALUES");
             foreach (RepCfg factionCfg in Reputation) {
@@ -89,15 +93,11 @@ namespace LootMagnet {
             }
 
             Mod.Log.Info($"HOLDBACK VALUES");
-            //Mod.Logger.Log($"  Holdback Picks: {Holdback.PickRange[0]} to {Holdback.PickRange[1]}");
-
-            //Mod.Logger.Log($"  Reputation ACCEPT:x{Holdback.RepMultiAccept} REFUSE:x{Holdback.RepMultiRefuse} DISPUTE_MRB:x{Holdback.RepMultiDisputeMRB}");
-            //Mod.Logger.Log($"  Reputation DISPUTE_SUCCESS:x{Holdback.RepMultiDisputeSuccess} DISPUTE_FAIL:x{Holdback.RepMultiDisputeFail} DISPUTE_CRIT_FAIL:x{Holdback.RepMultiDisputeCriticalFail}");
-
-            //Mod.Logger.Log($"  Dispute Chance BASE:{Holdback.DisputeSuccessBase}% CRIT_CHANCE:{Holdback.DisputeCritChance}% " +
-            //    $"MRB_FACTOR:{Holdback.DisputeMRBSuccessFactor}% RANDOM:{Holdback.DisputeSuccessRandomBound}%");
-
-            //Mod.Logger.Log($"  MRB_Fees:x{Holdback.DisputeMRBFeeFactor} FAIL_PAYOUT:x{Holdback.DisputeFailPayoutFactor} CRIT_FAIL_PAYOUT:X{Holdback.DisputeCritFailPayoutFactor}");
+            Mod.Log.Info($"  Holdback Picks: {Holdback.MechParts[0]} to {Holdback.MechParts[1]}");
+            Mod.Log.Info($"  Rep Range: {Holdback.ReputationRange[0]} to {Holdback.ReputationRange[1]}");
+            Mod.Log.Info($"  Dispute Picks: {Holdback.DisputePicks[0]} to {Holdback.DisputePicks[1]}");
+            Mod.Log.Info($"  Dispute SuccessBase:{Holdback.DisputeSuccessBase} MRBSuccessFactor:{Holdback.DisputeMRBSuccessFactor} " +
+                $"SuccessRandomBound:{Holdback.DisputeSuccessRandomBound} MRBFeeFactor:{Holdback.DisputeMRBFeeFactor}");
 
             Mod.Log.Info("=== MOD CONFIG END ===");
         }

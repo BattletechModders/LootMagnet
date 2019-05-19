@@ -41,26 +41,6 @@ namespace LootMagnet {
         }
     }
 
-    //[HarmonyPatch(typeof(Contract), "GetPotentialSalvage")]
-    //public static class Contract_GetPotentialSalvage {
-
-    //    // At this point, salvage has been collapsed and grouped. For each of those that have count > 1, change their name, add them to the Dict, and set count to 1.
-    //    public static void Postfix(Contract __instance, List<SalvageDef> __result) {
-    //        if (__result != null) {
-
-    //            // Sort by price, since other functions depend on it
-    //            __result.Sort(new Helper.SalvageDefByCostDescendingComparer());
-
-    //            // Roll up any remaining salvage
-    //            List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(__result);
-
-    //            // Update the result that will be returned 
-    //            __result.Clear();
-    //            __result.AddRange(rolledUpSalvage);
-    //        }
-    //    }
-    //} 
-
     [HarmonyPatch(typeof(ListElementController_SalvageMechPart_NotListView), "RefreshInfoOnWidget")]
     [HarmonyPatch(new Type[] { typeof(InventoryItemElement_NotListView) })]
     public static class ListElementController_SalvageMechPart_RefreshInfoOnWidget {
@@ -86,14 +66,24 @@ namespace LootMagnet {
     public static class Contract_AddToFinalSalvage {
         
         public static void Prefix(Contract __instance, ref SalvageDef def) {
-            if (def != null) {
-                if (def.RewardID != null && def.RewardID.Contains("_qty")) {
+            Mod.Log.Debug($"C:ATFS - entered.");
+            if (def?.RewardID != null) {
+                if (def.RewardID.Contains("_qty")) {
+                    Mod.Log.Debug($"  Salvage ({def.Description.Name}) has rewardID:({def.RewardID}) with multiple quantities");
                     int qtyIdx = def.RewardID.IndexOf("_qty");
                     string countS = def.RewardID.Substring(qtyIdx + 4);
-                    Mod.Log.Debug($"Salvage {def.Description.Name} with rewardID:{def.RewardID} will be given count: {countS}");
+                    Mod.Log.Debug($"  Salvage ({def.Description.Name}) with rewardID:({def.RewardID}) will be given count: {countS}");
                     int count = int.Parse(countS);
                     def.Count = count;
+                } else {
+                    Mod.Log.Debug($"  Salvage ({def.Description.Name}) has rewardID:({def.RewardID})");
+                    List<string> compPartIds = State.CompensationParts.Select(sd => sd.RewardID).ToList();
+                    if (compPartIds.Contains(def.RewardID)) {
+                        Mod.Log.Debug($" Found item in compensation that was randomly assigned.");
+                    }
                 }
+            } else {
+                Mod.Log.Debug($"  RewardId was null for def:({def?.Description?.Name})");
             }
         }
     }

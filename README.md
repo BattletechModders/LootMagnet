@@ -50,6 +50,12 @@ Mech parts may also be rolled up, if your faction rating is good enough. The **R
 | 4 | 0 | 0 | 1,800,000 | 2,700,000 | 16,200,000 |
 | 5 | 0 | 0 | 2,400,000 | 3,600,000 | 21,600,000 |
 
+### Blacklist
+
+Some items are too powerful or rare for employers to offer multiples. To mark any items as being ineligible for rollup, add them to the **RollupBlacklist** array in *mod.json*. 
+
+
+
 ## Salvage Holdback
 
 Mercenaries are contract workers. Even friendly employers hesitate when they notice LosTech or rare Battlemechs being carted off the field by a temporary 'friend'.  Hidden clauses and fine print are the weapons Inner Sphere lawyers use to **hold back** items they desperately desire. In lore, this was very common when salvage included Star League or Clan technology.

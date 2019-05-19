@@ -92,9 +92,12 @@ namespace LootMagnet {
 
         private static void RollupSalvageDef(SalvageDef salvageDef, float threshold, List<SalvageDef> salvage) {
             int rollupCount = (int)Math.Ceiling(threshold / salvageDef.Description.Cost);
-            Mod.Log.Debug($"threshold:{threshold.ToString("0")} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
+            Mod.Log.Debug($"  threshold:{threshold.ToString("0")} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
 
-            if (rollupCount > 1) {
+            if (Mod.Config.RollupBlacklist.Contains(salvageDef.MechComponentDef.Description.Id)) {
+                Mod.Log.Info($"  BLACKLISTED: {salvageDef.MechComponentDef.Description.Id} cannot be rolled up. Skipping. ");
+                salvage.Add(salvageDef);
+            } else if (rollupCount > 1) {
                 int buckets = (int)Math.Floor(salvageDef.Count / (double)rollupCount);
                 int remainder = salvageDef.Count % rollupCount;
                 Mod.Log.Debug($"count:{salvageDef.Count} / limit:{rollupCount} = buckets:{buckets}, remainder:{remainder}");
@@ -316,6 +319,14 @@ namespace LootMagnet {
             Mod.Log.Debug("CAAAS - updated salvageController count");
 
             salvageSelection.ApplySalvageSorting();
+
+            // Update the contract potential salvage
+            Contract contract = salvageScreenT.Field("contract").GetValue<Contract>();
+            Traverse finalPotentialSalvageT = Traverse.Create(contract).Field("finalPotentialSalvage");
+            List<SalvageDef> finalPotentialSalvage = finalPotentialSalvageT.GetValue<List<SalvageDef>>();
+
+            finalPotentialSalvage.Clear();
+            finalPotentialSalvage.AddRange(potentialSalvage);
         }
     }
 }
