@@ -11,12 +11,12 @@
     "Settings": {
         "Debug" : false,
         "RollupMRBValue" : [ 40000, 60000, 90000, 130000, 180000, 240000 ],
-        "RollupBlacklist": [ 
+        "RollupBlacklist": [
             "Lootable_arm_mortis", "Lootable_Actuator_CoolingJacket",
             "Lootable_AmmunitionBox_Hydra_LRM", "lootable_kit_shs", "lootable_engineslots_std_center", "lootable_kit_dhs_royal",
             "StatusEffect-Initiative_Gain-B2000", "emod_lootable_armor_clstandard", "lootable_armorslots_Primitive", "lootable_ChameleonLightPolarizationShield",
             "lootable_Cockpit_CLAN_Standard", "lootable_Cockpit_Generic_Standard", "lootable_Cockpit_Primitive", "lootable_Cockpit_SLDF_Standard",
-            "lootable_Cockpit_SolarisCage", "lootable_FCS_Generic_Clan", "lootable_FCS_Generic_SLDF", lootable_FCS_Generic_Standard",
+            "lootable_Cockpit_SolarisCage", "lootable_FCS_Generic_Clan", "lootable_FCS_Generic_SLDF", "lootable_FCS_Generic_Standard",
             "lootable_FCS_Primitive_Standard", "lootable_FCS_Society", "lootable_Gyro_Coventry_Brawler", "lootable_Gyro_Coventry_Dreadnought",
             "lootable_Gyro_Ultralight_Stabilized", "lootable_Sensors_Clan", "lootable_Sensors_Generic_Standard", "lootable_Sensors_Primitive_Standard",
             "lootable_Sensors_SLDF", "lootable_Sensors_Society", "Lootable_structureslots_EndoTSM",
