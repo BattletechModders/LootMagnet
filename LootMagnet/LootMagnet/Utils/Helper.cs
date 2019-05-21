@@ -89,13 +89,13 @@ namespace LootMagnet {
 
             return rolledUpSalvage;
         }
-
+        
         private static void RollupSalvageDef(SalvageDef salvageDef, float threshold, List<SalvageDef> salvage) {
             int rollupCount = (int)Math.Ceiling(threshold / salvageDef.Description.Cost);
             Mod.Log.Debug($"  threshold:{threshold.ToString("0")} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
 
-            if (Mod.Config.RollupBlacklist.Contains(salvageDef.MechComponentDef.Description.Id)) {
-                Mod.Log.Info($"  BLACKLISTED: {salvageDef.MechComponentDef.Description.Id} cannot be rolled up. Skipping. ");
+            if (Mod.Config.RollupBlacklist.Contains(salvageDef?.MechComponentDef?.Description?.Id)) {
+                Mod.Log.Info($"  BLACKLISTED: {salvageDef?.MechComponentDef?.Description?.Id} cannot be rolled up. Skipping. ");
                 salvage.Add(salvageDef);
             } else if (rollupCount > 1) {
                 int buckets = (int)Math.Floor(salvageDef.Count / (double)rollupCount);
