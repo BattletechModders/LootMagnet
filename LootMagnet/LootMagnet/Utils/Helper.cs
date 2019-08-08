@@ -91,31 +91,44 @@ namespace LootMagnet {
         }
         
         private static void RollupSalvageDef(SalvageDef salvageDef, float threshold, List<SalvageDef> salvage) {
-            int rollupCount = (int)Math.Ceiling(threshold / salvageDef.Description.Cost);
-            Mod.Log.Debug($"  threshold:{threshold.ToString("0")} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
-
-            if (Mod.Config.RollupBlacklist.Contains(salvageDef?.MechComponentDef?.Description?.Id)) {
-                Mod.Log.Info($"  BLACKLISTED: {salvageDef?.MechComponentDef?.Description?.Id} cannot be rolled up. Skipping. ");
-                salvage.Add(salvageDef);
-            } else if (rollupCount > 1) {
-                int buckets = (int)Math.Floor(salvageDef.Count / (double)rollupCount);
-                int remainder = salvageDef.Count % rollupCount;
-                Mod.Log.Debug($"count:{salvageDef.Count} / limit:{rollupCount} = buckets:{buckets}, remainder:{remainder}");
-
-                int i = 0;
-                for (i = 0; i < buckets; i++) {
-                    SalvageDef bucketDef = CloneToXName(salvageDef, rollupCount, i);
-                    salvage.Add(bucketDef);
+            try {
+                int sDefCost = 0;
+                if (salvageDef != null && salvageDef.Description != null) {
+                    sDefCost = salvageDef.Description.Cost;
+                } else {
+                    Mod.Log.Info($"WARNING: salvageDef.rewardID:({salvageDef?.RewardID}) is null or has null description: {salvageDef?.Description?.Id}");
                 }
 
-                if (remainder != 0) {
-                    SalvageDef remainderDef = CloneToXName(salvageDef, remainder, i + 1);
-                    salvage.Add(remainderDef);
+                int rollupCount = (int)Math.Ceiling(threshold / sDefCost);
+                Mod.Log.Debug($"  threshold:{threshold.ToString("0")} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
+
+                if (Mod.Config.RollupBlacklist.Contains(salvageDef?.MechComponentDef?.Description?.Id)) {
+                    Mod.Log.Info($"  BLACKLISTED: {salvageDef?.MechComponentDef?.Description?.Id} cannot be rolled up. Skipping. ");
+                    salvage.Add(salvageDef);
+                } else if (rollupCount > 1) {
+                    int buckets = (int)Math.Floor(salvageDef.Count / (double)rollupCount);
+                    int remainder = salvageDef.Count % rollupCount;
+                    Mod.Log.Debug($"count:{salvageDef.Count} / limit:{rollupCount} = buckets:{buckets}, remainder:{remainder}");
+
+                    int i = 0;
+                    for (i = 0; i < buckets; i++) {
+                        SalvageDef bucketDef = CloneToXName(salvageDef, rollupCount, i);
+                        salvage.Add(bucketDef);
+                    }
+
+                    if (remainder != 0) {
+                        SalvageDef remainderDef = CloneToXName(salvageDef, remainder, i + 1);
+                        salvage.Add(remainderDef);
+                    }
+                } else {
+                    // There's not enough value to rollup, so just add to salvage as is and let the player pick 1 by 1
+                    salvage.Add(salvageDef);
                 }
-            } else {
-                // There's not enough value to rollup, so just add to salvage as is and let the player pick 1 by 1
-                salvage.Add(salvageDef);
+
+            } catch (Exception e) {
+                Mod.Log.Info($"ERROR: Failed to rollup salvageDef due to: {e.Message}");
             }
+
         }
 
         public static void CalculateHoldback(List<SalvageDef> potentialSalvage) {
