@@ -27,7 +27,7 @@ namespace LootMagnet {
     public static class Contract_CompleteContract {
         
         public static void Prefix(Contract __instance, MissionResult result, bool isGoodFaithEffort) {
-            if (__instance != null && !__instance.IsArenaSkirmish) {
+            if (__instance != null && !__instance.ContractTypeValue.IsSkirmish) {
                 SimGameState simulation = HBS.LazySingletonBehavior<UnityGameInstance>.Instance.Game.Simulation;
 
                 State.Employer = __instance.GetTeamFaction("ecc8d4f2-74b4-465d-adf6-84445e5dfc230");

@@ -1,7 +1,7 @@
 {
     "Name": "LootMagnet",
     "Enabled": true,
-    "Version": "2.5.1",
+    "Version": "3.0.0",
     "Description": "Groups salvage of a similar type into a single pick. Provides lore-based employer shenanigans.",
     "Author": "IceRaptor",
     "Website": "https://github.com/IceRaptor/LootMagnet",
