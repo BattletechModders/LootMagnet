@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace LootMagnet {
 
     public static class State {
-        public static Faction Employer = Faction.INVALID_UNSET;
+        public static FactionValue Employer = null;
         public static SimGameReputation EmployerRep = SimGameReputation.INDIFFERENT;
         public static int EmployerRepRaw = 0;
         public static bool IsEmployerAlly = false;
@@ -17,7 +17,7 @@ namespace LootMagnet {
 
         public static void Reset() {
             // Reinitialize state to known values
-            Employer = Faction.INVALID_UNSET;
+            Employer = null;
             EmployerRep = SimGameReputation.INDIFFERENT;
             EmployerRepRaw = 0;
             IsEmployerAlly = false;

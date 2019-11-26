@@ -111,7 +111,8 @@ namespace LootMagnet {
 
             // Check for holdback
             bool hasMechParts = State.PotentialSalvage.FirstOrDefault(sd => sd.Type != SalvageDef.SalvageType.COMPONENT) != null;
-            bool canHoldback = SimGameState.DoesFactionGainReputation(State.Employer) && State.Employer != Faction.ComStar;
+            //bool canHoldback = SimGameState.DoesFactionGainReputation(State.Employer) && State.Employer != Faction.ComStar;
+            bool canHoldback = State.Employer.DoesGainReputation;
             float triggerChance = Helper.GetHoldbackTriggerChance();
             float holdbackRoll = LootMagnet.Random.Next(101);
             Mod.Log.Info($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
