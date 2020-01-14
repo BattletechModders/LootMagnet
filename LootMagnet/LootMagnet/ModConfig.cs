@@ -77,6 +77,66 @@ namespace LootMagnet {
             }
         }
 
+
+        public const string DT_DISPUTE_TITLE = "DISPUTE_TITLE";
+        public const string DT_DISPUTE_TEXT = "DISPUTE_TEXT";
+        public const string DT_FAILED_TITLE = "DISPUTE_FAIL_TITLE";
+        public const string DT_FAILED_TEXT = "DISPUTE_FAIL_TEXT";
+        public const string DT_SUCCESS_TITLE = "DISPUTE_SUCCESS_TITLE";
+        public const string DT_SUCCESS_TEXT = "DISPUTE_SUCCESS_TEXT";
+        public const string DT_ITEM_AND_QUANTITY = "ITEM_AND_QUANTITY";
+
+        public const string DT_BUTTON_ACCEPT = "BUTTON_ACCEPT";
+        public const string DT_BUTTON_REFUSE = "BUTTON_REFUSE";
+        public const string DT_BUTTON_DISPUTE = "BUTTON_DISPUTE";
+        public const string DT_BUTTON_OK = "BUTTON_OK";
+
+        public Dictionary<string, string> DialogText = new Dictionary<string, string>() {
+            {  DT_DISPUTE_TITLE, "DISPUTED SALVAGE" },
+            {  DT_DISPUTE_TEXT,  "<b>I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii...</b>\n\n" +
+                "As the salvage crew picks over the battlefield, you are contacted by the {0} representative. " +
+                "They insist the contract terms allows them first rights to the following items:" +
+                "\n\n{1}\n\n" +
+                "They offer to add the following to the <b>salvage pool</b> in exchange:" +
+                "\n\n{2}\n\n" +
+                "You may choose to:\n" +
+                "<b>Refuse</b>: the disputed salvage is retained, you <b>lose</b> <color=#FF0000>{3}</color> rep.\n" +
+                "<b>Accept</b>: the disputed salvage is lost, exchanged items are added to the <b>salvage pool</b>, " +
+                "you gain <b>gain</b> <color=#00FF00>{4:+0}</color> rep.\n" +
+                "<b>Dispute</b>: you pay <color=#FF0000>{5}</color> in legal fees, and have:\n" +
+                    "<line-indent=2px> - {6}% to keep the disputed salvage, and the salvage pool" +
+                    "gains {7}-{8} from the compensation offer.\n" +
+                    "<line-indent=2px> - {9}% to lose the disputed salvage, and " +
+                    "an additional {10}-{11} selections in the salvage pool.\n"
+            },
+
+            {  DT_FAILED_TITLE, "FAILED DISPUTE" },
+            {  DT_FAILED_TEXT,
+                "<b>Judge</b>: Counselor, what evidence do you offer for this new plea of insanity?\n\n" +
+                "<b>Attorney</b>: Well, for one, they done hired me to represent them.\n\n" +
+                "<b>Judge</b>: Insanity plea is accepted.\n\n" +
+                "{0}'s legal team completely ran away with the proceeding, painting {1} in the worst possible light." +
+                "You lose salvage rights to all of the following:" +
+                "\n\n{2}\n\n" +
+                "In addition they claim the following as compensation for legal fees:" +
+                "\n\n{3}\n\n"
+            },
+
+            {  DT_SUCCESS_TITLE, "SUCCESSFUL DISPUTE" },
+            {  DT_SUCCESS_TEXT,
+                "<b>Cause 193 of the negotiated mercenary contract clearly states...</b>\n\n" +
+                "Your laywer deftly defend your claim with the MRB. You keep your salvage, and gain the following compensation items:" +
+                "\n\n{0}\n\n"
+            },
+
+            {  DT_ITEM_AND_QUANTITY, "{0} [QTY:{1}]" },
+
+            {  DT_BUTTON_ACCEPT, "Accept" },
+            {  DT_BUTTON_REFUSE, "Refuse" },
+            {  DT_BUTTON_DISPUTE, "Dispute" },
+            {  DT_BUTTON_OK, "OK" },
+        };
+
         public void LogConfig() {
             Mod.Log.Info("=== MOD CONFIG BEGIN ===");
 

@@ -1,7 +1,7 @@
 ﻿using BattleTech;
 using BattleTech.UI;
 using Harmony;
-using System;
+using Localize;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -16,13 +16,23 @@ namespace LootMagnet {
 
             List<string> heldbackItemsDesc = new List<string>();
             foreach (SalvageDef sDef in ModState.HeldbackParts) {
-                heldbackItemsDesc.Add($"{sDef.Description.Name} [QTY:{sDef.Count}]");
+                string localItemName = new Text(sDef.Description.Name).ToString();
+                string localItemAndQuantity = 
+                    new Text(
+                        Mod.Config.DialogText[ModConfig.DT_ITEM_AND_QUANTITY], new object[] { localItemName, sDef.Count }
+                        ).ToString(); 
+                heldbackItemsDesc.Add(localItemAndQuantity);
             }
             string heldbackDescs = " -" + string.Join("\n -", heldbackItemsDesc.ToArray());
 
             List<string> compItemsDesc = new List<string>();
             foreach (SalvageDef sDef in ModState.CompensationParts) {
-                compItemsDesc.Add($"{sDef.Description.Name} [QTY:{sDef.Count}]");
+                string localItemName = new Text(sDef.Description.Name).ToString();
+                string localItemAndQuantity =
+                    new Text(
+                        Mod.Config.DialogText[ModConfig.DT_ITEM_AND_QUANTITY], new object[] { localItemName, sDef.Count }
+                        ).ToString();
+                compItemsDesc.Add(localItemAndQuantity);
             }
             string compDescs = " -" + string.Join("\n -", compItemsDesc.ToArray());
 
@@ -36,34 +46,29 @@ namespace LootMagnet {
             void refuseAction() { RefuseAction(salvageScreen, refuseRepMod); }
             void disputeAction() { DisputeAction(contract, salvageScreen, dispute); }
 
-            GenericPopup gp = GenericPopupBuilder.Create(
-                "DISPUTED SALVAGE",
-                $"<b>I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii...</b>\n\n" +
-                $"As the salvage crew picks over the battlefield, you are contacted by the {ModState.Employer} representative. " + 
-                $"They insist the contract terms allows them first rights to the following items:" +
-                $"\n\n{heldbackDescs}\n\n" +
-                $"They offer to add the following to the <b>salvage pool</b> in exchange:" +
-                $"\n\n{compDescs}\n\n" +
-                $"You may choose to:\n" +
-                $"<b>Refuse</b>: the disputed salvage is retained, you <b>lose</b> <color=#FF0000>{refuseRepMod}</color> rep.\n" +
-                $"<b>Accept</b>: the disputed salvage is lost, exchanged items are added to the <b>salvage pool</b>, " +
-                  $"you gain <b>gain</b> <color=#00FF00>{acceptRepMod:+0}</color> rep.\n" +
-                $"<b>Dispute</b>: you pay <color=#FF0000>{SimGameState.GetCBillString(dispute.MRBFees)}</color> in legal fees, and have:\n" +
-                    $"<line-indent=2px> - {dispute.SuccessChance}% to keep the disputed salvage, and the salvage pool" +
-                      $"gains {Mod.Config.Holdback.DisputePicks[0]}-{Mod.Config.Holdback.DisputePicks[1]} from the compensation offer.\n" +
-                    $"<line-indent=2px> - {100 - dispute.SuccessChance}% to lose the disputed salvage, and " +
-                      $"an additional {Mod.Config.Holdback.DisputePicks[0]}-{Mod.Config.Holdback.DisputePicks[1]} selections in the salvage pool.\n"
-                )
-                .AddButton("Refuse", refuseAction, true, null)
-                .AddButton("Accept", acceptAction, true, null)
-                .AddButton("Dispute", disputeAction, true, null)
+            string localDialogTitle = new Text(Mod.Config.DialogText[ModConfig.DT_DISPUTE_TITLE]).ToString();
+            string localDialogText = new Text(
+                Mod.Config.DialogText[ModConfig.DT_DISPUTE_TEXT], new object[] {
+                    ModState.Employer, heldbackDescs, compDescs, refuseRepMod, acceptRepMod,
+                    SimGameState.GetCBillString(dispute.MRBFees), dispute.SuccessChance,
+                    Mod.Config.Holdback.DisputePicks[0], Mod.Config.Holdback.DisputePicks[1],
+                    (100 - dispute.SuccessChance),
+                    Mod.Config.Holdback.DisputePicks[0], Mod.Config.Holdback.DisputePicks[1],
+                }
+                ).ToString();
+            string localButtonRefuse = new Text(Mod.Config.DialogText[ModConfig.DT_BUTTON_REFUSE]).ToString();
+            string localButtonAccept = new Text(Mod.Config.DialogText[ModConfig.DT_BUTTON_ACCEPT]).ToString();
+            string localButtonDispute = new Text(Mod.Config.DialogText[ModConfig.DT_BUTTON_DISPUTE]).ToString();
+            GenericPopup gp = GenericPopupBuilder.Create(localDialogTitle, localDialogText)
+                .AddButton(localButtonRefuse, refuseAction, true, null)
+                .AddButton(localButtonAccept, acceptAction, true, null)
+                .AddButton(localButtonDispute, disputeAction, true, null)
                 .Render();
 
             TextMeshProUGUI contentText = (TextMeshProUGUI)Traverse.Create(gp).Field("_contentText").GetValue();
             contentText.alignment = TextAlignmentOptions.Left;
         }
         
-
         public static void AcceptAction(AAR_SalvageScreen salvageScreen, int reputationModifier) {
 
             SimGameState sgs = UnityGameInstance.BattleTechGame.Simulation;
@@ -140,7 +145,13 @@ namespace LootMagnet {
 
                         if (compSDef.RewardID == sDef.RewardID) {
                             Mod.Log.Debug($"   Matched compensation target, updating quantity to: {compSDef.Count + sDef.Count}");
-                            compItemsDesc.Add($"{compSDef.Description.Name} [QTY:{compSDef.Count}]");
+
+                            string localItemName = new Text(compSDef.Description.Name).ToString();
+                            string localItemAndQuantity =
+                                new Text(
+                                    Mod.Config.DialogText[ModConfig.DT_ITEM_AND_QUANTITY], new object[] { localItemName, compSDef.Count }
+                                    ).ToString();
+                            compItemsDesc.Add(localItemAndQuantity);
                             sDef.Count = sDef.Count + compSDef.Count;
                             break;
                         }
@@ -149,14 +160,15 @@ namespace LootMagnet {
                 string compDescs = " -" + string.Join("\n -", compItemsDesc.ToArray());
 
                 // Display the confirmation screen
-                GenericPopupBuilder.Create(
-                    "SUCCESSFUL DISPUTE",
-                    $"<b>Cause 193 of the negotiated mercenary contract clearly states...</b>\n\n" +
-                    $"Your laywer deftly defend your claim with the MRB. You keep your salvage, and gain the following compensation items:" +
-                    $"\n\n{compDescs}\n\n"
-                )
-                .AddButton("OK")
-                .Render();
+                string localDialogTitle = new Text(Mod.Config.DialogText[ModConfig.DT_SUCCESS_TITLE]).ToString();
+                string localDialogText = new Text(
+                    Mod.Config.DialogText[ModConfig.DT_SUCCESS_TEXT], new object[] { compDescs }
+                ).ToString();
+                string localButtonOk = new Text(Mod.Config.DialogText[ModConfig.DT_BUTTON_OK]).ToString();
+                GenericPopupBuilder.Create(localDialogTitle, localDialogText)
+                    .AddButton("OK")
+                    .Render();
+
             } else {
                 Mod.Log.Info($"DISPUTE FAILURE: Player loses disputed items, and {dispute.Picks} items from the salvage pool.");
 
@@ -194,19 +206,15 @@ namespace LootMagnet {
                 string disputeDescs = " -" + string.Join("\n -", disputeDesc.ToArray());
 
                 // Display the configmration screen
-                GenericPopupBuilder.Create(
-                    "FAILED DISPUTE",
-                    $"<b>Judge</b>: Counselor, what evidence do you offer for this new plea of insanity?\n\n" +
-                    $"<b>Attorney</b>: Well, for one, they done hired me to represent them.\n\n" +
-                    $"<b>Judge</b>: Insanity plea is accepted.\n\n" +
-                    $"{ModState.Employer}'s legal team completely ran away with the proceeding, painting {sgs.CompanyName} in the worst possible light." +
-                    $"You lose salvage rights to all of the following:" +
-                    $"\n\n{heldbackDescs}\n\n" +
-                    $"In addition they claim the following as compensation for legal fees:" +
-                    $"\n\n{disputeDescs}\n\n"
-                )
-                .AddButton("OK")
-                .Render();
+                string localDialogTitle = new Text(Mod.Config.DialogText[ModConfig.DT_FAILED_TITLE]).ToString();
+                string localDialogText = new Text(
+                    Mod.Config.DialogText[ModConfig.DT_FAILED_TEXT], new object[] {
+                        ModState.Employer, sgs.CompanyName, heldbackDescs, disputeDescs
+                    }).ToString();
+                string localButtonOk = new Text(Mod.Config.DialogText[ModConfig.DT_BUTTON_OK]).ToString();
+                GenericPopupBuilder.Create(localDialogTitle, localDialogText)
+                    .AddButton(localButtonOk)
+                    .Render();
             }
 
             // Roll up any remaining salvage and widget-tize it
@@ -232,7 +240,10 @@ namespace LootMagnet {
         // This always returns a quantity of 1!
         public static SalvageDef CloneToXName(SalvageDef salvageDef, int quantity, int count) {
 
-            string uiNameWithQuantity = $"{salvageDef.Description.UIName} <lowercase>[QTY:{quantity}]</lowercase>";
+            string localItemName = new Text(salvageDef.Description.Name).ToString();
+            string localItemAndQuantity = new Text(
+                    Mod.Config.DialogText[ModConfig.DT_ITEM_AND_QUANTITY], new object[] { localItemName, quantity }
+                ).ToString();
             DescriptionDef newDescDef = new DescriptionDef(
                 salvageDef.Description.Id,
                 salvageDef.Description.Name,
@@ -243,7 +254,7 @@ namespace LootMagnet {
                 salvageDef.Description.Purchasable,
                 salvageDef.Description.Manufacturer,
                 salvageDef.Description.Model,
-                uiNameWithQuantity
+                localItemAndQuantity
             );
 
             SalvageDef newDef = new SalvageDef(salvageDef) {
