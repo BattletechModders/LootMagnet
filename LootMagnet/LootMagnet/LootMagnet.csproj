@@ -41,6 +41,9 @@
     <Reference Include="BattleTech.Common">
       <HintPath>..\..\..\..\..\..\..\..\Steam\steamapps\common\BATTLETECH\BattleTech_Data\Managed\BattleTech.Common.dll</HintPath>
     </Reference>
+    <Reference Include="CustomComponents">
+      <HintPath>E:\steam\SteamApps\common\BATTLETECH\Mods\CustomComponents\CustomComponents.dll</HintPath>
+    </Reference>
     <Reference Include="InControl">
       <HintPath>E:\steam\SteamApps\common\BATTLETECH\BattleTech_Data\Managed\InControl.dll</HintPath>
     </Reference>
@@ -66,6 +69,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Components\LootComponent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ModInit.cs" />
     <Compile Include="Utils\UIHelper.cs" />

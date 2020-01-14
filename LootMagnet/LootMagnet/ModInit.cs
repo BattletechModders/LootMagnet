@@ -45,6 +45,9 @@ namespace LootMagnet {
                 Mod.Log.Info($"INFO: No errors reading settings file.");
             }
 
+            // Initialize custom components
+            CustomComponents.Registry.RegisterSimpleCustomComponents(Assembly.GetExecutingAssembly());
+
             var harmony = HarmonyInstance.Create(HarmonyPackage);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
         }

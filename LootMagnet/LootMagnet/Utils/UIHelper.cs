@@ -9,7 +9,6 @@ using static LootMagnet.LootMagnet;
 
 namespace LootMagnet {
 
-
     public class UIHelper {
 
         public static void ShowHoldbackDialog(Contract contract, AAR_SalvageScreen salvageScreen) {
