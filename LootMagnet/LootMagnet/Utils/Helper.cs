@@ -1,6 +1,8 @@
 ﻿using BattleTech;
 using BattleTech.UI;
+using CustomComponents;
 using Harmony;
+using LootMagnet.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -102,7 +104,8 @@ namespace LootMagnet {
                 int rollupCount = (int)Math.Ceiling(threshold / sDefCost);
                 Mod.Log.Debug($"  threshold:{threshold.ToString("0")} / cost:{salvageDef?.Description?.Cost} = result:{rollupCount}");
 
-                if (Mod.Config.RollupBlacklist.Contains(salvageDef?.MechComponentDef?.Description?.Id)) {
+                bool isBlacklisted = IsBlacklisted(salvageDef);
+                if (isBlacklisted) {
                     Mod.Log.Info($"  BLACKLISTED: {salvageDef?.MechComponentDef?.Description?.Id} cannot be rolled up. Skipping. ");
                     salvage.Add(salvageDef);
                 } else if (rollupCount > 1) {
@@ -128,7 +131,23 @@ namespace LootMagnet {
             } catch (Exception e) {
                 Mod.Log.Info($"ERROR: Failed to rollup salvageDef due to: {e.Message}");
             }
+        }
 
+        // Checks to determine if a mech part is blacklisted
+        public static bool IsBlacklisted(SalvageDef salvageDef) {
+            bool isBlacklisted = false;
+
+            // If the blacklist config contains the componentDef
+            if (Mod.Config.RollupBlacklist.Contains(salvageDef?.MechComponentDef?.Description?.Id)) {
+                isBlacklisted = true;
+            }
+
+            // If the component is a LootComponent and is blacklisted
+            if (salvageDef.MechComponentDef.Is<LootMagnetComp>(out LootMagnetComp lootComponent) && lootComponent.Blacklisted) {
+                isBlacklisted = true;
+            }
+
+            return isBlacklisted;
         }
 
         public static void CalculateHoldback(List<SalvageDef> potentialSalvage) {
