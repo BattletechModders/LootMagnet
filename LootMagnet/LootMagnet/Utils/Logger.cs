@@ -19,9 +19,13 @@ namespace LootMagnet {
             LogStream = File.AppendText(LogFile);
         }
 
+        public Logger() { }
+
         public void Debug(string message) { if (Mod.Config.Debug) { Info(message); } }
 
         public void Info(string message) {
+            if (Logger.LogStream == null) { return;  }
+
             string now = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture);
             LogStream.WriteLine($"{now} - {message}");
             LogStream.Flush();

@@ -30,13 +30,13 @@ namespace LootMagnet {
             if (__instance != null && !__instance.ContractTypeValue.IsSkirmish) {
                 SimGameState simulation = HBS.LazySingletonBehavior<UnityGameInstance>.Instance.Game.Simulation;
 
-                State.Employer = __instance.GetTeamFaction("ecc8d4f2-74b4-465d-adf6-84445e5dfc230");
-                SimGameReputation employerRep = simulation.GetReputation(State.Employer);
-                State.EmployerRep = employerRep;
-                State.EmployerRepRaw = simulation.GetRawReputation(State.Employer);
-                State.IsEmployerAlly = simulation.IsCareerFactionAlly(State.Employer);
-                State.MRBRating = simulation.GetCurrentMRBLevel() - 1; // Normalize to 0 indexing
-                Mod.Log.Info($"At contract start, Player has MRB:{State.MRBRating}  Employer:({State.Employer}) EmployerRep:{State.EmployerRep} / EmployerAllied:{State.IsEmployerAlly}");
+                ModState.Employer = __instance.GetTeamFaction("ecc8d4f2-74b4-465d-adf6-84445e5dfc230");
+                SimGameReputation employerRep = simulation.GetReputation(ModState.Employer);
+                ModState.EmployerRep = employerRep;
+                ModState.EmployerRepRaw = simulation.GetRawReputation(ModState.Employer);
+                ModState.IsEmployerAlly = simulation.IsCareerFactionAlly(ModState.Employer);
+                ModState.MRBRating = simulation.GetCurrentMRBLevel() - 1; // Normalize to 0 indexing
+                Mod.Log.Info($"At contract start, Player has MRB:{ModState.MRBRating}  Employer:({ModState.Employer}) EmployerRep:{ModState.EmployerRep} / EmployerAllied:{ModState.IsEmployerAlly}");
             }            
         }
     }
@@ -77,7 +77,7 @@ namespace LootMagnet {
                     def.Count = count;
                 } else {
                     Mod.Log.Debug($"  Salvage ({def.Description.Name}) has rewardID:({def.RewardID})");
-                    List<string> compPartIds = State.CompensationParts.Select(sd => sd.RewardID).ToList();
+                    List<string> compPartIds = ModState.CompensationParts.Select(sd => sd.RewardID).ToList();
                     if (compPartIds.Contains(def.RewardID)) {
                         Mod.Log.Debug($" Found item in compensation that was randomly assigned.");
                     }
@@ -104,30 +104,30 @@ namespace LootMagnet {
             Mod.Log.Debug("AAR_SS:CAAAS entered.");
 
             // Calculate potential salvage, which will be rolled up at this point (including mechs!)
-            State.PotentialSalvage = ___contract.GetPotentialSalvage();
+            ModState.PotentialSalvage = ___contract.GetPotentialSalvage();
 
             // Sort by price, since other functions depend on it
-            State.PotentialSalvage.Sort(new Helper.SalvageDefByCostDescendingComparer());
+            ModState.PotentialSalvage.Sort(new Helper.SalvageDefByCostDescendingComparer());
 
             // Check for holdback
-            bool hasMechParts = State.PotentialSalvage.FirstOrDefault(sd => sd.Type != SalvageDef.SalvageType.COMPONENT) != null;
+            bool hasMechParts = ModState.PotentialSalvage.FirstOrDefault(sd => sd.Type != SalvageDef.SalvageType.COMPONENT) != null;
             //bool canHoldback = SimGameState.DoesFactionGainReputation(State.Employer) && State.Employer != Faction.ComStar;
-            bool canHoldback = State.Employer.DoesGainReputation;
+            bool canHoldback = ModState.Employer.DoesGainReputation;
             float triggerChance = Helper.GetHoldbackTriggerChance();
             float holdbackRoll = LootMagnet.Random.Next(101);
             Mod.Log.Info($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
 
             if (canHoldback && hasMechParts && holdbackRoll <= triggerChance) {
                 Mod.Log.Info($"Holdback triggered, determining disputed mech parts.");
-                Helper.CalculateHoldback(State.PotentialSalvage);
-                Helper.CalculateCompensation(State.PotentialSalvage);
+                Helper.CalculateHoldback(ModState.PotentialSalvage);
+                Helper.CalculateCompensation(ModState.PotentialSalvage);
             }
 
-            if (State.HeldbackParts.Count > 0) {
+            if (ModState.HeldbackParts.Count > 0) {
                 UIHelper.ShowHoldbackDialog(___contract, __instance);
             } else {
                 // Roll up any remaining salvage and widget-ize it
-                List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(State.PotentialSalvage);
+                List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(ModState.PotentialSalvage);
                 Helper.CalculateAndAddAvailableSalvage(__instance, rolledUpSalvage);
             }
 

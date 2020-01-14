@@ -19,10 +19,10 @@ namespace LootMagnet {
         public float SuccessChance;
         public int Picks;
 
-        public Dispute(Contract contract) {
-            int maxMoney = contract.InitialContractValue;
+        public Dispute(int initialContractValue, string contractName) {
+            int maxMoney = initialContractValue;
             this.MRBFees = (int)Math.Ceiling(maxMoney * Mod.Config.Holdback.DisputeMRBFeeFactor);
-            Mod.Log.Info($"Disputing contract: ({contract.Name}) - maxMoney:{maxMoney} MRB Fees:{MRBFees}");
+            Mod.Log.Info($"Disputing contract: ({contractName}) - maxMoney:{maxMoney} MRB Fees:{MRBFees}");
 
             float rawSuccess = Mod.Config.Holdback.DisputeSuccessBase + Mod.Config.Holdback.DisputeMRBSuccessFactor * Helper.MRBCfgIdx();
             int randBound = (int)Math.Ceiling(rawSuccess * Mod.Config.Holdback.DisputeSuccessRandomBound);
@@ -36,7 +36,7 @@ namespace LootMagnet {
 
         public Outcome GetOutcome() {
             float roll = LootMagnet.Random.Next(100);
-            if (roll < SuccessChance) {
+            if (roll > SuccessChance) {
                 Mod.Log.Info($"Roll {roll} vs. {SuccessChance} is a failure.");
                 return Outcome.FAILURE;
             } else { 
@@ -145,14 +145,14 @@ namespace LootMagnet {
                     Mod.Log.Info($"No more parts to holdback, skipping.");
                     break;
                 } else if (mechPartsToHoldback >= salvageDef.Count) {
-                    State.HeldbackParts.Add(salvageDef);
+                    ModState.HeldbackParts.Add(salvageDef);
                     mechPartsToHoldback -= salvageDef.Count;
                     Mod.Log.Debug($"Holding back all {mechPartsToHoldback} parts of mech:({salvageDef.Description.Name}).");
                 } else if (mechPartsToHoldback < salvageDef.Count) {
                     SalvageDef partialDef = new SalvageDef(salvageDef) {
                         Count = mechPartsToHoldback
                     };
-                    State.HeldbackParts.Add(partialDef);
+                    ModState.HeldbackParts.Add(partialDef);
                     Mod.Log.Debug($"Holding back {mechPartsToHoldback} parts of mech:({salvageDef.Description.Name}), leaving {salvageDef.Count} parts.");
                     mechPartsToHoldback = 0;
                     break;
@@ -161,12 +161,12 @@ namespace LootMagnet {
         }
 
         public static void CalculateCompensation(List<SalvageDef> potentialSalvage) {
-            if (State.HeldbackParts == null || State.HeldbackParts.Count == 0) { return; }
+            if (ModState.HeldbackParts == null || ModState.HeldbackParts.Count == 0) { return; }
 
             double compensation = 0;
             int valueCap = 0;
             int mechPartsForAssembly = UnityGameInstance.BattleTechGame.Simulation.Constants.Story.DefaultMechPartMax;
-            foreach (SalvageDef mechPart in State.HeldbackParts) {
+            foreach (SalvageDef mechPart in ModState.HeldbackParts) {
                 int adjustedCost = (int)Math.Ceiling(mechPart.Description.Cost / (double)mechPartsForAssembly);
                 if (adjustedCost >= valueCap) { valueCap = adjustedCost; }
                 compensation += adjustedCost;
@@ -196,7 +196,7 @@ namespace LootMagnet {
                     SalvageDef equivDef = new SalvageDef(compSDef) {
                         Count = compSDef.Count + adjAvailable
                     };
-                    State.CompensationParts.Add(equivDef);
+                    ModState.CompensationParts.Add(equivDef);
                     Mod.Log.Info($" - rawCount:{compSDef.Count} to adjCost:{equivDef.Count}");
 
                     // Reduce the remaining compensation
@@ -213,10 +213,10 @@ namespace LootMagnet {
 
         public static void RemoveSalvage(SalvageDef holdbackDef) {
             // TODO: Could cause an NRE, but shouldn't if the holdback logic is safe
-            SalvageDef spSDef = State.PotentialSalvage.Find((SalvageDef x) => x.Description.Id == holdbackDef.Description.Id && x.RewardID == holdbackDef.RewardID);
+            SalvageDef spSDef = ModState.PotentialSalvage.Find((SalvageDef x) => x.Description.Id == holdbackDef.Description.Id && x.RewardID == holdbackDef.RewardID);
             if (holdbackDef.Count == spSDef.Count) {
                 Mod.Log.Debug($"  Removing salvageDef:({spSDef.Description.Id}_{spSDef.Description.Name}_{spSDef.RewardID}) with count:{spSDef.Count} ");
-                State.PotentialSalvage.Remove(spSDef);
+                ModState.PotentialSalvage.Remove(spSDef);
             } else {
                 spSDef.Count = spSDef.Count - holdbackDef.Count;
                 Mod.Log.Debug($"  reducing salvageDef:({spSDef.Description.Id}_{spSDef.Description.Name}_{spSDef.RewardID}) to count:{spSDef.Count} ");
@@ -264,7 +264,7 @@ namespace LootMagnet {
 
         public static int FactionCfgIdx() {
             int cfgIdx = 0;
-            switch (State.EmployerRep) {
+            switch (ModState.EmployerRep) {
                 case SimGameReputation.LOATHED:
                     cfgIdx = 0;
                     break;
@@ -290,7 +290,7 @@ namespace LootMagnet {
             }
 
             // Check for allied
-            if (State.IsEmployerAlly) {
+            if (ModState.IsEmployerAlly) {
                 cfgIdx = 7;
             }
 
@@ -298,12 +298,12 @@ namespace LootMagnet {
         }
 
         public static int MRBCfgIdx() {
-            if (State.MRBRating <= 0) {
+            if (ModState.MRBRating <= 0) {
                 return 0;
-            } else if (State.MRBRating >= 5) {
+            } else if (ModState.MRBRating >= 5) {
                 return 5;
             } else {
-                return State.MRBRating;
+                return ModState.MRBRating;
             }
         }
 

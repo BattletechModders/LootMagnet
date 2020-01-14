@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace LootMagnet {
 
-    public static class State {
+    public static class ModState {
         public static FactionValue Employer = null;
         public static SimGameReputation EmployerRep = SimGameReputation.INDIFFERENT;
         public static int EmployerRepRaw = 0;
