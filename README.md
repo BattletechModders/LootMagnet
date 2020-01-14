@@ -52,7 +52,13 @@ Mech parts may also be rolled up, if your faction rating is good enough. The **R
 
 ### Blacklist
 
-Some items are too powerful or rare for employers to offer multiples. To mark any items as being ineligible for rollup, add them to the **RollupBlacklist** array in *mod.json*. 
+Some items are too powerful or rare for employers to offer multiples. To mark any items as being ineligible for rollup, add them to the **RollupBlacklist** array in *mod.json*. If you are using the [CustomComponents](https://github.com/battletechmodders/customcomponents/) mod, you can blacklist items by including the following in the item JSON:
+
+```json
+    "Custom" : { 
+        "LootMagnetComp" : { "Blacklisted" : true }
+    }
+```
 
 
 

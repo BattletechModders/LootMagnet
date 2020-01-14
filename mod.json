@@ -23,9 +23,9 @@
             { "Reputation" : "ALLIED", "RollupMultiComponent" : 21, "RollupMultiMech" : 180, "HoldbackTrigger" : 1, "HoldbackValueCapMulti" : 2 },
         ],
         "Holdback" : {
-            "MechParts" : [  2, 6 ],
-            "ReputationRange" : [  2, 6 ],
-            "DisputePicks" : [  1, 6 ],
+            "MechParts" : [ 2, 6 ],
+            "ReputationRange" : [ 2, 6 ],
+            "DisputePicks" : [ 1, 6 ],
             "DisputeSuccessBase" : 50.0,
             "DisputeMRBSuccessFactor" : 10.0,
             "DisputeSuccessRandomBound" : 0.2,
