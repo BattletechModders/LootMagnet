@@ -1,4 +1,4 @@
-﻿using BattleTech;
+using BattleTech;
 using BattleTech.UI;
 using Harmony;
 using Localize;
@@ -10,6 +10,24 @@ using static LootMagnet.LootMagnet;
 namespace LootMagnet {
 
     public class UIHelper {
+        // a few custom mechs have duplicate UINames so this won't be 100% accurate
+        // does not account for matching to assemble, too complex (ref CustomSalvage instead)
+        public static string AppendExistingPartialCount(string localItemName, SalvageDef sDef)
+        {
+            if (!localItemName.Contains("Partial Mech Salvage"))
+                return localItemName;
+            var sim = UnityGameInstance.BattleTechGame.Simulation;
+            var chassis = sim.GetAllInventoryMechDefs()
+                .Where(def => def.Description.UIName == sDef.Description.UIName);
+            var count = 0;
+            foreach (var def in chassis)
+            {
+                var id = def.Description.Id.Replace("chassisdef", "mechdef");
+                count += sim.GetItemCount(id, "MECHPART", SimGameState.ItemCountType.UNDAMAGED_ONLY);
+            }
+
+            return $"{localItemName} (Have {count})";
+        }
 
         public static void ShowHoldbackDialog(Contract contract, AAR_SalvageScreen salvageScreen) {
 
@@ -19,7 +37,8 @@ namespace LootMagnet {
                 string localItemAndQuantity = 
                     new Text(
                         Mod.Config.DialogText[ModConfig.DT_ITEM_AND_QUANTITY], new object[] { localItemName, sDef.Count }
-                        ).ToString(); 
+                        ).ToString();
+                localItemAndQuantity = AppendExistingPartialCount(localItemAndQuantity, sDef);
                 heldbackItemsDesc.Add(localItemAndQuantity);
             }
             string heldbackDescs = " -" + string.Join("\n -", heldbackItemsDesc.ToArray());
