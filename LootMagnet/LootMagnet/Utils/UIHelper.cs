@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using BattleTech;
 using BattleTech.UI;
 using Harmony;
@@ -20,19 +20,30 @@ namespace LootMagnet {
             if (!localItemName.Contains("Partial Mech Salvage"))
                 return localItemName;
             var sim = UnityGameInstance.BattleTechGame.Simulation;
-            var name = sDef.Description.Name;
-            var chassis = sim.GetAllInventoryMechDefs()
-                .Where(def => def.Description.Name == name);
+            var mechName = localItemName.Split(' ')[0];
+            var matchingChassis = sim.GetAllInventoryMechDefs()
+                .Where(x => ParseName(x.Description.Name) == mechName.ToLower()).ToList();
+            Mod.Log.Debug("Matching chassis:");
+            matchingChassis.Do(x => Mod.Log.Debug($"\t{x.Description.Name}"));
             var count = 0;
-            foreach (var def in chassis)
+            foreach (var chassis in matchingChassis)
             {
-                var id = def.Description.Id.Replace("chassisdef", "mechdef");
+                Mod.Log.Debug($"{chassis.Description.Name}, parsed {ParseName(chassis.Description.Name)}");
+                var id = chassis.Description.Id.Replace("chassisdef", "mechdef");
                 count += sim.GetItemCount(id, "MECHPART", SimGameState.ItemCountType.UNDAMAGED_ONLY);
             }
 
             return $"{localItemName} (Have {count})";
         }
-
+        
+        // match RT Names
+        // change __/Base_3061.mechdef_clint_CLNT-2-2R.Name/__ into clint
+        public static string ParseName(string input)
+        {
+            var match = Regex.Match(input.ToLower(), @"def_(\w+)_");
+            return match.Groups[1].Value == "" ? input : match.Groups[1].Value;
+        }
+        
         public static void ShowHoldbackDialog(Contract contract, AAR_SalvageScreen salvageScreen) {
 
             List<string> heldbackItemsDesc = new List<string>();
