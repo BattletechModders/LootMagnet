@@ -1,11 +1,9 @@
-using System;
 using BattleTech;
 using BattleTech.UI;
 using Harmony;
 using Localize;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using BattleTech.Designed;
 using TMPro;
