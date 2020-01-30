@@ -1,24 +1,28 @@
+﻿using System;
 using BattleTech;
 using BattleTech.UI;
 using Harmony;
 using Localize;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using BattleTech.Designed;
 using TMPro;
 using static LootMagnet.LootMagnet;
 
 namespace LootMagnet {
 
     public class UIHelper {
-        // a few custom mechs have duplicate UINames so this won't be 100% accurate
         // does not account for matching to assemble, too complex (ref CustomSalvage instead)
         public static string AppendExistingPartialCount(string localItemName, SalvageDef sDef)
         {
             if (!localItemName.Contains("Partial Mech Salvage"))
                 return localItemName;
             var sim = UnityGameInstance.BattleTechGame.Simulation;
+            var name = sDef.Description.Name;
             var chassis = sim.GetAllInventoryMechDefs()
-                .Where(def => def.Description.UIName == sDef.Description.UIName);
+                .Where(def => def.Description.Name == name);
             var count = 0;
             foreach (var def in chassis)
             {
