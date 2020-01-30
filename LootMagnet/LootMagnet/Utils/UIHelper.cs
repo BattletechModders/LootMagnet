@@ -15,14 +15,18 @@ namespace LootMagnet {
         // does not account for matching to assemble, too complex (ref CustomSalvage instead)
         public static string AppendExistingPartialCount(string localItemName, SalvageDef sDef)
         {
+            // only proceed with mech parts
             if (!localItemName.Contains("Partial Mech Salvage"))
                 return localItemName;
             var sim = UnityGameInstance.BattleTechGame.Simulation;
+            // take "Jenner" off "Jenner Partial Mech Salvage"
             var mechName = localItemName.Split(' ')[0];
+            // find all existing chassis variants that match this name
             var matchingChassis = sim.GetAllInventoryMechDefs()
                 .Where(x => ParseName(x.Description.Name) == mechName.ToLower()).ToList();
             Mod.Log.Debug("Matching chassis:");
             matchingChassis.Do(x => Mod.Log.Debug($"\t{x.Description.Name}"));
+            // aggregate the total count of matching chassis variants
             var count = 0;
             foreach (var chassis in matchingChassis)
             {
