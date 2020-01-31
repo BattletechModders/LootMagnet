@@ -172,15 +172,15 @@ namespace LootMagnet {
 
         public static void Postfix(InventoryItemElement_NotListView __instance)
         {
+            // have to be holding shift
+            if (!(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
+                return;
+
             // skip processing any non-parts or when the UI isn't up
             if (__instance.controller.salvageDef.Type == SalvageDef.SalvageType.MECH_PART)
                 return;
 
             if (GameObject.Find("AllSlots_scrollview-ShowAfterConfirm") == null)
-                return;
-
-            // have to be holding shift
-            if (!(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
                 return;
 
             // calculate cost (formula from assembly)
