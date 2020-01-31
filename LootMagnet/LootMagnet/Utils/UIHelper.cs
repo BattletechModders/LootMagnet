@@ -4,48 +4,13 @@ using Harmony;
 using Localize;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
-using BattleTech.Designed;
 using TMPro;
 using static LootMagnet.LootMagnet;
 
 namespace LootMagnet {
 
     public class UIHelper {
-        // does not account for matching to assemble, too complex (ref CustomSalvage instead)
-        public static string AppendExistingPartialCount(string localItemName, SalvageDef sDef)
-        {
-            // only proceed with mech parts
-            if (!localItemName.Contains("Partial Mech Salvage"))
-                return localItemName;
-            var sim = UnityGameInstance.BattleTechGame.Simulation;
-            // take "Jenner" off "Jenner Partial Mech Salvage"
-            var mechName = localItemName.Split(' ')[0];
-            // find all existing chassis variants that match this name
-            var matchingChassis = sim.GetAllInventoryMechDefs()
-                .Where(x => ParseName(x.Description.Name) == mechName.ToLower()).ToList();
-            Mod.Log.Debug("Matching chassis:");
-            matchingChassis.Do(x => Mod.Log.Debug($"\t{x.Description.Name}"));
-            // aggregate the total count of matching chassis variants
-            var count = 0;
-            foreach (var chassis in matchingChassis)
-            {
-                Mod.Log.Debug($"{chassis.Description.Name}, parsed {ParseName(chassis.Description.Name)}");
-                var id = chassis.Description.Id.Replace("chassisdef", "mechdef");
-                count += sim.GetItemCount(id, "MECHPART", SimGameState.ItemCountType.UNDAMAGED_ONLY);
-            }
 
-            return $"{localItemName} (Have {count})";
-        }
-        
-        // match RT Names
-        // change __/Base_3061.mechdef_clint_CLNT-2-2R.Name/__ into clint
-        public static string ParseName(string input)
-        {
-            var match = Regex.Match(input.ToLower(), @"def_(\w+)_");
-            return match.Groups[1].Value == "" ? input : match.Groups[1].Value;
-        }
-        
         public static void ShowHoldbackDialog(Contract contract, AAR_SalvageScreen salvageScreen) {
 
             List<string> heldbackItemsDesc = new List<string>();
@@ -54,8 +19,7 @@ namespace LootMagnet {
                 string localItemAndQuantity = 
                     new Text(
                         Mod.Config.DialogText[ModConfig.DT_ITEM_AND_QUANTITY], new object[] { localItemName, sDef.Count }
-                        ).ToString();
-                localItemAndQuantity = AppendExistingPartialCount(localItemAndQuantity, sDef);
+                        ).ToString(); 
                 heldbackItemsDesc.Add(localItemAndQuantity);
             }
             string heldbackDescs = " -" + string.Join("\n -", heldbackItemsDesc.ToArray());
