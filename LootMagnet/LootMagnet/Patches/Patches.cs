@@ -1,4 +1,4 @@
-﻿using BattleTech;
+using BattleTech;
 using BattleTech.UI;
 using Harmony;
 using Localize;
@@ -6,7 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using HBS.Extensions;
+using UnityEngine;
 using static LootMagnet.LootMagnet;
+using Object = UnityEngine.Object;
 
 namespace LootMagnet {
 
@@ -134,6 +137,69 @@ namespace LootMagnet {
             }
 
             return false;
+        }
+    }
+    
+    [HarmonyPatch(typeof(AAR_SalvageChosen), "ConvertToFinalState")]
+    public class AAR_SalvageChosen_ConvertToFinalState_Patch
+    {
+        public static void Postfix()
+        {
+            // skip processing unless the UI element is up
+            if (GameObject.Find("AllSlots_scrollview-ShowAfterConfirm") == null)
+                return;
+
+            // extract the list items from the prefab and unlock them
+            var parentGo = GameObject.Find("AllSlots_scrollview-ShowAfterConfirm");
+            var content = parentGo.FindFirstChildNamed("Content");
+            foreach (var item in content
+                .GetComponentsInChildren<InventoryItemElement_NotListView>(true)) {
+                item.GetComponentInChildren<HBSDOTweenToggle>(true).SetLocked(false);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(InventoryItemElement_NotListView), "OnButtonClicked")]
+    public class InventoryItemElement_NotListView_OnButtonClicked_Patch
+    {
+        private static readonly SimGameState sim = UnityGameInstance.BattleTechGame.Simulation;
+
+        private static readonly StatCollection companyStats =
+            Traverse.Create(sim).Field("companyStats").GetValue<StatCollection>();
+
+        private static readonly SGCurrencyDisplay sGCurrencyDisplay =
+            (SGCurrencyDisplay) Object.FindObjectOfType(typeof(SGCurrencyDisplay));
+
+        public static void Postfix(InventoryItemElement_NotListView __instance)
+        {
+            // skip processing any non-parts or when the UI isn't up
+            if (__instance.controller.salvageDef.Type == SalvageDef.SalvageType.MECH_PART)
+                return;
+
+            if (GameObject.Find("AllSlots_scrollview-ShowAfterConfirm") == null)
+                return;
+
+            // calculate cost (formula from assembly)
+            var cost = __instance.controller.salvageDef.Description.Cost;
+            var sellCost = Mathf.FloorToInt(cost * sim.Constants.Finances.ShopSellModifier);
+            // add the money and refresh the UI
+            companyStats.ModifyStat(
+                "LootMagnet", 0, "Funds", StatCollection.StatOperation.Int_Add, sellCost);
+            if (sellCost > 0)
+                companyStats.ModifyStat(
+                    "LootMagnet", 0, "FundsEverGained", StatCollection.StatOperation.Int_Add, sellCost);
+            sGCurrencyDisplay.UpdateMoney();
+
+            // remove the item from salvage and destroy the item widget
+            var aAR_SalvageScreen = (AAR_SalvageScreen) Object.FindObjectOfType(typeof(AAR_SalvageScreen));
+            var salvageResults = Traverse.Create(aAR_SalvageScreen)
+                .Field("contract").GetValue<Contract>().SalvageResults;
+            // if the SalvageDef isn't found just bail out, destroy the widget and move on
+            var matchingItem = salvageResults.FirstOrDefault(x => x == __instance.controller.salvageDef);
+            if (matchingItem != null)
+                salvageResults.Remove(matchingItem);
+            
+            Object.Destroy(__instance.gameObject);
         }
     }
 }
