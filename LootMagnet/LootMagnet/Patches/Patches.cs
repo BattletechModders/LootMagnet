@@ -139,20 +139,20 @@ namespace LootMagnet {
             return false;
         }
     }
-    
+
+    // executes after accepting salvage, we unlock the received item widgets
     [HarmonyPatch(typeof(AAR_SalvageChosen), "ConvertToFinalState")]
-    public class AAR_SalvageChosen_ConvertToFinalState_Patch
-    {
-        public static void Postfix()
-        {
+    public class AAR_SalvageChosen_ConvertToFinalState {
+
+        public static void Postfix() {
             // skip processing unless the UI element is up
             if (GameObject.Find("AllSlots_scrollview-ShowAfterConfirm") == null)
                 return;
 
             // extract the list items from the prefab and unlock them
-            var parentGo = GameObject.Find("AllSlots_scrollview-ShowAfterConfirm");
-            var content = parentGo.FindFirstChildNamed("Content");
-            foreach (var item in content
+            GameObject parentGo = GameObject.Find("AllSlots_scrollview-ShowAfterConfirm");
+            GameObject content = parentGo.FindFirstChildNamed("Content");
+            foreach (InventoryItemElement_NotListView item in content
                 .GetComponentsInChildren<InventoryItemElement_NotListView>(true)) {
                 item.GetComponentInChildren<HBSDOTweenToggle>(true).SetLocked(false);
             }
@@ -160,8 +160,8 @@ namespace LootMagnet {
     }
 
     [HarmonyPatch(typeof(InventoryItemElement_NotListView), "OnButtonClicked")]
-    public class InventoryItemElement_NotListView_OnButtonClicked_Patch
-    {
+    public class InventoryItemElement_NotListView_OnButtonClicked {
+
         private static readonly SimGameState sim = UnityGameInstance.BattleTechGame.Simulation;
 
         private static readonly StatCollection companyStats =
@@ -170,8 +170,7 @@ namespace LootMagnet {
         private static readonly SGCurrencyDisplay sGCurrencyDisplay =
             (SGCurrencyDisplay) Object.FindObjectOfType(typeof(SGCurrencyDisplay));
 
-        public static void Postfix(InventoryItemElement_NotListView __instance)
-        {
+        public static void Postfix(InventoryItemElement_NotListView __instance) {
             // have to be holding shift
             if (!(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
                 return;
@@ -195,14 +194,14 @@ namespace LootMagnet {
             sGCurrencyDisplay.UpdateMoney();
 
             // remove the item from salvage and destroy the item widget
-            var aAR_SalvageScreen = (AAR_SalvageScreen) Object.FindObjectOfType(typeof(AAR_SalvageScreen));
-            var salvageResults = Traverse.Create(aAR_SalvageScreen)
+            AAR_SalvageScreen aAR_SalvageScreen = (AAR_SalvageScreen) Object.FindObjectOfType(typeof(AAR_SalvageScreen));
+            List<SalvageDef> salvageResults = Traverse.Create(aAR_SalvageScreen)
                 .Field("contract").GetValue<Contract>().SalvageResults;
             // if the SalvageDef isn't found just bail out, destroy the widget and move on
-            var matchingItem = salvageResults.FirstOrDefault(x => x == __instance.controller.salvageDef);
+            SalvageDef matchingItem = salvageResults.FirstOrDefault(x => x == __instance.controller.salvageDef);
             if (matchingItem != null)
                 salvageResults.Remove(matchingItem);
-            
+
             Object.Destroy(__instance.gameObject);
         }
     }
