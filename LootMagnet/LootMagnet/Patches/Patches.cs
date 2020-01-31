@@ -103,8 +103,7 @@ namespace LootMagnet {
     [HarmonyPatch(typeof(AAR_SalvageScreen), "CalculateAndAddAvailableSalvage")]
     public static class AAR_SalvageScreen_CalculateAndAddAvailableSalvage {
 
-        public static bool Prefix(AAR_SalvageScreen __instance, Contract ___contract, ref int ___totalSalvageMadeAvailable)
-        {
+        public static bool Prefix(AAR_SalvageScreen __instance, Contract ___contract, ref int ___totalSalvageMadeAvailable) {
             Mod.Log.Debug("AAR_SS:CAAAS entered.");
 
             // Calculate potential salvage, which will be rolled up at this point (including mechs!)
@@ -120,11 +119,11 @@ namespace LootMagnet {
             float holdbackRoll = LootMagnet.Random.Next(101);
             Mod.Log.Info($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
 
-            //if (canHoldback && hasMechParts && holdbackRoll <= triggerChance) {
+            if (canHoldback && hasMechParts && holdbackRoll <= triggerChance) {
                 Mod.Log.Info($"Holdback triggered, determining disputed mech parts.");
                 Helper.CalculateHoldback(ModState.PotentialSalvage);
                 Helper.CalculateCompensation(ModState.PotentialSalvage);
-            //}
+            }
 
             ___totalSalvageMadeAvailable = ModState.PotentialSalvage.Count - ModState.HeldbackParts.Count;
             Mod.Log.Debug($"Setting totalSalvageMadeAvailable = potentialSalvage: {ModState.PotentialSalvage.Count} - heldbackParts: {ModState.HeldbackParts.Count}");
