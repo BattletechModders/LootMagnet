@@ -167,10 +167,8 @@ namespace LootMagnet {
         private static readonly StatCollection companyStats =
             Traverse.Create(sim).Field("companyStats").GetValue<StatCollection>();
 
-        private static readonly SGCurrencyDisplay sGCurrencyDisplay =
-            (SGCurrencyDisplay) Object.FindObjectOfType(typeof(SGCurrencyDisplay));
-
         public static void Postfix(InventoryItemElement_NotListView __instance) {
+            
             // have to be holding shift
             if (!(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
                 return;
@@ -185,23 +183,27 @@ namespace LootMagnet {
             // calculate cost (formula from assembly)
             var cost = __instance.controller.salvageDef.Description.Cost;
             var sellCost = Mathf.FloorToInt(cost * sim.Constants.Finances.ShopSellModifier);
+
             // add the money and refresh the UI
             companyStats.ModifyStat(
                 "LootMagnet", 0, "Funds", StatCollection.StatOperation.Int_Add, sellCost);
             if (sellCost > 0)
                 companyStats.ModifyStat(
                     "LootMagnet", 0, "FundsEverGained", StatCollection.StatOperation.Int_Add, sellCost);
+            var sGCurrencyDisplay = (SGCurrencyDisplay) Object.FindObjectOfType(typeof(SGCurrencyDisplay));
             sGCurrencyDisplay.UpdateMoney();
 
             // remove the item from salvage and destroy the item widget
-            AAR_SalvageScreen aAR_SalvageScreen = (AAR_SalvageScreen) Object.FindObjectOfType(typeof(AAR_SalvageScreen));
-            List<SalvageDef> salvageResults = Traverse.Create(aAR_SalvageScreen)
+            AAR_SalvageScreen aar_SalvageScreen = (AAR_SalvageScreen) Object.FindObjectOfType(typeof(AAR_SalvageScreen));
+            List<SalvageDef> salvageResults = Traverse.Create(aar_SalvageScreen)
                 .Field("contract").GetValue<Contract>().SalvageResults;
+
             // if the SalvageDef isn't found just bail out, destroy the widget and move on
             SalvageDef matchingItem = salvageResults.FirstOrDefault(x => x == __instance.controller.salvageDef);
             if (matchingItem != null)
                 salvageResults.Remove(matchingItem);
-
+            Mod.Log.Debug($"Sold {matchingItem?.Description.Name} worth {matchingItem?.Description.Cost}" +
+                          $" for {matchingItem?.Description.Cost * sim.Constants.Finances.ShopSellModifier}");
             Object.Destroy(__instance.gameObject);
         }
     }

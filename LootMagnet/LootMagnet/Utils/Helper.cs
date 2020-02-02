@@ -258,13 +258,18 @@ namespace LootMagnet {
         // This always returns a quantity of 1!
         public static SalvageDef CloneToXName(SalvageDef salvageDef, int quantity, int count) {
 
-            string uiNameWithQuantity = $"{salvageDef.Description.UIName} <lowercase>[QTY:{quantity}]</lowercase>";
+            // don't create QTY:1 strings
+            string uiNameWithQuantity = quantity > 1 ?
+                $"{salvageDef.Description.UIName} <lowercase>[QTY:{quantity}]</lowercase>" :
+                salvageDef.Description.UIName;
+            
+            // increase the value of the def
             DescriptionDef newDescDef = new DescriptionDef(
                 salvageDef.Description.Id,
                 salvageDef.Description.Name,
                 salvageDef.Description.Details,
                 salvageDef.Description.Icon,
-                salvageDef.Description.Cost,
+                salvageDef.Description.Cost * quantity,
                 salvageDef.Description.Rarity,
                 salvageDef.Description.Purchasable,
                 salvageDef.Description.Manufacturer,
@@ -278,6 +283,7 @@ namespace LootMagnet {
                 Count = 1
             };
 
+            Mod.Log.Debug($"Incoming for {quantity}, Cost in {salvageDef.Description.Cost}, out {newDef.Description.Cost}");
             return newDef;
         }
 
