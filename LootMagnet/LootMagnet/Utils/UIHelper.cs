@@ -13,36 +13,35 @@ namespace LootMagnet {
 
     public class UIHelper {
         // does not account for matching to assemble, too complex (ref CustomSalvage instead)
-        public static string AppendExistingPartialCount(string localItemName, SalvageDef sDef)
-        {
+        public static string AppendExistingPartialCount(string localItemName) {
+
             // only proceed with mech parts
             if (!localItemName.Contains("Partial Mech Salvage"))
                 return localItemName;
-            var sim = UnityGameInstance.BattleTechGame.Simulation;
+            SimGameState sim = UnityGameInstance.BattleTechGame.Simulation;
             // take "Jenner" off "Jenner Partial Mech Salvage"
-            var mechName = localItemName.Split(' ')[0];
+            string mechName = localItemName.Split(' ')[0];
             // find all existing chassis variants that match this name
-            var matchingChassis = sim.GetAllInventoryMechDefs()
+            List<ChassisDef> matchingChassis = sim.GetAllInventoryMechDefs()
                 .Where(x => ParseName(x.Description.Name) == mechName.ToLower()).ToList();
             Mod.Log.Debug("Matching chassis:");
-            matchingChassis.Do(x => Mod.Log.Debug($"\t{x.Description.Name}"));
+            matchingChassis.Do(chassisDef => Mod.Log.Debug($"\t{chassisDef.Description.Name}"));
             // aggregate the total count of matching chassis variants
-            var count = 0;
-            foreach (var chassis in matchingChassis)
-            {
+            int count = 0;
+            foreach (ChassisDef chassis in matchingChassis) {
                 Mod.Log.Debug($"{chassis.Description.Name}, parsed {ParseName(chassis.Description.Name)}");
-                var id = chassis.Description.Id.Replace("chassisdef", "mechdef");
+                string id = chassis.Description.Id.Replace("chassisdef", "mechdef");
                 count += sim.GetItemCount(id, "MECHPART", SimGameState.ItemCountType.UNDAMAGED_ONLY);
             }
 
             return $"{localItemName} (Have {count})";
         }
-        
-        // match RT Names
+
+        // match RT Names, returns lowercase string
         // change __/Base_3061.mechdef_clint_CLNT-2-2R.Name/__ into clint
         public static string ParseName(string input)
         {
-            var match = Regex.Match(input.ToLower(), @"def_(\w+)_");
+            Match match = Regex.Match(input.ToLower(), @"def_(\w+)_");
             return match.Groups[1].Value == "" ? input : match.Groups[1].Value;
         }
         
@@ -55,7 +54,7 @@ namespace LootMagnet {
                     new Text(
                         Mod.Config.DialogText[ModConfig.DT_ITEM_AND_QUANTITY], new object[] { localItemName, sDef.Count }
                         ).ToString();
-                localItemAndQuantity = AppendExistingPartialCount(localItemAndQuantity, sDef);
+                localItemAndQuantity = AppendExistingPartialCount(localItemAndQuantity);
                 heldbackItemsDesc.Add(localItemAndQuantity);
             }
             string heldbackDescs = " -" + string.Join("\n -", heldbackItemsDesc.ToArray());
