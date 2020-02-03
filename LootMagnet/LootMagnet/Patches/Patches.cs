@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using BattleTech.UI.TMProWrapper;
 using HBS.Extensions;
 using UnityEngine;
 using static LootMagnet.LootMagnet;
@@ -144,7 +145,7 @@ namespace LootMagnet {
     [HarmonyPatch(typeof(AAR_SalvageChosen), "ConvertToFinalState")]
     public class AAR_SalvageChosen_ConvertToFinalState {
 
-        public static void Postfix() {
+        public static void Postfix(LocalizableText ___howManyReceivedText) {
             // skip processing unless the UI element is up
             if (GameObject.Find("AllSlots_scrollview-ShowAfterConfirm") == null)
                 return;
@@ -156,6 +157,9 @@ namespace LootMagnet {
                 .GetComponentsInChildren<InventoryItemElement_NotListView>(true)) {
                 item.GetComponentInChildren<HBSDOTweenToggle>(true).SetLocked(false);
             }
+
+            // show Quick Sell instructions
+            ___howManyReceivedText.SetText(string.Concat(___howManyReceivedText.text, "\n(Shift-click to sell)"));
         }
     }
 
