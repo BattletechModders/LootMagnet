@@ -4,6 +4,7 @@ using Harmony;
 using Localize;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using TMPro;
 using static LootMagnet.LootMagnet;
 
