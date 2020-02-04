@@ -4,14 +4,13 @@ using Harmony;
 using Localize;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
-using BattleTech.Designed;
 using TMPro;
 using static LootMagnet.LootMagnet;
 
 namespace LootMagnet {
 
     public class UIHelper {
+
         // does not account for matching to assemble, too complex (ref CustomSalvage instead)
         public static string AppendExistingPartialCount(string localItemName) {
 

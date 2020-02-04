@@ -6,7 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using BattleTech.UI.TMProWrapper;
+using HBS.Extensions;
+using UnityEngine;
 using static LootMagnet.LootMagnet;
+using Object = UnityEngine.Object;
 
 namespace LootMagnet {
 
@@ -134,6 +138,77 @@ namespace LootMagnet {
             }
 
             return false;
+        }
+    }
+
+    // executes after accepting salvage, we unlock the received item widgets
+    [HarmonyPatch(typeof(AAR_SalvageChosen), "ConvertToFinalState")]
+    public class AAR_SalvageChosen_ConvertToFinalState {
+
+        public static void Postfix(LocalizableText ___howManyReceivedText) {
+            // skip processing unless the UI element is up
+            if (GameObject.Find("AllSlots_scrollview-ShowAfterConfirm") == null)
+                return;
+
+            // extract the list items from the prefab and unlock them
+            GameObject parentGo = GameObject.Find("AllSlots_scrollview-ShowAfterConfirm");
+            GameObject content = parentGo.FindFirstChildNamed("Content");
+            foreach (InventoryItemElement_NotListView item in content
+                .GetComponentsInChildren<InventoryItemElement_NotListView>(true)) {
+                item.GetComponentInChildren<HBSDOTweenToggle>(true).SetLocked(false);
+            }
+
+            // show Quick Sell instructions
+            ___howManyReceivedText.SetText(string.Concat(___howManyReceivedText.text, "\n(Shift-click to sell)"));
+        }
+    }
+
+    [HarmonyPatch(typeof(InventoryItemElement_NotListView), "OnButtonClicked")]
+    public class InventoryItemElement_NotListView_OnButtonClicked {
+
+        private static readonly SimGameState sim = UnityGameInstance.BattleTechGame.Simulation;
+
+        private static readonly StatCollection companyStats =
+            Traverse.Create(sim).Field("companyStats").GetValue<StatCollection>();
+
+        public static void Postfix(InventoryItemElement_NotListView __instance) {
+            
+            // have to be holding shift
+            if (!(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
+                return;
+
+            // skip processing any non-parts or when the UI isn't up
+            if (__instance.controller.salvageDef.Type == SalvageDef.SalvageType.MECH_PART)
+                return;
+
+            if (GameObject.Find("AllSlots_scrollview-ShowAfterConfirm") == null)
+                return;
+
+            // calculate cost (formula from assembly)
+            var cost = __instance.controller.salvageDef.Description.Cost;
+            var sellCost = Mathf.FloorToInt(cost * sim.Constants.Finances.ShopSellModifier);
+
+            // add the money and refresh the UI
+            companyStats.ModifyStat(
+                "LootMagnet", 0, "Funds", StatCollection.StatOperation.Int_Add, sellCost);
+            if (sellCost > 0)
+                companyStats.ModifyStat(
+                    "LootMagnet", 0, "FundsEverGained", StatCollection.StatOperation.Int_Add, sellCost);
+            var sGCurrencyDisplay = (SGCurrencyDisplay) Object.FindObjectOfType(typeof(SGCurrencyDisplay));
+            sGCurrencyDisplay.UpdateMoney();
+
+            // remove the item from salvage and destroy the item widget
+            AAR_SalvageScreen aar_SalvageScreen = (AAR_SalvageScreen) Object.FindObjectOfType(typeof(AAR_SalvageScreen));
+            List<SalvageDef> salvageResults = Traverse.Create(aar_SalvageScreen)
+                .Field("contract").GetValue<Contract>().SalvageResults;
+
+            // if the SalvageDef isn't found just bail out, destroy the widget and move on
+            SalvageDef matchingItem = salvageResults.FirstOrDefault(x => x == __instance.controller.salvageDef);
+            if (matchingItem != null)
+                salvageResults.Remove(matchingItem);
+            Mod.Log.Debug($"Sold {matchingItem?.Description.Name} worth {matchingItem?.Description.Cost}" +
+                          $" for {matchingItem?.Description.Cost * sim.Constants.Finances.ShopSellModifier}");
+            Object.Destroy(__instance.gameObject);
         }
     }
 }
