@@ -17,6 +17,10 @@ In the BattleTech lore salvage was a hotly negotiated topic for mercenaries. Mos
 
 To simulate that negotiation process, this mod modifies your salvage choices based upon your MSRB rating and your faction allegiance. The vanilla experience becomes the default for low MSRB and faction contracts. As your MSRB or faction allegiance increases, your employer will be more willing to negotiate bundles of equipment of equivalent value. At the highest levels, you'll find all similar equipment bundled together as a single salvage pick.
 
+### Attributions
+
+Thanks to gnivler, who contributed several key quality of life improvements. Your help is appreciated!
+
 ## Salvage Rollup
 
 If a faction trusts you and wants to continue working with you, they will negotiate more favorable terms. One of the most common 'little favors' is to allow salvage to be driven by equivalent cash amounts, instead of a strict item by item accounting. We refer to this as **Salvage Rollup**.
