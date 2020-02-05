@@ -39,8 +39,7 @@ namespace LootMagnet {
 
         // match RT Names, returns lowercase string
         // change __/Base_3061.mechdef_clint_CLNT-2-2R.Name/__ into clint
-        public static string ParseName(string input)
-        {
+        public static string ParseName(string input) {
             Match match = Regex.Match(input.ToLower(), @"def_(\w+)_");
             return match.Groups[1].Value == "" ? input : match.Groups[1].Value;
         }
