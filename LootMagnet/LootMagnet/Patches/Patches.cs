@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using BattleTech.UI.TMProWrapper;
 using HBS.Extensions;
+using TMPro;
 using UnityEngine;
 using static LootMagnet.LootMagnet;
 using Object = UnityEngine.Object;
@@ -167,12 +168,13 @@ namespace LootMagnet {
     public class InventoryItemElement_NotListView_OnButtonClicked {
 
         private static readonly SimGameState sim = UnityGameInstance.BattleTechGame.Simulation;
-
+        private static readonly TMP_FontAsset font =
+            Resources.FindObjectsOfTypeAll<TMP_FontAsset>().First(x => x.name == "UnitedSansReg-Black SDF");
         private static readonly StatCollection companyStats =
             Traverse.Create(sim).Field("companyStats").GetValue<StatCollection>();
 
         public static void Postfix(InventoryItemElement_NotListView __instance) {
-            
+
             // have to be holding shift
             if (!(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
                 return;
@@ -208,6 +210,15 @@ namespace LootMagnet {
                 salvageResults.Remove(matchingItem);
             Mod.Log.Debug($"Sold {matchingItem?.Description.Name} worth {matchingItem?.Description.Cost}" +
                           $" for {matchingItem?.Description.Cost * sim.Constants.Finances.ShopSellModifier}");
+
+            var floatie = new GameObject("LootMagnetFloatie");
+            var text = floatie.AddComponent<TextMeshProUGUI>();
+            floatie.transform.SetParent(GameObject.Find("PopupRoot").transform);
+            floatie.transform.position = __instance.gameObject.transform.position;
+            text.font = font;
+            text.SetText($"¢{sellCost:N0}");
+            floatie.AddComponent<FloatieBehaviour>();
+            floatie.AddComponent<FadeText>();
             Object.Destroy(__instance.gameObject);
         }
     }
