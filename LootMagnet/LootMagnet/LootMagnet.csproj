@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -73,6 +73,7 @@
     <Compile Include="Components\LootComponent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ModInit.cs" />
+    <Compile Include="Utils\SellFloatie.cs" />
     <Compile Include="Utils\UIHelper.cs" />
     <Compile Include="Utils\Logger.cs" />
     <Compile Include="ModConfig.cs" />
