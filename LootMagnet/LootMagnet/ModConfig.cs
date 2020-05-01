@@ -146,6 +146,8 @@ namespace LootMagnet {
             Mod.Log.Info($"  MRB Rollup Values: {rollupMRBVal}");
             string rollupBlacklistS = string.Join(", ", RollupBlacklist.ToArray<string>());
             Mod.Log.Info($"  Rollup Blacklists: {rollupBlacklistS}");
+            string rollupBlacklistTagsS = string.Join(", ", RollupBlacklistTags.ToArray<string>());
+            Mod.Log.Info($"  Rollup Blacklist Tags: {rollupBlacklistTagsS}");
 
             Mod.Log.Info($"FACTION REPUTATION VALUES");
             foreach (RepCfg factionCfg in Reputation) {
