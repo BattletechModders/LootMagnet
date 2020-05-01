@@ -138,13 +138,28 @@ namespace LootMagnet {
             bool isBlacklisted = false;
 
             // If the blacklist config contains the componentDef
-            if (Mod.Config.RollupBlacklist.Contains(salvageDef?.MechComponentDef?.Description?.Id)) {
+            if (Mod.Config.RollupBlacklist.Contains(salvageDef?.MechComponentDef?.Description?.Id))
+            {
                 isBlacklisted = true;
             }
 
             // If the component is a LootComponent and is blacklisted
-            if (salvageDef.MechComponentDef.Is<LootMagnetComp>(out LootMagnetComp lootComponent) && lootComponent.Blacklisted) {
+            if (salvageDef.MechComponentDef.Is<LootMagnetComp>(out LootMagnetComp lootComponent) && lootComponent.Blacklisted)
+            {
                 isBlacklisted = true;
+            }
+
+            if(!isBlacklisted)
+            {
+                foreach (string componentTag in salvageDef?.MechComponentDef?.ComponentTags)
+                {
+                    // If the blacklist config contains the componentDef
+                    if (Mod.Config.RollupBlacklistTags.Contains(componentTag))
+                    {
+                        isBlacklisted = true;
+                        continue;
+                    }
+                }
             }
 
             return isBlacklisted;
@@ -201,7 +216,9 @@ namespace LootMagnet {
             List<SalvageDef> allComponents = potentialSalvage.Where(sd => sd.Type == SalvageDef.SalvageType.COMPONENT).ToList();
             foreach (SalvageDef compSDef in allComponents) {
                 Mod.Log.Info($"   Component:{compSDef.Description.Id}::{compSDef.Description.Name}");
-                if (compSDef.Description.Cost > adjValueCap) {
+                if (isBlacklisted)
+                    Mod.Log.Info($"   Blacklisted: skipping.");
+                else if (compSDef.Description.Cost > adjValueCap) {
                     Mod.Log.Info($"   cost:{compSDef.Description.Cost} greater than cap, skipping.");
                 } else if (compSDef.Description.Cost > compensation) {
                     Mod.Log.Info($"   remaining compensation:{compensation} less than cost:{compSDef.Description.Cost}, skipping.");
