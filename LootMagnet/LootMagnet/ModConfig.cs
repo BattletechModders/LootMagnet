@@ -57,6 +57,7 @@ namespace LootMagnet {
         public float[] RollupMRBValue = new float[] { 40000f, 60000f, 90000f, 130000f, 180000f, 240000f };
 
         public List<string> RollupBlacklist = new List<string>();
+        public List<string> RollupBlacklistTags = new List<string>();
 
         public List<RepCfg> Reputation = new List<RepCfg>() {};
 
