@@ -8,7 +8,7 @@
     "Contact": "",
     "DLL": "LootMagnet.dll",
     "DLLEntryPoint" : "LootMagnet.Mod.Init",
-    "DependsOn" : [ "CustomComponents" ],
+    "OptionallyDependsOn" : [ "CustomComponents" ],
     "Settings": {
         "Debug" : true,
         "RollupMRBValue" : [ 40000, 60000, 90000, 130000, 180000, 240000 ],

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using static LootMagnet.LootMagnet;
 
 namespace LootMagnet {
     public class Logger {

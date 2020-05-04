@@ -4,26 +4,28 @@ using System;
 using System.Reflection;
 
 namespace LootMagnet {
-    public static class LootMagnet {
-
-        public class Mod {
-            public static Logger Log;
-            public static string ModDir;
-            public static ModConfig Config;
-        }
+    public static class Mod {
 
         public const string HarmonyPackage = "us.frostraptor.LootMagnet";
         public const string LogName = "loot_magnet";
 
+        public static Logger Log;
+        public static string ModDir;
+        public static ModConfig Config;
+
         public static readonly Random Random = new Random();
 
-        public static void Init(string modDirectory, string settingsJSON) {
+        public static void Init(string modDirectory, string settingsJSON)
+        {
             Mod.ModDir = modDirectory;
 
             Exception settingsE = null;
-            try {
+            try
+            {
                 Mod.Config = JsonConvert.DeserializeObject<ModConfig>(settingsJSON);
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 settingsE = e;
                 Mod.Config = new ModConfig();
                 Mod.Config.InitDefaultReputation();
@@ -39,18 +41,27 @@ namespace LootMagnet {
             Mod.Log.Debug($"mod.json settings are:({settingsJSON})");
             Mod.Config.LogConfig();
 
-            if (settingsE != null) {
+            if (settingsE != null)
+            {
                 Mod.Log.Info($"ERROR reading settings file! Error was: {settingsE}");
-            } else {
+            }
+            else
+            {
                 Mod.Log.Info($"INFO: No errors reading settings file.");
             }
 
+#if NO_CC
+#else
             // Initialize custom components
             CustomComponents.Registry.RegisterSimpleCustomComponents(Assembly.GetExecutingAssembly());
+#endif
 
             var harmony = HarmonyInstance.Create(HarmonyPackage);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
+
+        
+        
 
     }
 }

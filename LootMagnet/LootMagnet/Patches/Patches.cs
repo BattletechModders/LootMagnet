@@ -10,7 +10,6 @@ using BattleTech.UI.TMProWrapper;
 using HBS.Extensions;
 using TMPro;
 using UnityEngine;
-using static LootMagnet.LootMagnet;
 using Object = UnityEngine.Object;
 
 namespace LootMagnet {
@@ -118,7 +117,7 @@ namespace LootMagnet {
             bool hasMechParts = ModState.PotentialSalvage.FirstOrDefault(sd => sd.Type != SalvageDef.SalvageType.COMPONENT) != null;
             bool canHoldback = ModState.Employer.DoesGainReputation;
             float triggerChance = Helper.GetHoldbackTriggerChance();
-            float holdbackRoll = LootMagnet.Random.Next(101);
+            float holdbackRoll = Mod.Random.Next(101);
             Mod.Log.Info($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
 
             if (canHoldback && hasMechParts && holdbackRoll <= triggerChance) {

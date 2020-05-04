@@ -1,12 +1,15 @@
 ﻿using BattleTech;
 using BattleTech.UI;
-using CustomComponents;
 using Harmony;
-using LootMagnet.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static LootMagnet.LootMagnet;
+
+#if NO_CC
+#else
+using CustomComponents;
+using LootMagnet.Components;
+#endif
 
 namespace LootMagnet {
 
@@ -28,16 +31,16 @@ namespace LootMagnet {
 
             float rawSuccess = Mod.Config.Holdback.DisputeSuccessBase + Mod.Config.Holdback.DisputeMRBSuccessFactor * Helper.MRBCfgIdx();
             int randBound = (int)Math.Ceiling(rawSuccess * Mod.Config.Holdback.DisputeSuccessRandomBound);
-            float successRand = LootMagnet.Random.Next(randBound);
+            float successRand = Mod.Random.Next(randBound);
             this.SuccessChance = rawSuccess - successRand;
             Mod.Log.Info($"  rawSuccess:{rawSuccess} randBound:{randBound} rand:{successRand} finalSuccess:{this.SuccessChance}%");
 
-            this.Picks = LootMagnet.Random.Next(Mod.Config.Holdback.DisputePicks[0], Mod.Config.Holdback.DisputePicks[1]);
+            this.Picks = Mod.Random.Next(Mod.Config.Holdback.DisputePicks[0], Mod.Config.Holdback.DisputePicks[1]);
             Mod.Log.Info($"  picks: {this.Picks}");
         }
 
         public Outcome GetOutcome() {
-            float roll = LootMagnet.Random.Next(100);
+            float roll = Mod.Random.Next(100);
             if (roll > SuccessChance) {
                 Mod.Log.Info($"Roll {roll} vs. {SuccessChance} is a failure.");
                 return Outcome.FAILURE;
@@ -143,12 +146,15 @@ namespace LootMagnet {
                 return true;
             }
 
+#if NO_CC
+#else
             // If the component is a LootComponent and is blacklisted
             if (salvageDef.MechComponentDef.Is<LootMagnetComp>(out LootMagnetComp lootComponent) && lootComponent.Blacklisted)
             {
                 Mod.Log.Debug($"  Component blacklisted by CC:LootMagnetComp.");
                 return true;
             }
+#endif
 
             foreach (string componentTag in salvageDef?.MechComponentDef?.ComponentTags)
             {
@@ -168,7 +174,7 @@ namespace LootMagnet {
 
             // Filter to mech parts only
             List<SalvageDef> allMechParts = potentialSalvage.Where(sd => sd.Type != SalvageDef.SalvageType.COMPONENT).ToList();
-            int mechPartsToHoldback = LootMagnet.Random.Next(Mod.Config.Holdback.MechParts[0], Mod.Config.Holdback.MechParts[1]);
+            int mechPartsToHoldback = Mod.Random.Next(Mod.Config.Holdback.MechParts[0], Mod.Config.Holdback.MechParts[1]);
             Mod.Log.Info($"Holding back up to {mechPartsToHoldback} mech parts.");
 
             foreach (SalvageDef salvageDef in allMechParts) {
