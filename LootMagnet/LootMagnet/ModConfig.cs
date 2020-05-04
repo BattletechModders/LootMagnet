@@ -57,6 +57,7 @@ namespace LootMagnet {
         public float[] RollupMRBValue = new float[] { 40000f, 60000f, 90000f, 130000f, 180000f, 240000f };
 
         public List<string> RollupBlacklist = new List<string>();
+        public List<string> RollupBlacklistTags = new List<string>();
 
         public List<RepCfg> Reputation = new List<RepCfg>() {};
 
@@ -146,6 +147,8 @@ namespace LootMagnet {
             Mod.Log.Info($"  MRB Rollup Values: {rollupMRBVal}");
             string rollupBlacklistS = string.Join(", ", RollupBlacklist.ToArray<string>());
             Mod.Log.Info($"  Rollup Blacklists: {rollupBlacklistS}");
+            string rollupBlacklistTagsS = string.Join(", ", RollupBlacklistTags.ToArray<string>());
+            Mod.Log.Info($"  Rollup Blacklist Tags: {rollupBlacklistTagsS}");
 
             Mod.Log.Info($"FACTION REPUTATION VALUES");
             foreach (RepCfg factionCfg in Reputation) {

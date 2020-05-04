@@ -17,9 +17,15 @@ In the BattleTech lore salvage was a hotly negotiated topic for mercenaries. Mos
 
 To simulate that negotiation process, this mod modifies your salvage choices based upon your MSRB rating and your faction allegiance. The vanilla experience becomes the default for low MSRB and faction contracts. As your MSRB or faction allegiance increases, your employer will be more willing to negotiate bundles of equipment of equivalent value. At the highest levels, you'll find all similar equipment bundled together as a single salvage pick.
 
+:warning: This mod requires [Custom Components](https://github.com/denadan/customcomponents/). Most mod packs include this mod. If yours does not, or you are installing this mod independently, you need to download the most recent [Mech Engineer](https://github.com/battletechmodders/mechengineer) and copy CustomComponents.dll into the Mods/LootMagnet directory. After doing so, remove the following line from the `Mods/LootMagnet/mod.json`:
+
+`    "DependsOn" : [ "CustomComponents" ],`
+
 ### Attributions
 
 Thanks to gnivler, who contributed several key quality of life improvements. Your help is appreciated!
+
+Thanks for haree78 who contributed blacklist-by-tags for components.
 
 ## Salvage Rollup
 
@@ -56,7 +62,11 @@ Mech parts may also be rolled up, if your faction rating is good enough. The **R
 
 ### Blacklist
 
-Some items are too powerful or rare for employers to offer multiples. To mark any items as being ineligible for rollup, add them to the **RollupBlacklist** array in *mod.json*. If you are using the [CustomComponents](https://github.com/battletechmodders/customcomponents/) mod, you can blacklist items by including the following in the item JSON:
+Some items are too powerful or rare for employers to allow being bundled, or to be included as compensation in exchange for a holdback. Mod authors can blacklist items in one of three ways:
+
+* By component *description.id* in `RollupBlacklist`
+* By component tag in `RollupBlacklistTags`
+* As a [Custom Component](https://github.com/denadan/customcomponents/) on the component definition: 
 
 ```json
     "Custom" : { 

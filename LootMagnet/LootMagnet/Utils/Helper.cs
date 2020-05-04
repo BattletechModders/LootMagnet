@@ -135,19 +135,32 @@ namespace LootMagnet {
 
         // Checks to determine if a mech part is blacklisted
         public static bool IsBlacklisted(SalvageDef salvageDef) {
-            bool isBlacklisted = false;
 
             // If the blacklist config contains the componentDef
-            if (Mod.Config.RollupBlacklist.Contains(salvageDef?.MechComponentDef?.Description?.Id)) {
-                isBlacklisted = true;
+            if (Mod.Config.RollupBlacklist.Contains(salvageDef?.MechComponentDef?.Description?.Id))
+            {
+                Mod.Log.Debug($"  Component blacklisted by id: {salvageDef?.MechComponentDef?.Description?.Id}");
+                return true;
             }
 
             // If the component is a LootComponent and is blacklisted
-            if (salvageDef.MechComponentDef.Is<LootMagnetComp>(out LootMagnetComp lootComponent) && lootComponent.Blacklisted) {
-                isBlacklisted = true;
+            if (salvageDef.MechComponentDef.Is<LootMagnetComp>(out LootMagnetComp lootComponent) && lootComponent.Blacklisted)
+            {
+                Mod.Log.Debug($"  Component blacklisted by CC:LootMagnetComp.");
+                return true;
             }
 
-            return isBlacklisted;
+            foreach (string componentTag in salvageDef?.MechComponentDef?.ComponentTags)
+            {
+                // If the blacklist config contains the componentDef
+                if (Mod.Config.RollupBlacklistTags.Contains(componentTag))
+                {
+                    Mod.Log.Debug($"  Component blacklisted by component tag: {componentTag}");
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public static void CalculateHoldback(List<SalvageDef> potentialSalvage) {
@@ -201,11 +214,21 @@ namespace LootMagnet {
             List<SalvageDef> allComponents = potentialSalvage.Where(sd => sd.Type == SalvageDef.SalvageType.COMPONENT).ToList();
             foreach (SalvageDef compSDef in allComponents) {
                 Mod.Log.Info($"   Component:{compSDef.Description.Id}::{compSDef.Description.Name}");
-                if (compSDef.Description.Cost > adjValueCap) {
+                bool isBlacklisted = IsBlacklisted(compSDef);
+                if (isBlacklisted)
+                {
+                    Mod.Log.Info($"   Blacklisted: skipping.");
+                }
+                else if (compSDef.Description.Cost > adjValueCap) 
+                {
                     Mod.Log.Info($"   cost:{compSDef.Description.Cost} greater than cap, skipping.");
-                } else if (compSDef.Description.Cost > compensation) {
+                } 
+                else if (compSDef.Description.Cost > compensation) 
+                {
                     Mod.Log.Info($"   remaining compensation:{compensation} less than cost:{compSDef.Description.Cost}, skipping.");
-                } else {
+                } 
+                else 
+                {
                     int available = (int)Math.Floor(compensation / compSDef.Description.Cost);
                     Mod.Log.Info($" - remaining compensation:{compensation} / cost: {compSDef.Description.Cost} = available:{available}");
 
