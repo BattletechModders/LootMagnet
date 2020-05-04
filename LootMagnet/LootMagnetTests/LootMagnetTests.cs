@@ -1,7 +1,6 @@
 ﻿using System;
 using LootMagnet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using static LootMagnet.LootMagnet;
 
 namespace LootMagnetTests {
 
