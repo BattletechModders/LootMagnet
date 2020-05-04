@@ -53,6 +53,7 @@ namespace LootMagnet {
 #if NO_CC
 #else
             // Initialize custom components
+            Mod.Log.Info($"INFO: Registering custom components!");
             CustomComponents.Registry.RegisterSimpleCustomComponents(Assembly.GetExecutingAssembly());
 #endif
 
