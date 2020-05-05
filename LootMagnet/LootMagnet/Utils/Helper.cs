@@ -132,38 +132,53 @@ namespace LootMagnet {
                 }
 
             } catch (Exception e) {
-                Mod.Log.Info($"ERROR: Failed to rollup salvageDef due to: {e.Message}");
+                Mod.Log.Error($"Failed to rollup salvageDef '{salvageDef?.Description?.Id}'", e);
             }
         }
 
         // Checks to determine if a mech part is blacklisted
         public static bool IsBlacklisted(SalvageDef salvageDef) {
 
-            // If the blacklist config contains the componentDef
-            if (Mod.Config.RollupBlacklist.Contains(salvageDef?.MechComponentDef?.Description?.Id))
+            Mod.Log.Debug($"Checking item '{salvageDef?.Description?.Id}' for blacklisting.");
+            try
             {
-                Mod.Log.Debug($"  Component blacklisted by id: {salvageDef?.MechComponentDef?.Description?.Id}");
-                return true;
-            }
+                // If the blacklist config contains the componentDef
+                if (Mod.Config.RollupBlacklist?.Count > 0 && 
+                    Mod.Config.RollupBlacklist.Contains(salvageDef?.MechComponentDef?.Description?.Id))
+                {
+                    Mod.Log.Debug($"  Component blacklisted by id: {salvageDef?.MechComponentDef?.Description?.Id}");
+                    return true;
+                }
 
 #if NO_CC
 #else
-            // If the component is a LootComponent and is blacklisted
-            if (salvageDef.MechComponentDef.Is<LootMagnetComp>(out LootMagnetComp lootComponent) && lootComponent.Blacklisted)
-            {
-                Mod.Log.Debug($"  Component blacklisted by CC:LootMagnetComp.");
-                return true;
-            }
-#endif
-
-            foreach (string componentTag in salvageDef?.MechComponentDef?.ComponentTags)
-            {
-                // If the blacklist config contains the componentDef
-                if (Mod.Config.RollupBlacklistTags.Contains(componentTag))
+                // If the component is a LootComponent and is blacklisted
+                if (salvageDef.MechComponentDef != null && 
+                    salvageDef.MechComponentDef.Is<LootMagnetComp>(out LootMagnetComp lootComponent) && 
+                    lootComponent.Blacklisted)
                 {
-                    Mod.Log.Debug($"  Component blacklisted by component tag: {componentTag}");
+                    Mod.Log.Debug($"  Component blacklisted by CC:LootMagnetComp.");
                     return true;
                 }
+#endif
+
+                if (Mod.Config.RollupBlacklistTags?.Count > 0)
+                {
+                    foreach (string componentTag in salvageDef?.MechComponentDef?.ComponentTags)
+                    {
+                        // If the blacklist config contains the componentDef
+                        if (Mod.Config.RollupBlacklistTags.Contains(componentTag))
+                        {
+                            Mod.Log.Debug($"  Component blacklisted by component tag: {componentTag}");
+                            return true;
+                        }
+                    }
+                }
+
+            }
+            catch (Exception e)
+            {
+                Mod.Log.Error($"Failed to test blacklist for item: {salvageDef?.Description?.Id}", e);
             }
 
             return false;
