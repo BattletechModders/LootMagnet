@@ -50,7 +50,7 @@ namespace LootMagnet {
     public static class ListElementController_SalvageMechPart_RefreshInfoOnWidget {
         public static void Postfix(ListElementController_SalvageMechPart_NotListView __instance, InventoryItemElement_NotListView theWidget, MechDef ___mechDef, SalvageDef ___salvageDef) {
             Mod.Log.Debug($"LEC_SMP_NLV:RIOW - entered");
-            if (___salvageDef.RewardID != null && ___salvageDef.RewardID.Contains("_qty")) {
+            if (___salvageDef != null && ___salvageDef.RewardID != null && ___salvageDef.RewardID.Contains("_qty")) {
                 int qtyIdx = ___salvageDef.RewardID.IndexOf("_qty");
                 string countS = ___salvageDef.RewardID.Substring(qtyIdx + 4);
                 int count = int.Parse(countS);
