@@ -7,7 +7,7 @@ namespace LootMagnet
     public class FloatieBehaviour : MonoBehaviour
     {
 
-        private float speed = 40f;
+        private readonly float speed = 40f;
 
         void Update() {
  
@@ -18,7 +18,7 @@ namespace LootMagnet
 
     public class FadeText : MonoBehaviour
     {
-        private static float fadeSpeed = 0.6f;
+        private static readonly float fadeSpeed = 0.6f;
         private TextMeshProUGUI text;
 
         void Awake() {
