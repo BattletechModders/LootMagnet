@@ -137,6 +137,12 @@ namespace LootMagnet {
             {  DT_BUTTON_OK, "OK" },
         };
 
+        public const string LT_QUICK_SELL = "QUICK_SELL";
+        public Dictionary<string, string> LocalizedText = new Dictionary<string, string>()
+        {
+            { LT_QUICK_SELL, "\n(Shift-click to sell)" }
+        };
+
         public void LogConfig() {
             Mod.Log.Info("=== MOD CONFIG BEGIN ===");
 
