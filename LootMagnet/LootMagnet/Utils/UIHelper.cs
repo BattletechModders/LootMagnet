@@ -47,7 +47,7 @@ namespace LootMagnet {
 
             List<string> heldbackItemsDesc = new List<string>();
             foreach (SalvageDef sDef in ModState.HeldbackParts) {
-                string localItemName = new Text(sDef.Description.Name).ToString();
+                string localItemName = new Text(sDef.Description.UIName).ToString();
                 string localItemAndQuantity = 
                     new Text(
                         Mod.Config.DialogText[ModConfig.DT_ITEM_AND_QUANTITY], new object[] { localItemName, sDef.Count }
@@ -59,7 +59,7 @@ namespace LootMagnet {
 
             List<string> compItemsDesc = new List<string>();
             foreach (SalvageDef sDef in ModState.CompensationParts) {
-                string localItemName = new Text(sDef.Description.Name).ToString();
+                string localItemName = new Text(sDef.Description.UIName).ToString();
                 string localItemAndQuantity =
                     new Text(
                         Mod.Config.DialogText[ModConfig.DT_ITEM_AND_QUANTITY], new object[] { localItemName, sDef.Count }
