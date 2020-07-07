@@ -92,15 +92,6 @@ namespace LootMagnet {
         }
     }
 
-    [HarmonyPatch(typeof(Contract), "FinalizeSalvage")]
-    public static class Contract_FinalizeSalvage { 
-
-        public static void Postfix(Contract __instance) {
-            Mod.Log.Debug("C:FS entered.");
-        }
-    }
-
-
     [HarmonyPatch(typeof(AAR_SalvageScreen), "CalculateAndAddAvailableSalvage")]
     public static class AAR_SalvageScreen_CalculateAndAddAvailableSalvage {
 
@@ -145,80 +136,129 @@ namespace LootMagnet {
     [HarmonyPatch(typeof(AAR_SalvageChosen), "ConvertToFinalState")]
     public class AAR_SalvageChosen_ConvertToFinalState {
 
-        public static void Postfix(LocalizableText ___howManyReceivedText) {
-            // skip processing unless the UI element is up
-            if (GameObject.Find("AllSlots_scrollview-ShowAfterConfirm") == null)
-                return;
+        public static void Postfix(AAR_SalvageChosen __instance, LocalizableText ___howManyReceivedText, AAR_SalvageScreen ___parent, SimGameState ___simState, Contract ___contract) {
 
-            // extract the list items from the prefab and unlock them
-            GameObject parentGo = GameObject.Find("AllSlots_scrollview-ShowAfterConfirm");
-            GameObject content = parentGo.FindFirstChildNamed("Content");
-            foreach (InventoryItemElement_NotListView item in content
-                .GetComponentsInChildren<InventoryItemElement_NotListView>(true)) {
-                item.GetComponentInChildren<HBSDOTweenToggle>(true).SetLocked(false);
+            // Skip if the UI element isn't visible
+            if (!__instance.Visible)
+            {
+                Mod.Log.Info("SalvageChosen not visible, but ConvertToFinalState called - this should not happen, skipping.");
+                return;
             }
 
-            // show Quick Sell instructions
-            ___howManyReceivedText.SetText(string.Concat(___howManyReceivedText.text, "\n(Shift-click to sell)"));
+            // Set each of the items clickable
+            foreach (InventoryItemElement_NotListView iie in __instance.LeftoverInventory)
+            {
+                if (iie.controller != null && iie.controller.salvageDef != null && iie.controller.salvageDef.Type != SalvageDef.SalvageType.MECH_PART)
+                {
+                    Mod.Log.Debug($"Enabling non-mechpart for clicking: {iie.controller.salvageDef.Description.Id}");
+                    iie.SetClickable(true);
+                }
+            }
+
+            // Update text with Quick Sell instructions
+            string localText = new Text(Mod.Config.LocalizedText[ModConfig.LT_QUICK_SELL], new object[] { }).ToString();
+            ___howManyReceivedText.SetText(string.Concat(___howManyReceivedText.text, localText));
+
+            // Set the Mod state we'll rely upon
+            ModState.AAR_SalvageScreen = ___parent;
+            ModState.Contract = ___contract;
+            ModState.SimGameState = ___simState;
+
+            // Painful, full-context searches here
+            ModState.HBSPopupRoot = 
+                GameObject.Find(ModConsts.HBSPopupRootGOName);
+            ModState.FloatieFont = 
+                Resources.FindObjectsOfTypeAll<TMP_FontAsset>().First(x => x.name == "UnitedSansReg-Black SDF");
+            ModState.SGCurrencyDisplay = (SGCurrencyDisplay)Object.FindObjectOfType(typeof(SGCurrencyDisplay));
+        }
+}
+
+    // Reset state once we're leaving the salvage screen
+    [HarmonyPatch(typeof(AAR_SalvageScreen), "OnCompleted")]
+    public class AAR_SalvageScreen_OnCompleted
+    {
+        public static void Prefix()
+        {
+            Mod.Log.Debug("Resetting QuickSell state.");
+            ModState.Contract = null;
+            ModState.SimGameState = null;
+            ModState.AAR_SalvageScreen = null;
+            ModState.SGCurrencyDisplay = null;
+            ModState.HBSPopupRoot = null;
+            ModState.FloatieFont = null;
         }
     }
 
     [HarmonyPatch(typeof(InventoryItemElement_NotListView), "OnButtonClicked")]
-    public class InventoryItemElement_NotListView_OnButtonClicked {
+    public class InventoryItemElement_NotListView_OnButtonClicked 
+    {
 
-        private static readonly SimGameState sim = UnityGameInstance.BattleTechGame.Simulation;
-        private static readonly TMP_FontAsset font =
-            Resources.FindObjectsOfTypeAll<TMP_FontAsset>().First(x => x.name == "UnitedSansReg-Black SDF");
-        private static readonly StatCollection companyStats =
-            Traverse.Create(sim).Field("companyStats").GetValue<StatCollection>();
-
-        public static void Postfix(InventoryItemElement_NotListView __instance) {
+        public static void Postfix(InventoryItemElement_NotListView __instance) 
+        {
 
             // have to be holding shift
             if (!(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
+                return;
+
+            // Nothing to do, return
+            if (__instance.controller == null || __instance.controller.salvageDef == null)
                 return;
 
             // skip processing any non-parts or when the UI isn't up
             if (__instance.controller.salvageDef.Type == SalvageDef.SalvageType.MECH_PART)
                 return;
 
-            if (GameObject.Find("AllSlots_scrollview-ShowAfterConfirm") == null)
+            if (ModState.SimGameState == null || ModState.AAR_SalvageScreen == null)
+            {
+                Mod.Log.Warn("Expected state variables were null when performing quick sell - skipping!");
                 return;
+            }
 
-            // calculate cost (formula from assembly)
-            var cost = __instance.controller.salvageDef.Description.Cost;
-            var sellCost = Mathf.FloorToInt(cost * sim.Constants.Finances.ShopSellModifier);
+            // Ensure we can access the necessary UI elements before adding money
+            if (__instance.DropParent is AAR_SalvageChosen salvageChosen)
+            {
+                Mod.Log.Debug("Checking contract salvage against controller item");
+                List<SalvageDef> salvageResults = ModState.Contract.SalvageResults;
+                SalvageDef matchingItem = salvageResults.FirstOrDefault(x => x == __instance.controller.salvageDef);
+                if (matchingItem != null)
+                {
+                    // We have a matching salvageDef. Calculate the cost, and remove it from the list.
+                    var cost = __instance.controller.salvageDef.Description.Cost;
+                    var sellCost = Mathf.FloorToInt(cost * ModState.SimGameState.Constants.Finances.ShopSellModifier);
 
-            // add the money and refresh the UI
-            companyStats.ModifyStat(
-                "LootMagnet", 0, "Funds", StatCollection.StatOperation.Int_Add, sellCost);
-            if (sellCost > 0)
-                companyStats.ModifyStat(
-                    "LootMagnet", 0, "FundsEverGained", StatCollection.StatOperation.Int_Add, sellCost);
-            var sGCurrencyDisplay = (SGCurrencyDisplay) Object.FindObjectOfType(typeof(SGCurrencyDisplay));
-            sGCurrencyDisplay.UpdateMoney();
+                    Mod.Log.Info($"Selling {matchingItem?.Description.Name} worth {matchingItem?.Description.Cost}" +
+                                  $" x {ModState.SimGameState.Constants.Finances.ShopSellModifier} shopSellModifier = {matchingItem?.Description.Cost * ModState.SimGameState.Constants.Finances.ShopSellModifier}");
 
-            // remove the item from salvage and destroy the item widget
-            AAR_SalvageScreen aar_SalvageScreen = (AAR_SalvageScreen) Object.FindObjectOfType(typeof(AAR_SalvageScreen));
-            List<SalvageDef> salvageResults = Traverse.Create(aar_SalvageScreen)
-                .Field("contract").GetValue<Contract>().SalvageResults;
+                    ModState.SimGameState.AddFunds(sellCost, "LootMagnet", false, true);
+                    ModState.SGCurrencyDisplay.UpdateMoney();
 
-            // if the SalvageDef isn't found just bail out, destroy the widget and move on
-            SalvageDef matchingItem = salvageResults.FirstOrDefault(x => x == __instance.controller.salvageDef);
-            if (matchingItem != null)
-                salvageResults.Remove(matchingItem);
-            Mod.Log.Debug($"Sold {matchingItem?.Description.Name} worth {matchingItem?.Description.Cost}" +
-                          $" for {matchingItem?.Description.Cost * sim.Constants.Finances.ShopSellModifier}");
+                    // Create the new floatie text for the sell amount
+                    var floatie = new GameObject(ModConsts.LootMagnetFloatieGOName);
+                    floatie.transform.SetParent(ModState.HBSPopupRoot.transform);
+                    floatie.transform.position = __instance.gameObject.transform.position;
 
-            var floatie = new GameObject("LootMagnetFloatie");
-            var text = floatie.AddComponent<TextMeshProUGUI>();
-            floatie.transform.SetParent(GameObject.Find("PopupRoot").transform);
-            floatie.transform.position = __instance.gameObject.transform.position;
-            text.font = font;
-            text.SetText($"¢{sellCost:N0}");
-            floatie.AddComponent<FloatieBehaviour>();
-            floatie.AddComponent<FadeText>();
-            Object.Destroy(__instance.gameObject);
+                    var text = floatie.AddComponent<TextMeshProUGUI>();
+                    text.font = ModState.FloatieFont;
+                    text.SetText($"¢{sellCost:N0}");
+
+                    floatie.AddComponent<FloatieBehaviour>();
+                    floatie.AddComponent<FadeText>();
+
+                    // Finally, remove it from salvage - which has already been fixed
+                    ModState.Contract.SalvageResults.Remove(__instance.controller.salvageDef);
+
+                    // Remove it from the inventory widgets
+                    salvageChosen.LeftoverInventory.Remove(__instance);
+                    if (__instance.DropParent != null)
+                    {
+                        __instance.RemoveFromParent();
+                    }
+                    __instance.gameObject.SetActive(false);
+
+                }
+                Mod.Log.Info("All items sold");
+
+            }
         }
     }
 }
