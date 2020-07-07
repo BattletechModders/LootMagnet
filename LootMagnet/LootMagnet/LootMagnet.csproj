@@ -81,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Components\LootComponent.cs" />
+    <Compile Include="ModConstants.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ModInit.cs" />
     <Compile Include="Utils\SellFloatie.cs" />
@@ -93,6 +94,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(TargetDir)$(TargetFileName)" "$(BattleTechGame)\Mods\LootMagnet\" /y</PostBuildEvent>
+    <PostBuildEvent>xcopy "$(TargetDir)$(TargetFileName)" "$(BattleTechGame)\Mods\LootMagnet\" /y
+xcopy "$(TargetDir)$(TargetName).pdb" "$(BattleTechGame)\Mods\LootMagnet\" /y</PostBuildEvent>
   </PropertyGroup>
 </Project>
