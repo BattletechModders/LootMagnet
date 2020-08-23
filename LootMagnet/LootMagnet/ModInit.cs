@@ -9,7 +9,7 @@ namespace LootMagnet {
         public const string HarmonyPackage = "us.frostraptor.LootMagnet";
         public const string LogName = "loot_magnet";
 
-        public static Logger Log;
+        public static DeferringLogger Log;
         public static string ModDir;
         public static ModConfig Config;
 
@@ -31,29 +31,25 @@ namespace LootMagnet {
                 Mod.Config.InitDefaultReputation();
             }
 
-            Mod.Log = new Logger(modDirectory, LogName);
+            Mod.Log = new DeferringLogger(modDirectory, LogName, Mod.Config.Debug, false);
 
-            //Assembly asm = Assembly.GetExecutingAssembly();
-            //FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(asm.Location);
-            //Mod.Log.Info($"Assembly version: {fvi.ProductVersion}");
-
-            Mod.Log.Debug($"ModDir is:{modDirectory}");
-            Mod.Log.Debug($"mod.json settings are:({settingsJSON})");
+            Mod.Log.Debug?.Write($"ModDir is:{modDirectory}");
+            Mod.Log.Debug?.Write($"mod.json settings are:({settingsJSON})");
             Mod.Config.LogConfig();
 
             if (settingsE != null)
             {
-                Mod.Log.Info($"ERROR reading settings file! Error was: {settingsE}");
+                Mod.Log.Info?.Write($"ERROR reading settings file! Error was: {settingsE}");
             }
             else
             {
-                Mod.Log.Info($"INFO: No errors reading settings file.");
+                Mod.Log.Info?.Write($"INFO: No errors reading settings file.");
             }
 
 #if NO_CC
 #else
             // Initialize custom components
-            Mod.Log.Info($"INFO: Registering custom components!");
+            Mod.Log.Info?.Write($"INFO: Registering custom components!");
             CustomComponents.Registry.RegisterSimpleCustomComponents(Assembly.GetExecutingAssembly());
 #endif
 

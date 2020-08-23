@@ -144,30 +144,30 @@ namespace LootMagnet {
         };
 
         public void LogConfig() {
-            Mod.Log.Info("=== MOD CONFIG BEGIN ===");
+            Mod.Log.Info?.Write("=== MOD CONFIG BEGIN ===");
 
-            Mod.Log.Info($"  DEBUG: {this.Debug}");
+            Mod.Log.Info?.Write($"  DEBUG: {this.Debug}");
 
             string rollupMRBVal = string.Join(", ", RollupMRBValue.Select(v => v.ToString("0.00")).ToArray());
-            Mod.Log.Info($"  MRB Rollup Values: {rollupMRBVal}");
+            Mod.Log.Info?.Write($"  MRB Rollup Values: {rollupMRBVal}");
             string rollupBlacklistS = string.Join(", ", RollupBlacklist.ToArray<string>());
-            Mod.Log.Info($"  Rollup Blacklists: {rollupBlacklistS}");
+            Mod.Log.Info?.Write($"  Rollup Blacklists: {rollupBlacklistS}");
             string rollupBlacklistTagsS = string.Join(", ", RollupBlacklistTags.ToArray<string>());
-            Mod.Log.Info($"  Rollup Blacklist Tags: {rollupBlacklistTagsS}");
+            Mod.Log.Info?.Write($"  Rollup Blacklist Tags: {rollupBlacklistTagsS}");
 
-            Mod.Log.Info($"FACTION REPUTATION VALUES");
+            Mod.Log.Info?.Write($"FACTION REPUTATION VALUES");
             foreach (RepCfg factionCfg in Reputation) {
-                Mod.Log.Info($"  Reputation:{factionCfg.Reputation} ComponentRollup:{factionCfg.RollupMultiComponent} MechRollup:{factionCfg.RollupMultiMech} HoldbackTrigger:{factionCfg.HoldbackTrigger}%");
+                Mod.Log.Info?.Write($"  Reputation:{factionCfg.Reputation} ComponentRollup:{factionCfg.RollupMultiComponent} MechRollup:{factionCfg.RollupMultiMech} HoldbackTrigger:{factionCfg.HoldbackTrigger}%");
             }
 
-            Mod.Log.Info($"HOLDBACK VALUES");
-            Mod.Log.Info($"  Holdback Picks: {Holdback.MechParts[0]} to {Holdback.MechParts[1]}");
-            Mod.Log.Info($"  Rep Range: {Holdback.ReputationRange[0]} to {Holdback.ReputationRange[1]}");
-            Mod.Log.Info($"  Dispute Picks: {Holdback.DisputePicks[0]} to {Holdback.DisputePicks[1]}");
-            Mod.Log.Info($"  Dispute SuccessBase:{Holdback.DisputeSuccessBase} MRBSuccessFactor:{Holdback.DisputeMRBSuccessFactor} " +
+            Mod.Log.Info?.Write($"HOLDBACK VALUES");
+            Mod.Log.Info?.Write($"  Holdback Picks: {Holdback.MechParts[0]} to {Holdback.MechParts[1]}");
+            Mod.Log.Info?.Write($"  Rep Range: {Holdback.ReputationRange[0]} to {Holdback.ReputationRange[1]}");
+            Mod.Log.Info?.Write($"  Dispute Picks: {Holdback.DisputePicks[0]} to {Holdback.DisputePicks[1]}");
+            Mod.Log.Info?.Write($"  Dispute SuccessBase:{Holdback.DisputeSuccessBase} MRBSuccessFactor:{Holdback.DisputeMRBSuccessFactor} " +
                 $"SuccessRandomBound:{Holdback.DisputeSuccessRandomBound} MRBFeeFactor:{Holdback.DisputeMRBFeeFactor}");
 
-            Mod.Log.Info("=== MOD CONFIG END ===");
+            Mod.Log.Info?.Write("=== MOD CONFIG END ===");
         }
     }
 }

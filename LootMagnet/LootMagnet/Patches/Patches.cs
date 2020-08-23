@@ -23,7 +23,7 @@ namespace LootMagnet {
         }
 
         public static void Prefix(Contract __instance) {
-            Mod.Log.Info($"== Resolving salvage for contract:'{__instance.Name}' / '{__instance.GUID}' with result:{__instance.TheMissionResult}");
+            Mod.Log.Info?.Write($"== Resolving salvage for contract:'{__instance.Name}' / '{__instance.GUID}' with result:{__instance.TheMissionResult}");
         }
     }
 
@@ -40,7 +40,7 @@ namespace LootMagnet {
                 ModState.EmployerRepRaw = simulation.GetRawReputation(ModState.Employer);
                 ModState.IsEmployerAlly = simulation.IsCareerFactionAlly(ModState.Employer);
                 ModState.MRBRating = simulation.GetCurrentMRBLevel() - 1; // Normalize to 0 indexing
-                Mod.Log.Info($"At contract start, Player has MRB:{ModState.MRBRating}  Employer:({ModState.Employer}) EmployerRep:{ModState.EmployerRep} / EmployerAllied:{ModState.IsEmployerAlly}");
+                Mod.Log.Info?.Write($"At contract start, Player has MRB:{ModState.MRBRating}  Employer:({ModState.Employer}) EmployerRep:{ModState.EmployerRep} / EmployerAllied:{ModState.IsEmployerAlly}");
             }            
         }
     }
@@ -49,12 +49,12 @@ namespace LootMagnet {
     [HarmonyPatch(new Type[] { typeof(InventoryItemElement_NotListView) })]
     public static class ListElementController_SalvageMechPart_RefreshInfoOnWidget {
         public static void Postfix(ListElementController_SalvageMechPart_NotListView __instance, InventoryItemElement_NotListView theWidget, MechDef ___mechDef, SalvageDef ___salvageDef) {
-            Mod.Log.Debug($"LEC_SMP_NLV:RIOW - entered");
+            Mod.Log.Debug?.Write($"LEC_SMP_NLV:RIOW - entered");
             if (___salvageDef != null && ___salvageDef.RewardID != null && ___salvageDef.RewardID.Contains("_qty")) {
                 int qtyIdx = ___salvageDef.RewardID.IndexOf("_qty");
                 string countS = ___salvageDef.RewardID.Substring(qtyIdx + 4);
                 int count = int.Parse(countS);
-                Mod.Log.Debug($"LEC_SMP_NLV:RIOW - found quantity {count}, changing mechdef");
+                Mod.Log.Debug?.Write($"LEC_SMP_NLV:RIOW - found quantity {count}, changing mechdef");
 
                 DescriptionDef currentDesc = ___mechDef.Chassis.Description;
                 string newUIName = $"{currentDesc.UIName} <lowercase>[QTY:{count}]</lowercase>";
@@ -70,24 +70,24 @@ namespace LootMagnet {
     public static class Contract_AddToFinalSalvage {
         
         public static void Prefix(Contract __instance, ref SalvageDef def) {
-            Mod.Log.Debug($"C:ATFS - entered.");
+            Mod.Log.Debug?.Write($"C:ATFS - entered.");
             if (def?.RewardID != null) {
                 if (def.RewardID.Contains("_qty")) {
-                    Mod.Log.Debug($"  Salvage ({def.Description.Name}) has rewardID:({def.RewardID}) with multiple quantities");
+                    Mod.Log.Debug?.Write($"  Salvage ({def.Description.Name}) has rewardID:({def.RewardID}) with multiple quantities");
                     int qtyIdx = def.RewardID.IndexOf("_qty");
                     string countS = def.RewardID.Substring(qtyIdx + 4);
-                    Mod.Log.Debug($"  Salvage ({def.Description.Name}) with rewardID:({def.RewardID}) will be given count: {countS}");
+                    Mod.Log.Debug?.Write($"  Salvage ({def.Description.Name}) with rewardID:({def.RewardID}) will be given count: {countS}");
                     int count = int.Parse(countS);
                     def.Count = count;
                 } else {
-                    Mod.Log.Debug($"  Salvage ({def.Description.Name}) has rewardID:({def.RewardID})");
+                    Mod.Log.Debug?.Write($"  Salvage ({def.Description.Name}) has rewardID:({def.RewardID})");
                     List<string> compPartIds = ModState.CompensationParts.Select(sd => sd.RewardID).ToList();
                     if (compPartIds.Contains(def.RewardID)) {
-                        Mod.Log.Debug($" Found item in compensation that was randomly assigned.");
+                        Mod.Log.Debug?.Write($" Found item in compensation that was randomly assigned.");
                     }
                 }
             } else {
-                Mod.Log.Debug($"  RewardId was null for def:({def?.Description?.Name})");
+                Mod.Log.Debug?.Write($"  RewardId was null for def:({def?.Description?.Name})");
             }
         }
     }
@@ -96,7 +96,7 @@ namespace LootMagnet {
     public static class AAR_SalvageScreen_CalculateAndAddAvailableSalvage {
 
         public static bool Prefix(AAR_SalvageScreen __instance, Contract ___contract, ref int ___totalSalvageMadeAvailable) {
-            Mod.Log.Debug("AAR_SS:CAAAS entered.");
+            Mod.Log.Debug?.Write("AAR_SS:CAAAS entered.");
 
             // Calculate potential salvage, which will be rolled up at this point (including mechs!)
             ModState.PotentialSalvage = ___contract.GetPotentialSalvage();
@@ -109,16 +109,16 @@ namespace LootMagnet {
             bool canHoldback = ModState.Employer.DoesGainReputation;
             float triggerChance = Helper.GetHoldbackTriggerChance();
             float holdbackRoll = Mod.Random.Next(101);
-            Mod.Log.Info($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
+            Mod.Log.Info?.Write($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
 
             if (canHoldback && hasMechParts && holdbackRoll <= triggerChance) {
-                Mod.Log.Info($"Holdback triggered, determining disputed mech parts.");
+                Mod.Log.Info?.Write($"Holdback triggered, determining disputed mech parts.");
                 Helper.CalculateHoldback(ModState.PotentialSalvage);
                 Helper.CalculateCompensation(ModState.PotentialSalvage);
             }
 
             ___totalSalvageMadeAvailable = ModState.PotentialSalvage.Count - ModState.HeldbackParts.Count;
-            Mod.Log.Debug($"Setting totalSalvageMadeAvailable = potentialSalvage: {ModState.PotentialSalvage.Count} - heldbackParts: {ModState.HeldbackParts.Count}");
+            Mod.Log.Debug?.Write($"Setting totalSalvageMadeAvailable = potentialSalvage: {ModState.PotentialSalvage.Count} - heldbackParts: {ModState.HeldbackParts.Count}");
 
             if (ModState.HeldbackParts.Count > 0) {
                 UIHelper.ShowHoldbackDialog(___contract, __instance);
@@ -141,7 +141,7 @@ namespace LootMagnet {
             // Skip if the UI element isn't visible
             if (!__instance.Visible)
             {
-                Mod.Log.Info("SalvageChosen not visible, but ConvertToFinalState called - this should not happen, skipping.");
+                Mod.Log.Info?.Write("SalvageChosen not visible, but ConvertToFinalState called - this should not happen, skipping.");
                 return;
             }
 
@@ -150,7 +150,7 @@ namespace LootMagnet {
             {
                 if (iie.controller != null && iie.controller.salvageDef != null && iie.controller.salvageDef.Type != SalvageDef.SalvageType.MECH_PART)
                 {
-                    Mod.Log.Debug($"Enabling non-mechpart for clicking: {iie.controller.salvageDef.Description.Id}");
+                    Mod.Log.Debug?.Write($"Enabling non-mechpart for clicking: {iie.controller.salvageDef.Description.Id}");
                     iie.SetClickable(true);
                 }
             }
@@ -179,7 +179,7 @@ namespace LootMagnet {
     {
         public static void Prefix()
         {
-            Mod.Log.Debug("Resetting QuickSell state.");
+            Mod.Log.Debug?.Write("Resetting QuickSell state.");
             ModState.Contract = null;
             ModState.SimGameState = null;
             ModState.AAR_SalvageScreen = null;
@@ -210,14 +210,14 @@ namespace LootMagnet {
 
             if (ModState.SimGameState == null || ModState.AAR_SalvageScreen == null)
             {
-                Mod.Log.Warn("Expected state variables were null when performing quick sell - skipping!");
+                Mod.Log.Warn?.Write("Expected state variables were null when performing quick sell - skipping!");
                 return;
             }
 
             // Ensure we can access the necessary UI elements before adding money
             if (__instance.DropParent is AAR_SalvageChosen salvageChosen)
             {
-                Mod.Log.Debug("Checking contract salvage against controller item");
+                Mod.Log.Debug?.Write("Checking contract salvage against controller item");
                 List<SalvageDef> salvageResults = ModState.Contract.SalvageResults;
                 SalvageDef matchingItem = salvageResults.FirstOrDefault(x => x == __instance.controller.salvageDef);
                 if (matchingItem != null)
@@ -226,7 +226,7 @@ namespace LootMagnet {
                     var cost = __instance.controller.salvageDef.Description.Cost;
                     var sellCost = Mathf.FloorToInt(cost * ModState.SimGameState.Constants.Finances.ShopSellModifier);
 
-                    Mod.Log.Info($"Selling {matchingItem?.Description.Name} worth {matchingItem?.Description.Cost}" +
+                    Mod.Log.Info?.Write($"Selling {matchingItem?.Description.Name} worth {matchingItem?.Description.Cost}" +
                                   $" x {ModState.SimGameState.Constants.Finances.ShopSellModifier} shopSellModifier = {matchingItem?.Description.Cost * ModState.SimGameState.Constants.Finances.ShopSellModifier}");
 
                     ModState.SimGameState.AddFunds(sellCost, "LootMagnet", false, true);
@@ -256,7 +256,7 @@ namespace LootMagnet {
                     __instance.gameObject.SetActive(false);
 
                 }
-                Mod.Log.Info("All items sold");
+                Mod.Log.Info?.Write("All items sold");
 
             }
         }

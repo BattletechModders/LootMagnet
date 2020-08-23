@@ -23,12 +23,12 @@ namespace LootMagnet {
             // find all existing chassis variants that match this name
             List<ChassisDef> matchingChassis = sim.GetAllInventoryMechDefs()
                 .Where(x => ParseName(x.Description.Name) == mechName.ToLower()).ToList();
-            Mod.Log.Debug("Matching chassis:");
-            matchingChassis.Do(chassisDef => Mod.Log.Debug($"\t{chassisDef.Description.Name}"));
+            Mod.Log.Debug?.Write("Matching chassis:");
+            matchingChassis.Do(chassisDef => Mod.Log.Debug?.Write($"\t{chassisDef.Description.Name}"));
             // aggregate the total count of matching chassis variants
             int count = 0;
             foreach (ChassisDef chassis in matchingChassis) {
-                Mod.Log.Debug($"{chassis.Description.Name}, parsed {ParseName(chassis.Description.Name)}");
+                Mod.Log.Debug?.Write($"{chassis.Description.Name}, parsed {ParseName(chassis.Description.Name)}");
                 string id = chassis.Description.Id.Replace("chassisdef", "mechdef");
                 count += sim.GetItemCount(id, "MECHPART", SimGameState.ItemCountType.UNDAMAGED_ONLY);
             }
@@ -71,7 +71,7 @@ namespace LootMagnet {
             int acceptRepMod = Mod.Random.Next(Mod.Config.Holdback.ReputationRange[0], Mod.Config.Holdback.ReputationRange[1]);
             int refuseRepMod = Mod.Random.Next(Mod.Config.Holdback.ReputationRange[0], Mod.Config.Holdback.ReputationRange[1]);
             int disputeRepMod = Mod.Random.Next(Mod.Config.Holdback.ReputationRange[0], Mod.Config.Holdback.ReputationRange[1]);
-            Mod.Log.Debug($"Reputation modifiers - accept:{acceptRepMod} refuse:{refuseRepMod} dispute:{disputeRepMod}");
+            Mod.Log.Debug?.Write($"Reputation modifiers - accept:{acceptRepMod} refuse:{refuseRepMod} dispute:{disputeRepMod}");
 
             Dispute dispute = new Dispute(contract.InitialContractValue, contract.Name);
             void acceptAction() { AcceptAction(salvageScreen, acceptRepMod); }
@@ -107,23 +107,23 @@ namespace LootMagnet {
             int repBefore = sgs.GetRawReputation(ModState.Employer);
             sgs.AddReputation(ModState.Employer, reputationModifier, false);
             ModState.EmployerRepRaw = sgs.GetRawReputation(ModState.Employer);
-            Mod.Log.Info($"Player accepted holdback. {ModState.Employer} reputation {repBefore} + {reputationModifier} modifier = {ModState.EmployerRepRaw}.");
+            Mod.Log.Info?.Write($"Player accepted holdback. {ModState.Employer} reputation {repBefore} + {reputationModifier} modifier = {ModState.EmployerRepRaw}.");
 
             // Remove the disputed items
-            Mod.Log.Debug("  -- Removing disputed items.");
+            Mod.Log.Debug?.Write("  -- Removing disputed items.");
             foreach (SalvageDef sDef in ModState.HeldbackParts) {
                 Helper.RemoveSalvage(sDef);
             }
 
             // Update quantities of compensation parts
-            Mod.Log.Debug("  -- Updating quantities on compensation parts.");
+            Mod.Log.Debug?.Write("  -- Updating quantities on compensation parts.");
             foreach (SalvageDef compSDef in ModState.CompensationParts) {
-                Mod.Log.Debug($"   compensation salvageDef:{compSDef.Description.Name} with quantity:{compSDef.Count}");
+                Mod.Log.Debug?.Write($"   compensation salvageDef:{compSDef.Description.Name} with quantity:{compSDef.Count}");
                 foreach (SalvageDef sDef in ModState.PotentialSalvage) {
-                    Mod.Log.Debug($"   salvageDef:{sDef.Description.Name} with quantity:{sDef.Count}");
+                    Mod.Log.Debug?.Write($"   salvageDef:{sDef.Description.Name} with quantity:{sDef.Count}");
 
                     if (compSDef.RewardID == sDef.RewardID) {
-                        Mod.Log.Info($"   Matched compensation target, updating quantity to: {compSDef.Count + sDef.Count}");
+                        Mod.Log.Info?.Write($"   Matched compensation target, updating quantity to: {compSDef.Count + sDef.Count}");
                         sDef.Count = sDef.Count + compSDef.Count;
                         break;
                     }
@@ -143,7 +143,7 @@ namespace LootMagnet {
             int repBefore = sgs.GetRawReputation(ModState.Employer);
             sgs.AddReputation(ModState.Employer, reputationModifier, false);
             ModState.EmployerRepRaw = sgs.GetRawReputation(ModState.Employer);
-            Mod.Log.Info($"Player refused holdback. {ModState.Employer} reputation {repBefore} + {reputationModifier} modifier = {ModState.EmployerRepRaw}.");
+            Mod.Log.Info?.Write($"Player refused holdback. {ModState.Employer} reputation {repBefore} + {reputationModifier} modifier = {ModState.EmployerRepRaw}.");
 
             // Roll up any remaining salvage and widget-tize it
             List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(ModState.PotentialSalvage);
@@ -153,30 +153,30 @@ namespace LootMagnet {
         }
 
         public static void DisputeAction(Contract contract, AAR_SalvageScreen salvageScreen, Dispute dispute) {
-            Mod.Log.Info($"Player disputed holdback.");
+            Mod.Log.Info?.Write($"Player disputed holdback.");
 
             SimGameState sgs = UnityGameInstance.BattleTechGame.Simulation;
-            Mod.Log.Info($"  Dispute legal fees:{dispute.MRBFees}");
+            Mod.Log.Info?.Write($"  Dispute legal fees:{dispute.MRBFees}");
             sgs.AddFunds(dispute.MRBFees, $"MRB Legal Fees re: {contract.Name}", false);
 
             Dispute.Outcome outcome = dispute.GetOutcome();
             if (outcome == Dispute.Outcome.SUCCESS) {
-                Mod.Log.Info($"DISPUTE SUCCESS: Player keeps disputed salvage and gains {dispute.Picks} items from compensation pool.");
+                Mod.Log.Info?.Write($"DISPUTE SUCCESS: Player keeps disputed salvage and gains {dispute.Picks} items from compensation pool.");
 
                 // Update quantities of compensation parts
-                Mod.Log.Debug("  -- Updating quantities on compensation parts.");
+                Mod.Log.Debug?.Write("  -- Updating quantities on compensation parts.");
                 List<string> compItemsDesc = new List<string>();
                 int loopCount = 0;
                 foreach (SalvageDef compSDef in ModState.CompensationParts) {
                     if (loopCount < dispute.Picks) { loopCount++; } 
                     else { break; }
 
-                    Mod.Log.Debug($"   compensation salvageDef:{compSDef.Description.Name} with quantity:{compSDef.Count}");
+                    Mod.Log.Debug?.Write($"   compensation salvageDef:{compSDef.Description.Name} with quantity:{compSDef.Count}");
                     foreach (SalvageDef sDef in ModState.PotentialSalvage) {
-                        Mod.Log.Debug($"   salvageDef:{sDef.Description.Name} with quantity:{sDef.Count}");
+                        Mod.Log.Debug?.Write($"   salvageDef:{sDef.Description.Name} with quantity:{sDef.Count}");
 
                         if (compSDef.RewardID == sDef.RewardID) {
-                            Mod.Log.Debug($"   Matched compensation target, updating quantity to: {compSDef.Count + sDef.Count}");
+                            Mod.Log.Debug?.Write($"   Matched compensation target, updating quantity to: {compSDef.Count + sDef.Count}");
 
                             string localItemName = new Text(compSDef.Description.Name).ToString();
                             string localItemAndQuantity =
@@ -202,16 +202,16 @@ namespace LootMagnet {
                     .Render();
 
             } else {
-                Mod.Log.Info($"DISPUTE FAILURE: Player loses disputed items, and {dispute.Picks} items from the salvage pool.");
+                Mod.Log.Info?.Write($"DISPUTE FAILURE: Player loses disputed items, and {dispute.Picks} items from the salvage pool.");
 
                 // Remove the disputed items
-                Mod.Log.Debug("  -- Removing disputed items.");
+                Mod.Log.Debug?.Write("  -- Removing disputed items.");
                 foreach (SalvageDef sDef in ModState.HeldbackParts) {
                     Helper.RemoveSalvage(sDef);
                 }
 
                 // Update quantities of compensation parts
-                Mod.Log.Debug("  -- Determining dispute failure picks.");
+                Mod.Log.Debug?.Write("  -- Determining dispute failure picks.");
                 List<SalvageDef> disputePicks = new List<SalvageDef>();
                 List<SalvageDef> components = ModState.PotentialSalvage.Where(sd => sd.Type == SalvageDef.SalvageType.COMPONENT).ToList();
                 components.Sort(new Helper.SalvageDefByCostDescendingComparer());
@@ -220,7 +220,7 @@ namespace LootMagnet {
                     if (loopCount < dispute.Picks) { loopCount++; }
                     else { break; }
 
-                    Mod.Log.Debug($"   dispute fail salvageDef:{compDef.Description.Name} with quantity:{compDef.Count}");
+                    Mod.Log.Debug?.Write($"   dispute fail salvageDef:{compDef.Description.Name} with quantity:{compDef.Count}");
                     disputePicks.Add(compDef);
                     ModState.PotentialSalvage.Remove(compDef);
                 }

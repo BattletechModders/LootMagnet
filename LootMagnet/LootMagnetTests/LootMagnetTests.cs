@@ -6,11 +6,13 @@ namespace LootMagnetTests {
 
     [TestClass]
     public class GetOutcomeTests {
+        public TestContext TestContext { get; set; }
+
         [TestMethod]
         public void TestOutcomes() {
 
             Mod.Config = new ModConfig();
-            Mod.Log = new Logger();
+            Mod.Log = new DeferringLogger(TestContext.DeploymentDirectory, "test", true, true);
             Dispute dispute = new Dispute(100000, "TEST");
 
             // Test guaranteed failure
@@ -26,7 +28,7 @@ namespace LootMagnetTests {
         public void TestAverageOutcome30() {
 
             Mod.Config = new ModConfig();
-            Mod.Log = new Logger();
+            Mod.Log = new DeferringLogger(TestContext.DeploymentDirectory, "test", true, true);
             Dispute dispute = new Dispute(100000, "TEST");
 
             dispute.SuccessChance = 30;
@@ -52,7 +54,7 @@ namespace LootMagnetTests {
         public void TestAverageOutcome50() {
 
             Mod.Config = new ModConfig();
-            Mod.Log = new Logger();
+            Mod.Log = new DeferringLogger(TestContext.DeploymentDirectory, "test", true, true);
             Dispute dispute = new Dispute(100000, "TEST");
 
             dispute.SuccessChance = 50;
@@ -77,7 +79,7 @@ namespace LootMagnetTests {
         public void TestAverageOutcome75() {
 
             Mod.Config = new ModConfig();
-            Mod.Log = new Logger();
+            Mod.Log = new DeferringLogger(TestContext.DeploymentDirectory, "test", true, true);
             Dispute dispute = new Dispute(100000, "TEST");
 
             dispute.SuccessChance = 75;
