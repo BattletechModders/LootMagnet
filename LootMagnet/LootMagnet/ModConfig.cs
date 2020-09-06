@@ -25,6 +25,8 @@ namespace LootMagnet {
 
     public class HoldbackCfg {
 
+        public bool Enabled = true;
+
         public int[] MechParts = new int[] { 1, 6 };
 
         public int[] ReputationRange = new int[] { 2, 6 };
@@ -160,7 +162,7 @@ namespace LootMagnet {
                 Mod.Log.Info?.Write($"  Reputation:{factionCfg.Reputation} ComponentRollup:{factionCfg.RollupMultiComponent} MechRollup:{factionCfg.RollupMultiMech} HoldbackTrigger:{factionCfg.HoldbackTrigger}%");
             }
 
-            Mod.Log.Info?.Write($"HOLDBACK VALUES");
+            Mod.Log.Info?.Write($"HOLDBACK - enabled? {Holdback.Enabled}");
             Mod.Log.Info?.Write($"  Holdback Picks: {Holdback.MechParts[0]} to {Holdback.MechParts[1]}");
             Mod.Log.Info?.Write($"  Rep Range: {Holdback.ReputationRange[0]} to {Holdback.ReputationRange[1]}");
             Mod.Log.Info?.Write($"  Dispute Picks: {Holdback.DisputePicks[0]} to {Holdback.DisputePicks[1]}");
