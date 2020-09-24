@@ -303,9 +303,8 @@ namespace LootMagnet {
         public static SalvageDef CloneToXName(SalvageDef salvageDef, int quantity, int count) {
 
             // don't create QTY:1 strings
-            string uiNameWithQuantity = quantity > 1 ?
-                $"{salvageDef.Description.UIName} <lowercase>[QTY:{quantity}]</lowercase>" :
-                salvageDef.Description.UIName;
+            string displayName = !String.IsNullOrEmpty(salvageDef.Description.UIName) ? salvageDef.Description.UIName : salvageDef.Description.Name;
+            string uiNameWithQuantity = quantity > 1 ? $"{displayName} <lowercase>[QTY:{quantity}]</lowercase>" : displayName;
             
             // increase the value of the def
             DescriptionDef newDescDef = new DescriptionDef(

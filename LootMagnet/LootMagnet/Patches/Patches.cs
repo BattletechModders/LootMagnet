@@ -57,7 +57,8 @@ namespace LootMagnet {
                 Mod.Log.Debug?.Write($"LEC_SMP_NLV:RIOW - found quantity {count}, changing mechdef");
 
                 DescriptionDef currentDesc = ___mechDef.Chassis.Description;
-                string newUIName = $"{currentDesc.UIName} <lowercase>[QTY:{count}]</lowercase>";
+                string displayName = !String.IsNullOrEmpty(currentDesc.UIName) ? currentDesc.UIName : currentDesc.Name;
+                string newUIName = $"{displayName} <lowercase>[QTY:{count}]</lowercase>";
 
                 Text newPartName = new Text(newUIName, new object[] { });
                 theWidget.mechPartName.SetText(newPartName);
