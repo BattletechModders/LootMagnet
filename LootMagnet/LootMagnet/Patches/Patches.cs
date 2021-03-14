@@ -38,9 +38,21 @@ namespace LootMagnet {
                 SimGameReputation employerRep = simulation.GetReputation(ModState.Employer);
                 ModState.EmployerRep = employerRep;
                 ModState.EmployerRepRaw = simulation.GetRawReputation(ModState.Employer);
-                ModState.IsEmployerAlly = simulation.IsCareerFactionAlly(ModState.Employer);
-                ModState.MRBRating = simulation.GetCurrentMRBLevel() - 1; // Normalize to 0 indexing
-                Mod.Log.Info?.Write($"At contract start, Player has MRB:{ModState.MRBRating}  Employer:({ModState.Employer}) EmployerRep:{ModState.EmployerRep} / EmployerAllied:{ModState.IsEmployerAlly}");
+
+                ModState.IsEmployerAlly = simulation.IsFactionAlly(ModState.Employer);
+                ModState.MRBRating = simulation.GetCurrentMRBLevel(); // Normalize to 0 indexing
+                Mod.Log.Info?.Write($"At contract start for employer: Employer:({ModState.Employer}):  " +
+                    $"employerRep:{ModState.EmployerRep}  employerIsAllied:{ModState.IsEmployerAlly}  " +
+                    $"MRBRating: {ModState.MRBRating}  MRBIndex: {Helper.MRBCfgIdx()}");
+
+                // Calculate the rollup, reputation and etc:
+                Mod.Log.Info?.Write($" -- Contract Rollup Idx: {Helper.MRBCfgIdx()} => " +
+                    $"RawRollup: {Mod.Config.RollupMRBValue[Helper.MRBCfgIdx()]}");
+                RepCfg repCfg = Mod.Config.Reputation[Helper.FactionCfgIdx()];
+                Mod.Log.Info?.Write($" -- Faction Rep Idx: {Helper.FactionCfgIdx()} => " +
+                    $"Reputation: {repCfg.Reputation}  " +
+                    $"RollupMultiComponent: {repCfg.RollupMultiComponent}  RollupMultiMech: {repCfg.RollupMultiMech}  " +
+                    $"HoldbackTrigger: {repCfg.HoldbackTrigger}  HoldbackValueCapMulti: {repCfg.HoldbackValueCapMulti}");
             }            
         }
     }
