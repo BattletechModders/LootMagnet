@@ -1,6 +1,7 @@
 ﻿using Harmony;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace LootMagnet {
@@ -14,6 +15,14 @@ namespace LootMagnet {
         public static ModConfig Config;
 
         public static readonly Random Random = new Random();
+        public static void FinishedLoading(List<string> loadOrder) {
+          Mod.Log.Debug?.Write($"FinishedLoading");
+          try {
+            CustomSalvageHelper.DetectAPI();
+          } catch (Exception e) {
+            Mod.Log.Error?.Write(e);
+          }
+        }
 
         public static void Init(string modDirectory, string settingsJSON)
         {
