@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 
 namespace LootMagnet {
@@ -157,8 +158,11 @@ namespace LootMagnet {
   public class SalavageStorageWidget : MonoBehaviour, IMechLabDropTarget {
     public HashSet<SalvageStorageChassisWidget> childWidgets { get; set; } = new HashSet<SalvageStorageChassisWidget>();
     public MechBayMechStorageWidget storageWidget { get; set; } = null;
+    public MechLabInventoryWidget_ListView inventoryWidget { get; set; } = null;
     public GameObject storageWidgetGO { get; set; } = null;
+    public GameObject inventoryWidgetGO { get; set; } = null;
     public GameObject storageButtonGO { get; set; } = null;
+    public GameObject inventoryButtonGO { get; set; } = null;
     public AAR_SalvageScreen salvageScreen { get; set; } = null;
     public MechLabDropTargetType dropTargetType { get { return MechLabDropTargetType.MechList; } }
     private MechBayChassisUnitElement dragItem { get; set; } = null;
@@ -206,16 +210,18 @@ namespace LootMagnet {
     public void SetRaycastBlockerActive(bool isActive) {
       Mod.Log.Debug?.Write( "SalavageStorageWidget.SetRaycastBlockerActive " + isActive);
     }
-    public HBSDOTweenButton showHideButton { get; set; } = null;
-    public void OnHideShowButton() {
-      Mod.Log.Debug?.Write( "SalavageStorageWidget.OnHideShowButton");
+    public HBSDOTweenButton storageButton { get; set; } = null;
+    public HBSDOTweenButton inventoryButton { get; set; } = null;
+    public void OnStorageButton() {
+      Mod.Log.Debug?.Write("SalavageStorageWidget.OnStorageButton");
       try {
+        this.inventoryWidget?.gameObject.SetActive(false);
         if (this.storageWidget != null) {
           this.storageWidget.gameObject.SetActive(!this.storageWidget.gameObject.activeSelf);
           return;
         }
-        showHideButton?.SetState(ButtonState.Disabled, true);
-        storageWidget = this.gameObject.GetComponentInChildren<MechBayMechStorageWidget>();
+        storageButton?.SetState(ButtonState.Disabled, true);
+        storageWidget = this.gameObject.GetComponentInChildren<MechBayMechStorageWidget>(true);
         if (storageWidget == null) {
           storageWidgetGO = this.Sim.DataManager.PooledInstantiate("uixPrfPanl_SIM_mechStorage-Widget", BattleTechResourceType.UIModulePrefabs);
           if (storageWidgetGO != null) {
@@ -253,7 +259,113 @@ namespace LootMagnet {
           storageWidget.SetData(this, this.Sim.DataManager, "uixPrfPanl_storageMechUnit-Element", false, true, MechLabDraggableItemType.Chassis);
           storageWidget.InitInventory(this.Sim.GetAllInventoryMechDefs(), true);
         }
-        showHideButton?.SetState(ButtonState.Enabled, true);
+        storageButton?.SetState(ButtonState.Enabled, true);
+      } catch (Exception e) {
+        Mod.Log.Error?.Write(e);
+      }
+    }
+    public void SelectInventoryItem(InventoryItemElement item) {
+    }
+    public void OnFilterButtonClicked() {
+      Mod.Log.Debug?.Write("SalavageStorageWidget.OnFilterButtonClicked");
+      inventoryWidget.OnFilterButtonClicked("Ammo");
+    }
+    private bool inventoryUIInited = true;
+    public void OnInventoryButton() {
+      Mod.Log.Debug?.Write("SalavageStorageWidget.OnInventoryButton");
+      try {
+        this.storageWidget?.gameObject.SetActive(false);
+        if (this.inventoryWidget != null) {
+          this.inventoryWidget.gameObject.SetActive(!this.inventoryWidget.gameObject.activeSelf);
+          return;
+        }
+        inventoryButton?.SetState(ButtonState.Disabled, true);
+        inventoryWidget = this.gameObject.GetComponentInChildren<MechLabInventoryWidget_ListView>(true);
+        if (inventoryWidget == null) {
+          inventoryWidgetGO = this.Sim.DataManager.PooledInstantiate("uixPrfPanl_inventory-Widget", BattleTechResourceType.UIModulePrefabs);
+          if (inventoryWidgetGO != null) {
+            inventoryWidgetGO.name = "uixPrfPanl_inventory-Widget-MANAGED";
+            Transform Overall_layout = this.gameObject.FindComponent<Transform>("Overall-layout");
+            if (Overall_layout == null) {
+              Overall_layout = this.gameObject.transform;
+            }
+            inventoryWidgetGO.transform.SetParent(Overall_layout);
+            inventoryWidgetGO.transform.localScale = Vector3.one;
+            inventoryWidgetGO.transform.localPosition = Vector3.zero;
+            inventoryWidget = inventoryWidgetGO.GetComponentInChildren<MechLabInventoryWidget_ListView>(true);
+            if (inventoryWidget != null) {
+              GameObject uixPrfPanl_AA_SalvageLeftPanel = this.gameObject.FindComponent<Transform>("uixPrfPanl_AA_SalvageLeftPanel").gameObject;
+              RectTransform deco = uixPrfPanl_AA_SalvageLeftPanel.FindComponent<RectTransform>("deco");
+              RectTransform inventoryWidgetRT = inventoryWidget.gameObject.GetComponent<RectTransform>();
+              inventoryWidgetRT.pivot = new Vector2(0f, 1f);
+              inventoryWidgetRT.position = deco.position;
+              inventoryWidgetRT.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+              if(inventoryWidget.tabAmmoToggleObj == null) {
+                inventoryWidget.tabAmmoToggleObj = GameObject.Instantiate(inventoryWidget.tabWeaponsToggleObj.gameObject).GetComponent<HBSDOTweenToggle>();
+                inventoryWidget.tabAmmoToggleObj.transform.SetParent(inventoryWidget.tabWeaponsToggleObj.transform.parent);
+                inventoryWidget.tabAmmoToggleObj.transform.localScale = Vector3.one;
+                inventoryWidget.tabAmmoToggleObj.transform.SetSiblingIndex(inventoryWidget.tabWeaponsToggleObj.transform.GetSiblingIndex() + 1);
+                LocalizableText ammoText = inventoryWidget.tabAmmoToggleObj.gameObject.GetComponentInChildren<LocalizableText>(true);
+                ammoText.SetText("AMMO");
+                inventoryWidget.tabAmmoToggleObj.OnClicked = new UnityEvent();
+                inventoryWidget.tabAmmoToggleObj.OnClicked.AddListener(new UnityAction(this.OnFilterButtonClicked));
+                inventoryUIInited = false;
+                RectTransform buttonRT = inventoryWidget.tabAmmoToggleObj.transform as RectTransform;
+                RectTransform parentRT = inventoryWidget.tabAmmoToggleObj.transform.parent as RectTransform;
+                Vector3 tabsPos = parentRT.localPosition;
+                tabsPos.y += (buttonRT.sizeDelta.y + 6f);
+                parentRT.localPosition = tabsPos;
+              }
+              Vector3 pos = inventoryWidgetRT.position;
+              pos.x = -50f;
+              inventoryWidgetRT.position = pos;
+            }
+          }
+        } else {
+          inventoryWidgetGO = inventoryWidget.gameObject;
+        }
+        if (inventoryWidget != null) {
+          this.inventoryWidget.SetData((IMechLabDropTarget)this, this.Sim.DataManager);
+          this.inventoryWidget.SetListViewSelectedCallback(new UnityAction<InventoryItemElement>(this.SelectInventoryItem));
+          this.inventoryWidget.ForceWeaponFilterButtonHighlight();
+          this.inventoryWidget.SetSortByInventoryType();
+          List<MechComponentRef> inventory = this.Sim.GetAllInventoryItemDefs();
+          for (int index = 0; index < inventory.Count; ++index) {
+            inventory[index].DataManager = this.Sim.DataManager;
+            inventory[index].RefreshComponentDef();
+            SimGameState.ItemCountType itemCountDamageType = Sim.GetItemCountDamageType(inventory[index]);
+            int quantity = int.MinValue;
+            if (this.Sim != null)
+              quantity = this.Sim.GetItemCount(inventory[index].Def.Description, inventory[index].Def.GetType(), itemCountDamageType);
+            int num = 0;
+            if (itemCountDamageType == SimGameState.ItemCountType.DAMAGED_ONLY)
+              quantity -= num;
+            if (quantity > 0) {
+              switch (inventory[index].ComponentDefType) {
+                case ComponentType.Weapon:
+                InventoryDataObject_InventoryWeapon objectInventoryWeapon = new InventoryDataObject_InventoryWeapon();
+                objectInventoryWeapon.InitWithCallback(inventory[index], this.Sim.DataManager, (IMechLabDropTarget)this.inventoryWidget, quantity, callback: new UnityAction<InventoryItemElement>(this.SelectInventoryItem));
+                this.inventoryWidget.AddItemToInventory((InventoryDataObject_BASE)objectInventoryWeapon);
+                objectInventoryWeapon.SetItemDraggable(false);
+                continue;
+                case ComponentType.AmmunitionBox:
+                case ComponentType.HeatSink:
+                case ComponentType.JumpJet:
+                case ComponentType.Upgrade:
+                InventoryDataObject_InventoryGear objectInventoryGear = new InventoryDataObject_InventoryGear();
+                objectInventoryGear.InitWithCallback(inventory[index], this.Sim.DataManager, (IMechLabDropTarget)this.inventoryWidget, quantity, callback: new UnityAction<InventoryItemElement>(this.SelectInventoryItem));
+                this.inventoryWidget.AddItemToInventory((InventoryDataObject_BASE)objectInventoryGear);
+                objectInventoryGear.SetItemDraggable(false);
+                continue;
+                default:
+                continue;
+              }
+            }
+          }
+          this.inventoryWidget.ApplyFiltering();
+          this.inventoryWidget.ApplySorting();
+        }
+        inventoryButton?.SetState(ButtonState.Enabled, true);
       } catch (Exception e) {
         Mod.Log.Error?.Write(e);
       }
@@ -262,34 +374,58 @@ namespace LootMagnet {
       this.salvageScreen = salvageScreen;
       MechBayMechStorageWidget existingStorageWidget = this.gameObject.GetComponentInChildren<MechBayMechStorageWidget>(true);
       if (existingStorageWidget != null) { existingStorageWidget.gameObject.SetActive(false); }
-      RectTransform hideShowButton = this.gameObject.FindComponent<RectTransform>("uixPrfPanl_AA_storageButtonPanel");
-      if (hideShowButton == null) {
+      RectTransform storageShowButton = this.gameObject.FindComponent<RectTransform>("uixPrfPanl_AA_storageButtonPanel");
+      if (storageShowButton == null) {
         GameObject buttonSource = this.gameObject.FindComponent<Transform>("uixPrfPanl_AA_nextButtonPanel").gameObject;
         this.storageButtonGO = GameObject.Instantiate(buttonSource);
-        hideShowButton = storageButtonGO.transform as RectTransform;
+        storageShowButton = storageButtonGO.transform as RectTransform;
         storageButtonGO.name = "uixPrfPanl_AA_storageButtonPanel";
-        hideShowButton.SetParent(buttonSource.transform.parent);
+        storageShowButton.SetParent(buttonSource.transform.parent);
         GameObject uixPrfPanl_AA_SalvageLeftPanel = this.gameObject.FindComponent<Transform>("uixPrfPanl_AA_SalvageLeftPanel").gameObject;
         RectTransform deco = uixPrfPanl_AA_SalvageLeftPanel.FindComponent<RectTransform>("deco");
         deco.gameObject.SetActive(false);
-        hideShowButton.position = deco.position;
-        hideShowButton.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-        hideShowButton.pivot = new Vector2(0f, 0f);
-        showHideButton = hideShowButton.gameObject.GetComponentInChildren<HBSDOTweenButton>();
-        showHideButton.gameObject.transform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
-        showHideButton.OnClicked = new UnityEngine.Events.UnityEvent();
-        showHideButton.OnClicked.AddListener(new UnityEngine.Events.UnityAction(this.OnHideShowButton));
-        showHideButton.SetState(ButtonState.Enabled, true);
-        LocalizableText text = hideShowButton.GetComponentInChildren<LocalizableText>();
+        storageShowButton.position = deco.position;
+        storageShowButton.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+        storageShowButton.pivot = new Vector2(0f, 0f);
+        storageButton = storageShowButton.gameObject.GetComponentInChildren<HBSDOTweenButton>();
+        storageButton.gameObject.transform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
+        storageButton.OnClicked = new UnityEngine.Events.UnityEvent();
+        storageButton.OnClicked.AddListener(new UnityEngine.Events.UnityAction(this.OnStorageButton));
+        storageButton.SetState(ButtonState.Enabled, true);
+        LocalizableText text = storageShowButton.GetComponentInChildren<LocalizableText>();
         text?.SetText("STORAGE");
+      }
+      RectTransform inventoryShowButton = this.gameObject.FindComponent<RectTransform>("uixPrfPanl_AA_inventoryButtonPanel");
+      if (inventoryShowButton == null) {
+        GameObject buttonSource = this.gameObject.FindComponent<Transform>("uixPrfPanl_AA_nextButtonPanel").gameObject;
+        this.inventoryButtonGO = GameObject.Instantiate(buttonSource);
+        inventoryShowButton = inventoryButtonGO.transform as RectTransform;
+        inventoryButtonGO.name = "uixPrfPanl_AA_inventoryButtonPanel";
+        inventoryShowButton.SetParent(buttonSource.transform.parent);
+        GameObject uixPrfPanl_AA_SalvageLeftPanel = this.gameObject.FindComponent<Transform>("uixPrfPanl_AA_SalvageLeftPanel").gameObject;
+        RectTransform deco = uixPrfPanl_AA_SalvageLeftPanel.FindComponent<RectTransform>("deco");
+        deco.gameObject.SetActive(false);
+        inventoryShowButton.position = deco.position;
+        inventoryShowButton.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+        inventoryShowButton.pivot = new Vector2(-1f, 0f);
+        inventoryButton = inventoryShowButton.gameObject.GetComponentInChildren<HBSDOTweenButton>();
+        inventoryButton.gameObject.transform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
+        inventoryButton.OnClicked = new UnityEngine.Events.UnityEvent();
+        inventoryButton.OnClicked.AddListener(new UnityEngine.Events.UnityAction(this.OnInventoryButton));
+        inventoryButton.SetState(ButtonState.Enabled, true);
+        LocalizableText text = inventoryButton.GetComponentInChildren<LocalizableText>();
+        text?.SetText("COMPONENTS");
       }
     }
     public void OnDestroy() {
       Mod.Log.Debug?.Write( "SalavageStorageWidget.OnDestroy");
       if (this.storageWidget != null) { storageWidget = null; }
+      if (this.inventoryWidget != null) { inventoryWidget = null; }
       if (storageWidgetGO != null) { GameObject.Destroy(storageWidgetGO); storageWidgetGO = null; }
       if (storageButtonGO != null) { GameObject.Destroy(storageButtonGO); storageButtonGO = null; }
-      foreach(var childWidget in this.childWidgets) {
+      if (inventoryWidgetGO != null) { GameObject.Destroy(inventoryWidgetGO); inventoryWidgetGO = null; }
+      if (inventoryButtonGO != null) { GameObject.Destroy(inventoryButtonGO); inventoryButtonGO = null; }
+      foreach (var childWidget in this.childWidgets) {
         GameObject.Destroy(childWidget);
       }
       childWidgets.Clear();
