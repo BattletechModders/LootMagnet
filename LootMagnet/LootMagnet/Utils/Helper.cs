@@ -267,6 +267,15 @@ namespace LootMagnet {
                 }
             }
 
+            foreach (SalvageDef sDef in ModState.CompensationParts)
+            {
+                if (sDef.Count > Mod.Config.CompensationMaxRollupQuantity)
+                {
+                    Mod.Log.Info?.Write($"Part: {sDef.Description?.Id} has quantity {sDef.Count} greater than max rollup. Capping quantity at {Mod.Config.CompensationMaxRollupQuantity}");
+                    sDef.Count = Mod.Config.CompensationMaxRollupQuantity;
+                }
+            }
+
             if (compensation > 0) {
                 // TODO: Should this come back as cbills?
                 Mod.Log.Info?.Write($" Compensation of {compensation} remaining and unpaid!");

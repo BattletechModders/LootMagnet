@@ -59,6 +59,8 @@ namespace LootMagnet {
 
         public List<string> RollupBlacklist = new List<string>();
         public List<string> RollupBlacklistTags = new List<string>();
+        
+        public int CompensationMaxRollupQuantity = 10;
 
         public List<RepCfg> Reputation = new List<RepCfg>() {};
 
@@ -156,6 +158,8 @@ namespace LootMagnet {
             Mod.Log.Info?.Write($"  Rollup Blacklists: {rollupBlacklistS}");
             string rollupBlacklistTagsS = string.Join(", ", RollupBlacklistTags.ToArray<string>());
             Mod.Log.Info?.Write($"  Rollup Blacklist Tags: {rollupBlacklistTagsS}");
+
+            Mod.Log.Info?.Write($"  Compensation Max Rollup Quantity: {CompensationMaxRollupQuantity}");
 
             Mod.Log.Info?.Write($"FACTION REPUTATION VALUES");
             foreach (RepCfg factionCfg in Reputation) {

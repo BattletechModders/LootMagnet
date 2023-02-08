@@ -109,6 +109,8 @@ If a component would normally add more than 10 of itself to the pool, the compen
 
 > Example: The salvage pool has a SRM-2, and the compensation sum is high enough that we'd normally add 26 copies of the SRM-2 to the pool. Because 26 > 10, we divide 26 / 3 = 8.66. We round up to 9, and add 9 copies of the SRM-2 to the salvage pool instead.
 
+After processing all salvage compensation, components with a quantity greater than `CompensationMaxRollupQuantity` will be capped to this value. The difference in value between the calculated compensation quantity and this value isn't accounted for.
+
 ### Negotiation
 
 > Every day's a negotiation and sometimes it's done with guns. - Joss Whedon
