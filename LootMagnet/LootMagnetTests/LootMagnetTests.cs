@@ -1,11 +1,13 @@
-﻿using System;
-using LootMagnet;
+﻿using LootMagnet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 
-namespace LootMagnetTests {
+namespace LootMagnetTests
+{
 
     [TestClass]
-    public class GetOutcomeTests {
+    public class GetOutcomeTests
+    {
 
 
         [ClassInitialize]
@@ -16,7 +18,8 @@ namespace LootMagnetTests {
         }
 
         [TestMethod]
-        public void TestOutcomes() {
+        public void TestOutcomes()
+        {
 
             Dispute dispute = new Dispute(100000, "TEST");
 
@@ -30,7 +33,8 @@ namespace LootMagnetTests {
         }
 
         [TestMethod]
-        public void TestAverageOutcome30() {
+        public void TestAverageOutcome30()
+        {
 
             Dispute dispute = new Dispute(100000, "TEST");
 
@@ -38,9 +42,10 @@ namespace LootMagnetTests {
             int successCount = 0;
             int failCount = 0;
             int totalCount = 100000;
-            for (int i = 0; i < totalCount; i++) {
-                if (dispute.GetOutcome() == Dispute.Outcome.SUCCESS) { successCount++; } 
-                else { failCount++;  }
+            for (int i = 0; i < totalCount; i++)
+            {
+                if (dispute.GetOutcome() == Dispute.Outcome.SUCCESS) { successCount++; }
+                else { failCount++; }
             }
             Console.WriteLine($"totalCount: {totalCount}  successCount: {successCount}  failCount: {failCount}");
             float expectedSuccessRate = dispute.SuccessChance / 100f;
@@ -54,7 +59,8 @@ namespace LootMagnetTests {
         }
 
         [TestMethod]
-        public void TestAverageOutcome50() {
+        public void TestAverageOutcome50()
+        {
 
             Dispute dispute = new Dispute(100000, "TEST");
 
@@ -62,7 +68,8 @@ namespace LootMagnetTests {
             int successCount = 0;
             int failCount = 0;
             int totalCount = 100000;
-            for (int i = 0; i < totalCount; i++) {
+            for (int i = 0; i < totalCount; i++)
+            {
                 if (dispute.GetOutcome() == Dispute.Outcome.SUCCESS) { successCount++; } else { failCount++; }
             }
             Console.WriteLine($"totalCount: {totalCount}  successCount: {successCount}  failCount: {failCount}");
@@ -77,7 +84,8 @@ namespace LootMagnetTests {
         }
 
         [TestMethod]
-        public void TestAverageOutcome75() {
+        public void TestAverageOutcome75()
+        {
 
             Dispute dispute = new Dispute(100000, "TEST");
 
@@ -85,7 +93,8 @@ namespace LootMagnetTests {
             int successCount = 0;
             int failCount = 0;
             int totalCount = 100000;
-            for (int i = 0; i < totalCount; i++) {
+            for (int i = 0; i < totalCount; i++)
+            {
                 if (dispute.GetOutcome() == Dispute.Outcome.SUCCESS) { successCount++; } else { failCount++; }
             }
             Console.WriteLine($"totalCount: {totalCount}  successCount: {successCount}  failCount: {failCount}");

@@ -369,7 +369,6 @@ namespace LootMagnet
                                 ammoText.SetText("AMMO");
                                 inventoryWidget.tabAmmoToggleObj.OnClicked = new UnityEvent();
                                 inventoryWidget.tabAmmoToggleObj.OnClicked.AddListener(new UnityAction(this.OnFilterButtonClicked));
-                                inventoryUIInited = false;
                                 RectTransform buttonRT = inventoryWidget.tabAmmoToggleObj.transform as RectTransform;
                                 RectTransform parentRT = inventoryWidget.tabAmmoToggleObj.transform.parent as RectTransform;
                                 Vector3 tabsPos = parentRT.localPosition;
@@ -534,8 +533,9 @@ namespace LootMagnet
     [HarmonyPatch(MethodType.Normal)]
     public static class AAR_CalculateAndAddAvailableSalvage
     {
-        public static void Postfix(AAR_SalvageScreen __instance, List<ListElementController_BASE_NotListView> ___AllSalvageControllers)
+        public static void Postfix(AAR_SalvageScreen __instance)
         {
+            List<ListElementController_BASE_NotListView> allSalvageControllers = __instance.AllSalvageControllers;
             try
             {
                 SalavageStorageWidget storageWidget = __instance.GetComponent<SalavageStorageWidget>();
@@ -547,7 +547,7 @@ namespace LootMagnet
                 if (storageWidget != null)
                 {
                     __instance.Sim.GetAllInventoryMechDefs(); //to make CustomSalvageRecalculate things
-                    foreach (var salvageElement in ___AllSalvageControllers)
+                    foreach (var salvageElement in allSalvageControllers)
                     {
                         var chassisElement = salvageElement as ListElementController_SalvageMechPart_NotListView;
                         if (chassisElement == null) { continue; }

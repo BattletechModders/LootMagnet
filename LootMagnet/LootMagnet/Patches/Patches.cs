@@ -12,16 +12,9 @@ using Object = UnityEngine.Object;
 namespace LootMagnet
 {
 
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(Contract), "GenerateSalvage")]
     public static class Contract_GenerateSalvage
     {
-
-        // Private method can't be patched by annotations, so use MethodInfo
-        public static MethodInfo TargetMethod()
-        {
-            return AccessTools.Method(typeof(Contract), "GenerateSalvage");
-        }
-
         public static void Prefix(ref bool __runOriginal, Contract __instance)
         {
             if (!__runOriginal) return;
@@ -69,17 +62,17 @@ namespace LootMagnet
     [HarmonyPatch(new Type[] { typeof(InventoryItemElement_NotListView) })]
     public static class ListElementController_SalvageMechPart_RefreshInfoOnWidget
     {
-        public static void Postfix(ListElementController_SalvageMechPart_NotListView __instance, InventoryItemElement_NotListView theWidget, MechDef ___mechDef, SalvageDef ___salvageDef)
+        public static void Postfix(ListElementController_SalvageMechPart_NotListView __instance, InventoryItemElement_NotListView theWidget)
         {
             Mod.Log.Debug?.Write($"LEC_SMP_NLV:RIOW - entered");
-            if (___salvageDef != null && ___salvageDef.RewardID != null && ___salvageDef.RewardID.Contains("_qty"))
+            if (__instance.salvageDef != null && __instance.salvageDef.RewardID != null && __instance.salvageDef.RewardID.Contains("_qty"))
             {
-                int qtyIdx = ___salvageDef.RewardID.IndexOf("_qty");
-                string countS = ___salvageDef.RewardID.Substring(qtyIdx + 4);
+                int qtyIdx = __instance.salvageDef.RewardID.IndexOf("_qty");
+                string countS = __instance.salvageDef.RewardID.Substring(qtyIdx + 4);
                 int count = int.Parse(countS);
                 Mod.Log.Debug?.Write($"LEC_SMP_NLV:RIOW - found quantity {count}, changing mechdef");
 
-                DescriptionDef currentDesc = ___mechDef.Chassis.Description;
+                DescriptionDef currentDesc = __instance.mechDef.Chassis.Description;
                 string displayName = !String.IsNullOrEmpty(currentDesc.UIName) ? currentDesc.UIName : currentDesc.Name;
                 string newUIName = $"{displayName} <lowercase>[QTY:{count}]</lowercase>";
 
@@ -131,14 +124,14 @@ namespace LootMagnet
     public static class AAR_SalvageScreen_CalculateAndAddAvailableSalvage
     {
 
-        public static void Prefix(ref bool __runOriginal, AAR_SalvageScreen __instance, Contract ___contract, ref int ___totalSalvageMadeAvailable)
+        public static void Prefix(ref bool __runOriginal, AAR_SalvageScreen __instance)
         {
             if (!__runOriginal) return;
 
             Mod.Log.Debug?.Write("AAR_SS:CAAAS entered.");
 
             // Calculate potential salvage, which will be rolled up at this point (including mechs!)
-            ModState.PotentialSalvage = ___contract.GetPotentialSalvage();
+            ModState.PotentialSalvage = __instance.contract.GetPotentialSalvage();
 
             // Sort by price, since other functions depend on it
             ModState.PotentialSalvage.Sort(new Helper.SalvageDefByCostDescendingComparer());
@@ -157,12 +150,12 @@ namespace LootMagnet
                 Helper.CalculateCompensation(ModState.PotentialSalvage);
             }
 
-            ___totalSalvageMadeAvailable = ModState.PotentialSalvage.Count - ModState.HeldbackParts.Count;
+            __instance.totalSalvageMadeAvailable = ModState.PotentialSalvage.Count - ModState.HeldbackParts.Count;
             Mod.Log.Debug?.Write($"Setting totalSalvageMadeAvailable = potentialSalvage: {ModState.PotentialSalvage.Count} - heldbackParts: {ModState.HeldbackParts.Count}");
 
             if (ModState.HeldbackParts.Count > 0)
             {
-                UIHelper.ShowHoldbackDialog(___contract, __instance);
+                UIHelper.ShowHoldbackDialog(__instance.contract, __instance);
             }
             else
             {
@@ -180,9 +173,8 @@ namespace LootMagnet
     public class AAR_SalvageChosen_ConvertToFinalState
     {
 
-        public static void Postfix(AAR_SalvageChosen __instance, LocalizableText ___howManyReceivedText, AAR_SalvageScreen ___parent, SimGameState ___simState, Contract ___contract)
+        public static void Postfix(AAR_SalvageChosen __instance)
         {
-
             // Skip if the UI element isn't visible
             if (!__instance.Visible)
             {
@@ -202,12 +194,12 @@ namespace LootMagnet
 
             // Update text with Quick Sell instructions
             string localText = new Text(Mod.Config.LocalizedText[ModConfig.LT_QUICK_SELL], new object[] { }).ToString();
-            ___howManyReceivedText.SetText(string.Concat(___howManyReceivedText.text, localText));
+            __instance.howManyReceivedText.SetText(string.Concat(__instance.howManyReceivedText.text, localText));
 
             // Set the Mod state we'll rely upon
-            ModState.AAR_SalvageScreen = ___parent;
-            ModState.Contract = ___contract;
-            ModState.SimGameState = ___simState;
+            ModState.AAR_SalvageScreen = __instance.parent;
+            ModState.Contract = __instance.contract;
+            ModState.SimGameState = __instance.simState;
 
             // Painful, full-context searches here
             ModState.HBSPopupRoot =

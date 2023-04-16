@@ -105,7 +105,7 @@ namespace LootMagnet
                 .AddButton(localButtonDispute, disputeAction, true, null)
                 .Render();
 
-            TextMeshProUGUI contentText = (TextMeshProUGUI)Traverse.Create(gp).Field("_contentText").GetValue();
+            TextMeshProUGUI contentText = gp._contentText;
             contentText.alignment = TextAlignmentOptions.Left;
         }
 

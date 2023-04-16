@@ -2,51 +2,56 @@
   
   	<Target Name="ValidateBattleTechGameDir" Condition="'$(BattleTechGameDir)' == '' Or !Exists('$(BattleTechGameDir)')">
 		<Error Text="BattleTechGameDir variable not set properly" />
-	</Target>  
-  
-  	<PropertyGroup>
-		<OutputType>Library</OutputType>
-		<TargetFramework>net472</TargetFramework>
-		<AssemblySearchPaths>
-			$(ReferencePath);
-			{HintPathFromItem};
-			$(BattleTechGameDir)\BattleTech_Data\Managed
-		</AssemblySearchPaths>
-		<DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-		<DebugType>none</DebugType>
-		<DebugSymbols>false</DebugSymbols>	
-		<IsCodedUITest>False</IsCodedUITest>
-		<TestProjectType>UnitTest</TestProjectType>
-		
-		<AssemblyTitle>LootMagnetTests</AssemblyTitle>
-		<Product>LootMagnetTests</Product>
-		<Copyright>Copyright ©  2021</Copyright>
-      <AssemblyVersion>2.0.0.0</AssemblyVersion>
-      <FileVersion>2.0.0.0</FileVersion>
-	</PropertyGroup>
-  
-	<Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" 
+	</Target>
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblySearchPaths>
+      $(ReferencePath);
+      {HintPathFromItem};
+      $(BattleTechGameDir)\BattleTech_Data\Managed
+    </AssemblySearchPaths>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+
+    <AssemblyTitle>LootMagnet</AssemblyTitle>
+    <Product>LootMagnet</Product>
+    <Copyright>Copyright ©  2021</Copyright>
+    <AssemblyVersion>8.0.0</AssemblyVersion>
+    <FileVersion>8.0.0</FileVersion>
+    <LangVersion>11</LangVersion>
+  </PropertyGroup>
+
+  <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets"
 		Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
-	<ItemGroup>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.0.1" />
-		<PackageReference Include="MSTest.TestAdapter" Version="1.4.0" />
-		<PackageReference Include="MSTest.TestFramework" Version="1.4.0" />
-	</ItemGroup>
-  
-	<ItemGroup>
-		<Reference Include="0Harmony">
-			<Private>True</Private>
-		</Reference>
-		<Reference Include="Assembly-CSharp">
-			<Private>True</Private>
-		</Reference>
-		<Reference Include="System">
-		  <Private>False</Private>
-		</Reference>	
-		<Reference Include="System.Core">
-		  <Private>False</Private>
-		</Reference>		
-	</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MSTest.TestAdapter" Version="3.0.2" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Assets need to be private / included for testing purposes. Do not ship them-->
+    <PackageReference Include="HarmonyX" Version="2.10.1">
+    </PackageReference>
+
+    <Reference Include="Assembly-CSharp">
+    </Reference>
+    <Reference Include="System">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Core">
+      <Private>False</Private>
+    </Reference>
+
+    <Reference Include="IRBTModUtils">
+      <HintPath>$(DeployedModPath)\..\IRBTModUtils\IRBTModUtils.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+    </Reference>
+  </ItemGroup>
   
 	<ItemGroup>
 		<ProjectReference Include="..\LootMagnet\LootMagnet.csproj" />

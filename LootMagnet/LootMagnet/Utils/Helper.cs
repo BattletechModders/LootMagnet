@@ -448,12 +448,7 @@ namespace LootMagnet
         // Replica of HBS code used once holdback has been decided
         public static void CalculateAndAddAvailableSalvage(AAR_SalvageScreen salvageScreen, List<SalvageDef> potentialSalvage)
         {
-
-            Traverse salvageScreenT = Traverse.Create(salvageScreen);
-            Mod.Log.Debug?.Write("CAAAS - created base traverse.");
-
-            Traverse salvageSelectT = salvageScreenT.Field("salvageSelection");
-            AAR_SalvageSelection salvageSelection = salvageSelectT.GetValue<AAR_SalvageSelection>();
+            AAR_SalvageSelection salvageSelection = salvageScreen.salvageSelection;
             Mod.Log.Debug?.Write("CAAAS - found salvage selection.");
 
             foreach (SalvageDef item in potentialSalvage)
@@ -462,21 +457,16 @@ namespace LootMagnet
             }
             Mod.Log.Debug?.Write("CAAAS - added all salvage entries.");
 
-            Traverse allSalvageContT = salvageScreenT.Field("AllSalvageControllers");
-            List<ListElementController_BASE_NotListView> allSalvageControllers =
-                allSalvageContT.GetValue<List<ListElementController_BASE_NotListView>>();
+            List <ListElementController_BASE_NotListView> allSalvageControllers = salvageScreen.AllSalvageControllers;
             Mod.Log.Debug?.Write("CAAAS - found salvage controllers");
 
-            Traverse totalSalvageT = salvageScreenT.Field("totalSalvageMadeAvailable");
-            totalSalvageT.SetValue(allSalvageControllers.Count);
+            salvageScreen.totalSalvageMadeAvailable = allSalvageControllers.Count;
             Mod.Log.Debug?.Write("CAAAS - updated salvageController count");
 
             salvageSelection.ApplySalvageSorting();
 
             // Update the contract potential salvage
-            Contract contract = salvageScreenT.Field("contract").GetValue<Contract>();
-            Traverse finalPotentialSalvageT = Traverse.Create(contract).Field("finalPotentialSalvage");
-            List<SalvageDef> finalPotentialSalvage = finalPotentialSalvageT.GetValue<List<SalvageDef>>();
+            List<SalvageDef> finalPotentialSalvage = salvageScreen.contract.finalPotentialSalvage;
 
             finalPotentialSalvage.Clear();
             finalPotentialSalvage.AddRange(potentialSalvage);
