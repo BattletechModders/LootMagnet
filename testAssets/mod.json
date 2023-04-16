@@ -1,14 +1,14 @@
 {
     "Name": "LootMagnet",
     "Enabled": true,
-    "Version": "6.4.0",
+    "Version": "8.0.0",
     "Description": "Groups salvage of a similar type into a single pick. Provides lore-based employer shenanigans.",
     "Author": "IceRaptor",
     "Website": "https://github.com/IceRaptor/LootMagnet",
     "Contact": "",
     "DLL": "LootMagnet.dll",
     "DLLEntryPoint" : "LootMagnet.Mod.Init",
-    "OptionallyDependsOn" : [ "CustomComponents", "CustomSalvage" ],
+    "OptionallyDependsOn" : [ "CustomComponents" ],
     "Settings": {
         "Debug" : true,
         "RollupMRBValue" : [ 40000, 60000, 90000, 130000, 180000, 240000 ],
