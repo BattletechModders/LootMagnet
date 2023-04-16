@@ -27,23 +27,32 @@
 		<AssemblyTitle>LootMagnet</AssemblyTitle>
 		<Product>LootMagnet</Product>
 		<Copyright>Copyright ©  2021</Copyright>
-		<AssemblyVersion>0.7.0.0</AssemblyVersion>
-		<FileVersion>0.7.0.0</FileVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
+    <LangVersion>11</LangVersion>
 	</PropertyGroup>
 
+  <Target Name="AfterBuildMigrated" AfterTargets="CopyFilesToOutputDirectory">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BattleTechGameDir)\Mods\Core\LootMagnet" Condition="'$(BattleTechGameDir)' != '' And Exists('$(BattleTechGameDir)\Mods\Core\LootMagnet')" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BattleTechGameDir)\Mods_CBDE\Core\LootMagnet" Condition="'$(BattleTechGameDir)' != '' And Exists('$(BattleTechGameDir)\Mods_CBDE\Core\LootMagnet')" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(RogueTechRepo)\Core\LootMagnet" Condition="'$(RogueTechRepo)' != '' And Exists('$(RogueTechRepo)\Core\LootMagnet')" />
+  </Target>
 
-	<Target Name="CopyFilesToGame" AfterTargets="CopyFilesToOutputDirectory">
-		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(DeployedModPath)" />
-	</Target>
-	  
-	<ItemGroup>
-		<PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.0" />
-	</ItemGroup>
+  <PropertyGroup>
+    <!-- avoids IgnoresAccessChecksToAttribute warnings -->
+    <PublicizerRuntimeStrategies>Unsafe</PublicizerRuntimeStrategies>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Krafs.Publicizer" Version="2.2.1" />
+    <Publicize Include="Assembly-CSharp;UnityEngine.UI" />
+  </ItemGroup>
 
 	<ItemGroup>
-		<Reference Include="0Harmony">
-			<Private>False</Private>
-		</Reference>
+    <PackageReference Include="HarmonyX" Version="2.10.1">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+    
 		<Reference Include="Assembly-CSharp">
 			<Private>False</Private>
 		</Reference>
