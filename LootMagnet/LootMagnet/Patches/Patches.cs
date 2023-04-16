@@ -1,37 +1,45 @@
-﻿using BattleTech;
-using BattleTech.UI;
-using Harmony;
+﻿using BattleTech.UI;
+using BattleTech.UI.TMProWrapper;
 using Localize;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using BattleTech.UI.TMProWrapper;
-using HBS.Extensions;
 using TMPro;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace LootMagnet {
+namespace LootMagnet
+{
 
     [HarmonyPatch]
-    public static class Contract_GenerateSalvage {
+    public static class Contract_GenerateSalvage
+    {
 
         // Private method can't be patched by annotations, so use MethodInfo
-        public static MethodInfo TargetMethod() {
+        public static MethodInfo TargetMethod()
+        {
             return AccessTools.Method(typeof(Contract), "GenerateSalvage");
         }
 
-        public static void Prefix(Contract __instance) {
+        public static void Prefix(ref bool __runOriginal, Contract __instance)
+        {
+            if (!__runOriginal) return;
+
             Mod.Log.Info?.Write($"== Resolving salvage for contract:'{__instance.Name}' / '{__instance.GUID}' with result:{__instance.TheMissionResult}");
         }
     }
 
     [HarmonyPatch(typeof(Contract), "CompleteContract")]
-    public static class Contract_CompleteContract {
-        
-        public static void Prefix(Contract __instance, MissionResult result, bool isGoodFaithEffort) {
-            if (__instance != null && !__instance.ContractTypeValue.IsSkirmish) {
+    public static class Contract_CompleteContract
+    {
+
+        public static void Prefix(ref bool __runOriginal, Contract __instance, MissionResult result, bool isGoodFaithEffort)
+        {
+            if (!__runOriginal) return;
+
+            if (__instance != null && !__instance.ContractTypeValue.IsSkirmish)
+            {
                 SimGameState simulation = HBS.LazySingletonBehavior<UnityGameInstance>.Instance.Game.Simulation;
 
                 ModState.Employer = __instance.GetTeamFaction("ecc8d4f2-74b4-465d-adf6-84445e5dfc230");
@@ -53,16 +61,19 @@ namespace LootMagnet {
                     $"Reputation: {repCfg.Reputation}  " +
                     $"RollupMultiComponent: {repCfg.RollupMultiComponent}  RollupMultiMech: {repCfg.RollupMultiMech}  " +
                     $"HoldbackTrigger: {repCfg.HoldbackTrigger}  HoldbackValueCapMulti: {repCfg.HoldbackValueCapMulti}");
-            }            
+            }
         }
     }
 
     [HarmonyPatch(typeof(ListElementController_SalvageMechPart_NotListView), "RefreshInfoOnWidget")]
     [HarmonyPatch(new Type[] { typeof(InventoryItemElement_NotListView) })]
-    public static class ListElementController_SalvageMechPart_RefreshInfoOnWidget {
-        public static void Postfix(ListElementController_SalvageMechPart_NotListView __instance, InventoryItemElement_NotListView theWidget, MechDef ___mechDef, SalvageDef ___salvageDef) {
+    public static class ListElementController_SalvageMechPart_RefreshInfoOnWidget
+    {
+        public static void Postfix(ListElementController_SalvageMechPart_NotListView __instance, InventoryItemElement_NotListView theWidget, MechDef ___mechDef, SalvageDef ___salvageDef)
+        {
             Mod.Log.Debug?.Write($"LEC_SMP_NLV:RIOW - entered");
-            if (___salvageDef != null && ___salvageDef.RewardID != null && ___salvageDef.RewardID.Contains("_qty")) {
+            if (___salvageDef != null && ___salvageDef.RewardID != null && ___salvageDef.RewardID.Contains("_qty"))
+            {
                 int qtyIdx = ___salvageDef.RewardID.IndexOf("_qty");
                 string countS = ___salvageDef.RewardID.Substring(qtyIdx + 4);
                 int count = int.Parse(countS);
@@ -80,35 +91,50 @@ namespace LootMagnet {
 
     [HarmonyPatch(typeof(Contract), "AddToFinalSalvage")]
     [HarmonyAfter("io.github.denadan.CustomComponents")]
-    public static class Contract_AddToFinalSalvage {
-        
-        public static void Prefix(Contract __instance, ref SalvageDef def) {
+    public static class Contract_AddToFinalSalvage
+    {
+
+        public static void Prefix(ref bool __runOriginal, Contract __instance, ref SalvageDef def)
+        {
+            if (!__runOriginal) return;
+
             Mod.Log.Debug?.Write($"C:ATFS - entered.");
-            if (def?.RewardID != null) {
-                if (def.RewardID.Contains("_qty")) {
+            if (def?.RewardID != null)
+            {
+                if (def.RewardID.Contains("_qty"))
+                {
                     Mod.Log.Debug?.Write($"  Salvage ({def.Description.Name}) has rewardID:({def.RewardID}) with multiple quantities");
                     int qtyIdx = def.RewardID.IndexOf("_qty");
                     string countS = def.RewardID.Substring(qtyIdx + 4);
                     Mod.Log.Debug?.Write($"  Salvage ({def.Description.Name}) with rewardID:({def.RewardID}) will be given count: {countS}");
                     int count = int.Parse(countS);
                     def.Count = count;
-                } else {
+                }
+                else
+                {
                     Mod.Log.Debug?.Write($"  Salvage ({def.Description.Name}) has rewardID:({def.RewardID})");
                     List<string> compPartIds = ModState.CompensationParts.Select(sd => sd.RewardID).ToList();
-                    if (compPartIds.Contains(def.RewardID)) {
+                    if (compPartIds.Contains(def.RewardID))
+                    {
                         Mod.Log.Debug?.Write($" Found item in compensation that was randomly assigned.");
                     }
                 }
-            } else {
+            }
+            else
+            {
                 Mod.Log.Debug?.Write($"  RewardId was null for def:({def?.Description?.Name})");
             }
         }
     }
 
     [HarmonyPatch(typeof(AAR_SalvageScreen), "CalculateAndAddAvailableSalvage")]
-    public static class AAR_SalvageScreen_CalculateAndAddAvailableSalvage {
+    public static class AAR_SalvageScreen_CalculateAndAddAvailableSalvage
+    {
 
-        public static bool Prefix(AAR_SalvageScreen __instance, Contract ___contract, ref int ___totalSalvageMadeAvailable) {
+        public static void Prefix(ref bool __runOriginal, AAR_SalvageScreen __instance, Contract ___contract, ref int ___totalSalvageMadeAvailable)
+        {
+            if (!__runOriginal) return;
+
             Mod.Log.Debug?.Write("AAR_SS:CAAAS entered.");
 
             // Calculate potential salvage, which will be rolled up at this point (including mechs!)
@@ -124,7 +150,8 @@ namespace LootMagnet {
             float holdbackRoll = Mod.Random.Next(101);
             Mod.Log.Info?.Write($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
 
-            if (canHoldback && hasMechParts && holdbackRoll <= triggerChance) {
+            if (canHoldback && hasMechParts && holdbackRoll <= triggerChance)
+            {
                 Mod.Log.Info?.Write($"Holdback triggered, determining disputed mech parts.");
                 Helper.CalculateHoldback(ModState.PotentialSalvage);
                 Helper.CalculateCompensation(ModState.PotentialSalvage);
@@ -133,23 +160,28 @@ namespace LootMagnet {
             ___totalSalvageMadeAvailable = ModState.PotentialSalvage.Count - ModState.HeldbackParts.Count;
             Mod.Log.Debug?.Write($"Setting totalSalvageMadeAvailable = potentialSalvage: {ModState.PotentialSalvage.Count} - heldbackParts: {ModState.HeldbackParts.Count}");
 
-            if (ModState.HeldbackParts.Count > 0) {
+            if (ModState.HeldbackParts.Count > 0)
+            {
                 UIHelper.ShowHoldbackDialog(___contract, __instance);
-            } else {
+            }
+            else
+            {
                 // Roll up any remaining salvage and widget-ize it
                 List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(ModState.PotentialSalvage);
                 Helper.CalculateAndAddAvailableSalvage(__instance, rolledUpSalvage);
             }
 
-            return false;
+            __runOriginal = false;
         }
     }
 
     // executes after accepting salvage, we unlock the received item widgets
     [HarmonyPatch(typeof(AAR_SalvageChosen), "ConvertToFinalState")]
-    public class AAR_SalvageChosen_ConvertToFinalState {
+    public class AAR_SalvageChosen_ConvertToFinalState
+    {
 
-        public static void Postfix(AAR_SalvageChosen __instance, LocalizableText ___howManyReceivedText, AAR_SalvageScreen ___parent, SimGameState ___simState, Contract ___contract) {
+        public static void Postfix(AAR_SalvageChosen __instance, LocalizableText ___howManyReceivedText, AAR_SalvageScreen ___parent, SimGameState ___simState, Contract ___contract)
+        {
 
             // Skip if the UI element isn't visible
             if (!__instance.Visible)
@@ -178,20 +210,22 @@ namespace LootMagnet {
             ModState.SimGameState = ___simState;
 
             // Painful, full-context searches here
-            ModState.HBSPopupRoot = 
+            ModState.HBSPopupRoot =
                 GameObject.Find(ModConsts.HBSPopupRootGOName);
-            ModState.FloatieFont = 
+            ModState.FloatieFont =
                 Resources.FindObjectsOfTypeAll<TMP_FontAsset>().First(x => x.name == "UnitedSansReg-Black SDF");
             ModState.SGCurrencyDisplay = (SGCurrencyDisplay)Object.FindObjectOfType(typeof(SGCurrencyDisplay));
         }
-}
+    }
 
     // Reset state once we're leaving the salvage screen
     [HarmonyPatch(typeof(AAR_SalvageScreen), "OnCompleted")]
     public class AAR_SalvageScreen_OnCompleted
     {
-        public static void Prefix()
+        public static void Prefix(ref bool __runOriginal)
         {
+            if (!__runOriginal) return;
+
             Mod.Log.Debug?.Write("Resetting QuickSell state.");
             ModState.Contract = null;
             ModState.SimGameState = null;
@@ -203,10 +237,10 @@ namespace LootMagnet {
     }
 
     [HarmonyPatch(typeof(InventoryItemElement_NotListView), "OnButtonClicked")]
-    public class InventoryItemElement_NotListView_OnButtonClicked 
+    public class InventoryItemElement_NotListView_OnButtonClicked
     {
 
-        public static void Postfix(InventoryItemElement_NotListView __instance) 
+        public static void Postfix(InventoryItemElement_NotListView __instance)
         {
 
             // have to be holding shift

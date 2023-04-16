@@ -9,8 +9,9 @@ namespace LootMagnet
 
         private readonly float speed = 40f;
 
-        void Update() {
- 
+        void Update()
+        {
+
             gameObject.transform.Translate(Vector3.up * (Time.deltaTime * speed));
             gameObject.transform.localScale += new Vector3(0.001f, 0.001f, 0.001f);
         }
@@ -21,12 +22,14 @@ namespace LootMagnet
         private static readonly float fadeSpeed = 0.6f;
         private TextMeshProUGUI text;
 
-        void Awake() {
+        void Awake()
+        {
 
             text = gameObject.GetComponentInChildren<TextMeshProUGUI>(true);
             StartCoroutine(FadeOutText());
 
-            IEnumerator FadeOutText() {
+            IEnumerator FadeOutText()
+            {
                 text.color = new Color(text.color.r, text.color.g, text.color.b, 1);
                 while (text.color.a > 0)
                 {

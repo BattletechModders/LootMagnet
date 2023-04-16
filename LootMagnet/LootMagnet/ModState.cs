@@ -1,12 +1,13 @@
-﻿using BattleTech;
-using BattleTech.UI;
+﻿using BattleTech.UI;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-namespace LootMagnet {
+namespace LootMagnet
+{
 
-    public static class ModState {
+    public static class ModState
+    {
         public static FactionValue Employer = null;
         public static SimGameReputation EmployerRep = SimGameReputation.INDIFFERENT;
         public static int EmployerRepRaw = 0;
@@ -26,7 +27,8 @@ namespace LootMagnet {
         public static GameObject HBSPopupRoot;
         public static TMP_FontAsset FloatieFont;
 
-        public static void Reset() {
+        public static void Reset()
+        {
             // Reinitialize state to known values
             Employer = null;
             EmployerRep = SimGameReputation.INDIFFERENT;

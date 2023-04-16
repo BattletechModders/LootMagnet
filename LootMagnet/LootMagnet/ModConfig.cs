@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LootMagnet {
+namespace LootMagnet
+{
 
-    public enum Rep {
+    public enum Rep
+    {
         LOATHED,
         HATED,
         DISLIKED,
@@ -15,7 +17,8 @@ namespace LootMagnet {
         ALLIED
     }
 
-    public class RepCfg {
+    public class RepCfg
+    {
         public Rep Reputation = Rep.INDIFFERENT;
         public float RollupMultiComponent = 0f;
         public float RollupMultiMech = 0f;
@@ -23,7 +26,8 @@ namespace LootMagnet {
         public float HoldbackValueCapMulti = 0f;
     }
 
-    public class HoldbackCfg {
+    public class HoldbackCfg
+    {
 
         public bool Enabled = true;
 
@@ -47,7 +51,8 @@ namespace LootMagnet {
 
     }
 
-    public class ModConfig {
+    public class ModConfig
+    {
 
         // If true, many logs will be printed
         public bool Debug = false;
@@ -59,15 +64,17 @@ namespace LootMagnet {
 
         public List<string> RollupBlacklist = new List<string>();
         public List<string> RollupBlacklistTags = new List<string>();
-        
+
         public int CompensationMaxRollupQuantity = 10;
 
-        public List<RepCfg> Reputation = new List<RepCfg>() {};
+        public List<RepCfg> Reputation = new List<RepCfg>() { };
 
         public HoldbackCfg Holdback = new HoldbackCfg();
 
-        public void InitDefaultReputation() {
-            if (Reputation.Count == 0) {
+        public void InitDefaultReputation()
+        {
+            if (Reputation.Count == 0)
+            {
                 Reputation = new List<RepCfg>() {
                     new RepCfg{ Reputation = Rep.LOATHED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 60f, HoldbackValueCapMulti = 0.2f },
                     new RepCfg{ Reputation = Rep.HATED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 48f, HoldbackValueCapMulti = 0.3f },
@@ -147,7 +154,8 @@ namespace LootMagnet {
             { LT_QUICK_SELL, "\n(Shift-click to sell)" }
         };
 
-        public void LogConfig() {
+        public void LogConfig()
+        {
             Mod.Log.Info?.Write("=== MOD CONFIG BEGIN ===");
 
             Mod.Log.Info?.Write($"  DEBUG: {this.Debug}");
@@ -162,7 +170,8 @@ namespace LootMagnet {
             Mod.Log.Info?.Write($"  Compensation Max Rollup Quantity: {CompensationMaxRollupQuantity}");
 
             Mod.Log.Info?.Write($"FACTION REPUTATION VALUES");
-            foreach (RepCfg factionCfg in Reputation) {
+            foreach (RepCfg factionCfg in Reputation)
+            {
                 Mod.Log.Info?.Write($"  Reputation:{factionCfg.Reputation} ComponentRollup:{factionCfg.RollupMultiComponent} MechRollup:{factionCfg.RollupMultiMech} HoldbackTrigger:{factionCfg.HoldbackTrigger}%");
             }
 

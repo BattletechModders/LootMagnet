@@ -1,11 +1,12 @@
-﻿using Harmony;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace LootMagnet {
-    public static class Mod {
+namespace LootMagnet
+{
+    public static class Mod
+    {
 
         public const string HarmonyPackage = "us.frostraptor.LootMagnet";
         public const string LogName = "loot_magnet";
@@ -15,13 +16,17 @@ namespace LootMagnet {
         public static ModConfig Config;
 
         public static readonly Random Random = new Random();
-        public static void FinishedLoading(List<string> loadOrder) {
-          Mod.Log.Debug?.Write($"FinishedLoading");
-          try {
-            CustomSalvageHelper.DetectAPI();
-          } catch (Exception e) {
-            Mod.Log.Error?.Write(e);
-          }
+        public static void FinishedLoading(List<string> loadOrder)
+        {
+            Mod.Log.Debug?.Write($"FinishedLoading");
+            try
+            {
+                CustomSalvageHelper.DetectAPI();
+            }
+            catch (Exception e)
+            {
+                Mod.Log.Error?.Write(e);
+            }
         }
 
         public static void Init(string modDirectory, string settingsJSON)
@@ -55,19 +60,15 @@ namespace LootMagnet {
                 Mod.Log.Info?.Write($"INFO: No errors reading settings file.");
             }
 
-#if NO_CC
-#else
             // Initialize custom components
             Mod.Log.Info?.Write($"INFO: Registering custom components!");
             CustomComponents.Registry.RegisterSimpleCustomComponents(Assembly.GetExecutingAssembly());
-#endif
 
-            var harmony = HarmonyInstance.Create(HarmonyPackage);
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
+            Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), HarmonyPackage);
         }
 
-        
-        
+
+
 
     }
 }
