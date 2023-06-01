@@ -1,10 +1,12 @@
 ﻿using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
+using IRBTModUtils;
 using Localize;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using TMPro;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -98,7 +100,7 @@ namespace LootMagnet
                 {
                     Mod.Log.Debug?.Write($"  Salvage ({def.Description.Name}) has rewardID:({def.RewardID}) with multiple quantities");
                     int qtyIdx = def.RewardID.IndexOf("_qty");
-                    string countS = def.RewardID.Substring(qtyIdx + 4);
+                    string countS = def.RewardID.Substring(qtyIdx + "_qty".Length);
                     Mod.Log.Debug?.Write($"  Salvage ({def.Description.Name}) with rewardID:({def.RewardID}) will be given count: {countS}");
                     int count = int.Parse(countS);
                     def.Count = count;
@@ -138,7 +140,7 @@ namespace LootMagnet
 
             // Check for holdback
             bool hasMechParts = ModState.PotentialSalvage.FirstOrDefault(sd => sd.Type != SalvageDef.SalvageType.COMPONENT) != null;
-            bool canHoldback = Mod.Config.Holdback.Enabled && ModState.Employer.DoesGainReputation;
+            bool canHoldback = Mod.Config.Holdback.Enabled && ModState.Employer.DoesGainReputation && (Thread.CurrentThread.isFlagSet("LootMagnet_supress_dialog") == false) && (ModState.Employer != null);
             float triggerChance = Helper.GetHoldbackTriggerChance();
             float holdbackRoll = Mod.Random.Next(101);
             Mod.Log.Info?.Write($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");

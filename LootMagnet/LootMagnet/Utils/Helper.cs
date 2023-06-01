@@ -362,8 +362,13 @@ namespace LootMagnet
         public static SalvageDef CloneToXName(SalvageDef salvageDef, int quantity, int count)
         {
 
+            //Mod.Log.Debug?.Write($"CloneToXName {salvageDef.Description.Id} displayName:{salvageDef.Description.UIName} rewardId:{salvageDef.RewardID}");
             // don't create QTY:1 strings
             string displayName = !String.IsNullOrEmpty(salvageDef.Description.UIName) ? salvageDef.Description.UIName : salvageDef.Description.Name;
+            int qty_pos = displayName.IndexOf(" <lowercase>[QTY:");
+            if (qty_pos >= 0) {
+                displayName = displayName.Remove(qty_pos);
+            }
             string uiNameWithQuantity = quantity > 1 ? $"{displayName} <lowercase>[QTY:{quantity}]</lowercase>" : displayName;
 
             // increase the value of the def
@@ -380,14 +385,20 @@ namespace LootMagnet
                 uiNameWithQuantity
             );
 
+            string rewardId = salvageDef.RewardID;
+            qty_pos = rewardId.IndexOf("_LootMagnetInfo:c");
+            if (qty_pos >= 0)
+            {
+                rewardId = rewardId.Remove(qty_pos);
+            }
             SalvageDef newDef = new SalvageDef(salvageDef)
             {
                 Description = newDescDef,
-                RewardID = $"{salvageDef.RewardID}_c{count}_qty{quantity}",
+                RewardID = $"{rewardId}_LootMagnetInfo:c{count}_qty{quantity}",
                 Count = 1
             };
 
-            Mod.Log.Debug?.Write($"Incoming for {quantity}, Cost in {salvageDef.Description.Cost}, out {newDef.Description.Cost}");
+            Mod.Log.Debug?.Write($"Incoming for {quantity}, Cost in {salvageDef.Description.Cost}, out {newDef.Description.Cost} displayName:{newDef.Description.UIName} rewardId:{newDef.RewardID}");
             return newDef;
         }
 
