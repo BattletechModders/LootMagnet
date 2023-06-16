@@ -147,7 +147,7 @@ namespace LootMagnet
             List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(ModState.PotentialSalvage);
             Helper.CalculateAndAddAvailableSalvage(salvageScreen, rolledUpSalvage);
 
-            ModState.Reset();
+            //ModState.Reset();
         }
 
         public static void RefuseAction(AAR_SalvageScreen salvageScreen, int reputationModifier)
@@ -163,7 +163,7 @@ namespace LootMagnet
             List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(ModState.PotentialSalvage);
             Helper.CalculateAndAddAvailableSalvage(salvageScreen, rolledUpSalvage);
 
-            ModState.Reset();
+            //ModState.Reset();
         }
 
         public static void DisputeAction(Contract contract, AAR_SalvageScreen salvageScreen, Dispute dispute)
@@ -278,7 +278,7 @@ namespace LootMagnet
             List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(ModState.PotentialSalvage);
             Helper.CalculateAndAddAvailableSalvage(salvageScreen, rolledUpSalvage);
 
-            ModState.Reset();
+            //ModState.Reset();
         }
 
         public class SalvageDefByCostDescendingComparer : IComparer<SalvageDef>

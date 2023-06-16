@@ -218,8 +218,6 @@ namespace LootMagnet
     {
         public static void Prefix(ref bool __runOriginal)
         {
-            if (!__runOriginal) return;
-
             Mod.Log.Debug?.Write("Resetting QuickSell state.");
             ModState.Contract = null;
             ModState.SimGameState = null;
@@ -227,6 +225,7 @@ namespace LootMagnet
             ModState.SGCurrencyDisplay = null;
             ModState.HBSPopupRoot = null;
             ModState.FloatieFont = null;
+            ModState.Reset();
         }
     }
 

@@ -119,22 +119,32 @@ namespace LootMagnet
         {
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (assembly.FullName.StartsWith("CustomSalvage"))
+                if (assembly.FullName.StartsWith("CustomSalvage, Version="))
                 {
-                    Mod.Log.Debug?.Write("CustomSalvage assembly found " + assembly.FullName);
+                    Mod.Log.Info?.Write("CustomSalvage assembly found " + assembly.FullName);
                     Type ChassisHandler = assembly.GetType("CustomSalvage.ChassisHandler");
                     if (ChassisHandler != null)
                     {
-                        Mod.Log.Debug?.Write("ChassisHandler type found " + ChassisHandler.FullName);
+                        Mod.Log.Info?.Write("ChassisHandler type found " + ChassisHandler.FullName);
                         GetCompatible_mi = ChassisHandler.GetMethod("GetCompatible", BindingFlags.Static | BindingFlags.Public);
                         if (GetCompatible_mi != null)
                         {
-                            Mod.Log.Debug?.Write("ChassisHandler.GetCompatible method found " + GetCompatible_mi.Name);
+                            Mod.Log.Info?.Write("ChassisHandler.GetCompatible method found " + GetCompatible_mi.Name);
                         }
                         RegisterMechDef_mi = ChassisHandler.GetMethod("RegisterMechDef", BindingFlags.Static | BindingFlags.Public);
                         if (RegisterMechDef_mi != null)
                         {
-                            Mod.Log.Debug?.Write("ChassisHandler.RegisterMechDef method found " + RegisterMechDef_mi.Name);
+                            Mod.Log.Info?.Write("ChassisHandler.RegisterMechDef method found " + RegisterMechDef_mi.Name);
+                        }
+                    }
+                    Type FullUnitSalvageHelper = assembly.GetType("CustomSalvage.FullUnitSalvageHelper");
+                    if (FullUnitSalvageHelper != null) { 
+                        Mod.Log.Info?.Write($"CustomSalvage.FullUnitSalvageHelper found");
+                        MethodInfo RegisterDelegates = AccessTools.Method(FullUnitSalvageHelper, "RegisterDelegates");
+                        if (RegisterDelegates != null)
+                        {
+                            Mod.Log.Info?.Write($"CustomSalvage.FullUnitSalvageHelper.RegisterDelegates found");
+                            RegisterDelegates.Invoke(null, new object[] { "LootMagneet" , (Func<MechDef, int>)Helper.GetChassisSalvageSlotsCount, (Func<List<MechComponentDef>, int>)Helper.GetInventorySalvageSlotsCount });
                         }
                     }
                     break;
