@@ -140,9 +140,9 @@ namespace LootMagnet
 
             // Check for holdback
             bool hasMechParts = ModState.PotentialSalvage.FirstOrDefault(sd => sd.Type == SalvageDef.SalvageType.MECH_PART) != null;
-            bool canHoldback = true;//Mod.Config.Holdback.Enabled && (Thread.CurrentThread.isFlagSet("LootMagnet_supress_dialog") == false) && (ModState.Employer != null) && ModState.Employer.DoesGainReputation;
+            bool canHoldback = Mod.Config.Holdback.Enabled && (Thread.CurrentThread.isFlagSet("LootMagnet_supress_dialog") == false) && (ModState.Employer != null) && ModState.Employer.DoesGainReputation;
             float triggerChance = Helper.GetHoldbackTriggerChance();
-            float holdbackRoll = 0;//Mod.Random.Next(101);
+            float holdbackRoll = Mod.Random.Next(101);
             Mod.Log.Info?.Write($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
 
             if (canHoldback && hasMechParts && holdbackRoll <= triggerChance)
