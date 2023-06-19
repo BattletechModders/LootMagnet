@@ -16,6 +16,10 @@ namespace LootMagnet
         HONORED,
         ALLIED
     }
+    public enum FullUnitComponentRollupType
+    {
+        None, AvgCost, UpToThreshold, UpToThresholdSame, FlatModifier, Zero
+    }
 
     public class RepCfg
     {
@@ -24,6 +28,9 @@ namespace LootMagnet
         public float RollupMultiMech = 0f;
         public float HoldbackTrigger = 0f;
         public float HoldbackValueCapMulti = 0f;
+        public float RollupFullUnitComponent = 0f;
+        public float RollupFullUnitMech = 0f;
+        public int RollupFullUnitMaxComponents = 0;
     }
 
     public class HoldbackCfg
@@ -71,19 +78,25 @@ namespace LootMagnet
 
         public HoldbackCfg Holdback = new HoldbackCfg();
 
+        public FullUnitComponentRollupType RollupComponentsInsideMechStrategy = FullUnitComponentRollupType.UpToThreshold;
+        public bool RollupPartsInsideMechUsePartCost = false;
+        public bool RollupPartsInsideMechUseRestStructure = true;
+        public Dictionary<int, int> FullUnitChassisTonnageMod = new Dictionary<int, int>() {
+            { 35, 0 } , { 55, 2 }, { 75, 4 }, { 100, 6 }, { 101, 8 }
+        };
         public void InitDefaultReputation()
         {
             if (Reputation.Count == 0)
             {
                 Reputation = new List<RepCfg>() {
-                    new RepCfg{ Reputation = Rep.LOATHED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 60f, HoldbackValueCapMulti = 0.2f },
-                    new RepCfg{ Reputation = Rep.HATED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 48f, HoldbackValueCapMulti = 0.3f },
-                    new RepCfg{ Reputation = Rep.DISLIKED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 32f, HoldbackValueCapMulti = 0.4f },
-                    new RepCfg{ Reputation = Rep.INDIFFERENT, RollupMultiComponent = 1f, RollupMultiMech = 0f, HoldbackTrigger = 16f, HoldbackValueCapMulti = 0.6f },
-                    new RepCfg{ Reputation = Rep.LIKED, RollupMultiComponent = 5f, RollupMultiMech = 0f, HoldbackTrigger = 8f, HoldbackValueCapMulti = 0.8f },
-                    new RepCfg{ Reputation = Rep.FRIENDLY, RollupMultiComponent = 9f, RollupMultiMech = 20f, HoldbackTrigger = 4f, HoldbackValueCapMulti = 1f },
-                    new RepCfg{ Reputation = Rep.HONORED, RollupMultiComponent = 13f, RollupMultiMech = 30f, HoldbackTrigger = 2f, HoldbackValueCapMulti = 1.25f },
-                    new RepCfg{ Reputation = Rep.ALLIED, RollupMultiComponent = 21f, RollupMultiMech = 180f, HoldbackTrigger = 1f, HoldbackValueCapMulti = 2f },
+                    new RepCfg{ Reputation = Rep.LOATHED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 60f, HoldbackValueCapMulti = 0.2f, RollupFullUnitComponent=0f, RollupFullUnitMech=0f, RollupFullUnitMaxComponents = 0 },
+                    new RepCfg{ Reputation = Rep.HATED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 48f, HoldbackValueCapMulti = 0.3f, RollupFullUnitComponent=0f, RollupFullUnitMech=0f, RollupFullUnitMaxComponents = 0 },
+                    new RepCfg{ Reputation = Rep.DISLIKED, RollupMultiComponent = 0f, RollupMultiMech = 0f, HoldbackTrigger = 32f, HoldbackValueCapMulti = 0.4f, RollupFullUnitComponent=0f, RollupFullUnitMech=0f, RollupFullUnitMaxComponents = 0 },
+                    new RepCfg{ Reputation = Rep.INDIFFERENT, RollupMultiComponent = 1f, RollupMultiMech = 0f, HoldbackTrigger = 16f, HoldbackValueCapMulti = 0.6f, RollupFullUnitComponent=0f, RollupFullUnitMech=0f, RollupFullUnitMaxComponents = 0 },
+                    new RepCfg{ Reputation = Rep.LIKED, RollupMultiComponent = 5f, RollupMultiMech = 0f, HoldbackTrigger = 8f, HoldbackValueCapMulti = 0.8f, RollupFullUnitComponent=0f, RollupFullUnitMech=0f, RollupFullUnitMaxComponents = 0 },
+                    new RepCfg{ Reputation = Rep.FRIENDLY, RollupMultiComponent = 9f, RollupMultiMech = 20f, HoldbackTrigger = 4f, HoldbackValueCapMulti = 1f, RollupFullUnitComponent=0f, RollupFullUnitMech=0f, RollupFullUnitMaxComponents = 0 },
+                    new RepCfg{ Reputation = Rep.HONORED, RollupMultiComponent = 13f, RollupMultiMech = 30f, HoldbackTrigger = 2f, HoldbackValueCapMulti = 1.25f, RollupFullUnitComponent=0f, RollupFullUnitMech=0f, RollupFullUnitMaxComponents = 0 },
+                    new RepCfg{ Reputation = Rep.ALLIED, RollupMultiComponent = 21f, RollupMultiMech = 180f, HoldbackTrigger = 1f, HoldbackValueCapMulti = 2f, RollupFullUnitComponent=0f, RollupFullUnitMech=0f, RollupFullUnitMaxComponents = 0 },
                 };
             }
         }

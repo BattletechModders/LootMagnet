@@ -139,10 +139,10 @@ namespace LootMagnet
             ModState.PotentialSalvage.Sort(new Helper.SalvageDefByCostDescendingComparer());
 
             // Check for holdback
-            bool hasMechParts = ModState.PotentialSalvage.FirstOrDefault(sd => sd.Type != SalvageDef.SalvageType.COMPONENT) != null;
-            bool canHoldback = Mod.Config.Holdback.Enabled && (Thread.CurrentThread.isFlagSet("LootMagnet_supress_dialog") == false) && (ModState.Employer != null) && ModState.Employer.DoesGainReputation;
+            bool hasMechParts = ModState.PotentialSalvage.FirstOrDefault(sd => sd.Type == SalvageDef.SalvageType.MECH_PART) != null;
+            bool canHoldback = true;//Mod.Config.Holdback.Enabled && (Thread.CurrentThread.isFlagSet("LootMagnet_supress_dialog") == false) && (ModState.Employer != null) && ModState.Employer.DoesGainReputation;
             float triggerChance = Helper.GetHoldbackTriggerChance();
-            float holdbackRoll = Mod.Random.Next(101);
+            float holdbackRoll = 0;//Mod.Random.Next(101);
             Mod.Log.Info?.Write($"Holdback roll:{holdbackRoll}% triggerChance:{triggerChance}% hasMechParts:{hasMechParts} canHoldback:{canHoldback}");
 
             if (canHoldback && hasMechParts && holdbackRoll <= triggerChance)
@@ -157,7 +157,7 @@ namespace LootMagnet
 
             if (ModState.HeldbackParts.Count > 0)
             {
-                UIHelper.ShowHoldbackDialog(__instance.contract, __instance);
+                UIHelper.ShowHoldbackDialog();
             }
             else
             {
@@ -197,11 +197,6 @@ namespace LootMagnet
             // Update text with Quick Sell instructions
             string localText = new Text(Mod.Config.LocalizedText[ModConfig.LT_QUICK_SELL], new object[] { }).ToString();
             __instance.howManyReceivedText.SetText(string.Concat(__instance.howManyReceivedText.text, localText));
-
-            // Set the Mod state we'll rely upon
-            ModState.AAR_SalvageScreen = __instance.parent;
-            ModState.Contract = __instance.contract;
-            ModState.SimGameState = __instance.simState;
 
             // Painful, full-context searches here
             ModState.HBSPopupRoot =

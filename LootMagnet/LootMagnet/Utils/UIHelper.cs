@@ -46,7 +46,7 @@ namespace LootMagnet
             return match.Groups[1].Value == "" ? input : match.Groups[1].Value;
         }
 
-        public static void ShowHoldbackDialog(Contract contract, AAR_SalvageScreen salvageScreen)
+        public static void ShowHoldbackDialog()
         {
 
             List<string> heldbackItemsDesc = new List<string>();
@@ -81,10 +81,10 @@ namespace LootMagnet
             int disputeRepMod = Mod.Random.Next(Mod.Config.Holdback.ReputationRange[0], Mod.Config.Holdback.ReputationRange[1]);
             Mod.Log.Debug?.Write($"Reputation modifiers - accept:{acceptRepMod} refuse:{refuseRepMod} dispute:{disputeRepMod}");
 
-            Dispute dispute = new Dispute(contract.InitialContractValue, contract.Name);
-            void acceptAction() { AcceptAction(salvageScreen, acceptRepMod); }
-            void refuseAction() { RefuseAction(salvageScreen, refuseRepMod); }
-            void disputeAction() { DisputeAction(contract, salvageScreen, dispute); }
+            Dispute dispute = new Dispute(ModState.Contract.InitialContractValue, ModState.Contract.Name);
+            void acceptAction() { AcceptAction(acceptRepMod); }
+            void refuseAction() { RefuseAction(refuseRepMod); }
+            void disputeAction() { DisputeAction(dispute); }
 
             string localDialogTitle = new Text(Mod.Config.DialogText[ModConfig.DT_DISPUTE_TITLE]).ToString();
             string localDialogText = new Text(
@@ -109,7 +109,7 @@ namespace LootMagnet
             contentText.alignment = TextAlignmentOptions.Left;
         }
 
-        public static void AcceptAction(AAR_SalvageScreen salvageScreen, int reputationModifier)
+        public static void AcceptAction(int reputationModifier)
         {
 
             SimGameState sgs = UnityGameInstance.BattleTechGame.Simulation;
@@ -145,12 +145,12 @@ namespace LootMagnet
 
             // Roll up any remaining salvage and widget-tize it
             List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(ModState.PotentialSalvage);
-            Helper.CalculateAndAddAvailableSalvage(salvageScreen, rolledUpSalvage);
+            Helper.CalculateAndAddAvailableSalvage(ModState.AAR_SalvageScreen, rolledUpSalvage);
 
             //ModState.Reset();
         }
 
-        public static void RefuseAction(AAR_SalvageScreen salvageScreen, int reputationModifier)
+        public static void RefuseAction(int reputationModifier)
         {
 
             SimGameState sgs = UnityGameInstance.BattleTechGame.Simulation;
@@ -161,18 +161,18 @@ namespace LootMagnet
 
             // Roll up any remaining salvage and widget-tize it
             List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(ModState.PotentialSalvage);
-            Helper.CalculateAndAddAvailableSalvage(salvageScreen, rolledUpSalvage);
+            Helper.CalculateAndAddAvailableSalvage(ModState.AAR_SalvageScreen, rolledUpSalvage);
 
             //ModState.Reset();
         }
 
-        public static void DisputeAction(Contract contract, AAR_SalvageScreen salvageScreen, Dispute dispute)
+        public static void DisputeAction(Dispute dispute)
         {
             Mod.Log.Info?.Write($"Player disputed holdback.");
 
             SimGameState sgs = UnityGameInstance.BattleTechGame.Simulation;
             Mod.Log.Info?.Write($"  Dispute legal fees:{dispute.MRBFees}");
-            sgs.AddFunds(dispute.MRBFees, $"MRB Legal Fees re: {contract.Name}", false);
+            sgs.AddFunds(dispute.MRBFees, $"MRB Legal Fees re: {ModState.Contract.Name}", false);
 
             Dispute.Outcome outcome = dispute.GetOutcome();
             if (outcome == Dispute.Outcome.SUCCESS)
@@ -276,7 +276,7 @@ namespace LootMagnet
 
             // Roll up any remaining salvage and widget-tize it
             List<SalvageDef> rolledUpSalvage = Helper.RollupSalvage(ModState.PotentialSalvage);
-            Helper.CalculateAndAddAvailableSalvage(salvageScreen, rolledUpSalvage);
+            Helper.CalculateAndAddAvailableSalvage(ModState.AAR_SalvageScreen, rolledUpSalvage);
 
             //ModState.Reset();
         }

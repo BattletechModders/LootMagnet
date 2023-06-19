@@ -75,6 +75,23 @@ namespace LootMagnet
             return result;
         }
 
+        public static float GetSalvageThresholdRaw()
+        {
+            return Mod.Config.RollupMRBValue[MRBCfgIdx()];
+        }
+
+        public static float GetSalvageThresholdMod(bool forMech = false)
+        {
+            RepCfg repCfg = Mod.Config.Reputation.Find(r => r.Reputation == (Rep)FactionCfgIdx());
+            return forMech ? repCfg.RollupFullUnitMech : repCfg.RollupFullUnitComponent;
+        }
+
+        public static int GetSalvageMaxComponentsRollup()
+        {
+            RepCfg repCfg = Mod.Config.Reputation.Find(r => r.Reputation == (Rep)FactionCfgIdx());
+            return repCfg.RollupFullUnitMaxComponents;
+        }
+
         public static float GetHoldbackTriggerChance()
         {
             RepCfg repCfg = Mod.Config.Reputation.Find(r => r.Reputation == (Rep)FactionCfgIdx());
@@ -94,43 +111,121 @@ namespace LootMagnet
             }
             return allStructure > 0.01f ? (availStructure / allStructure) : 0f;
         }
+        public static int GetTonnageSalvageSlotsMod(MechDef mechDef)
+        {
+            int result = 0;
+            int tonnage = Mathf.RoundToInt(mechDef.Chassis.Tonnage);
+            foreach (var mod in Mod.Config.FullUnitChassisTonnageMod)
+            {
+                result = mod.Value;
+                if (tonnage <= mod.Key) { return result; }
+            }
+            return result;
+        }
+
         public static int GetChassisSalvageSlotsCount(MechDef mechDef)
         {
-            float mechThreshold = Mod.Config.DeveloperMode ? 999999999f : GetSalvageThreshold(true);
-            float structureParts = UnityGameInstance.BattleTechGame.Simulation.Constants.Story.DefaultMechPartMax * GetStructurePersantage(mechDef);
-            float parts = (mechThreshold > mechDef.SimGameMechPartCost) ? (structureParts * (mechDef.SimGameMechPartCost / mechThreshold)) : structureParts;
-            Mod.Log.Info?.Write($"GetChassisSalvageSlotsCount {mechDef.Description.Id} partCost:{mechDef.SimGameMechPartCost} mechThreshold:{mechThreshold} structureParts:{structureParts} result:{parts}");
-            return Mathf.CeilToInt(parts);
+            float mechThreshold = Mod.Config.DeveloperMode ? 999999999f : (GetSalvageThresholdRaw() * GetSalvageThresholdMod(true));
+            float structureParts = UnityGameInstance.BattleTechGame.Simulation.Constants.Story.DefaultMechPartMax;
+            if (Mod.Config.RollupPartsInsideMechUseRestStructure)
+            {
+                structureParts *= GetStructurePersantage(mechDef);
+            }
+            float partCost = Mod.Config.RollupPartsInsideMechUsePartCost ? mechDef.SimGameMechPartCost : mechDef.Description.Cost;
+            float parts = (mechThreshold > partCost) ? (structureParts * (partCost / mechThreshold)) : structureParts;
+            int tonnageModifier = GetTonnageSalvageSlotsMod(mechDef);
+            Mod.Log.Info?.Write($"GetChassisSalvageSlotsCount {mechDef.Description.Id} partCost:{partCost} mechThreshold:{mechThreshold} structureParts:{structureParts} parts:{parts} tonnageMod:{tonnageModifier}");
+            return Mathf.CeilToInt(parts) + tonnageModifier;
         }
         public static int GetInventorySalvageSlotsCount(List<MechComponentDef> inventory)
         {
-            float componentThreshold = Mod.Config.DeveloperMode ? 999999999f : GetSalvageThreshold(false);
-            float tempCost = componentThreshold;
-            inventory.Sort((a,b)=>a.Description.Cost.CompareTo(b.Description.Cost));
-            Mod.Log.Info?.Write($"GetInventorySalvageSlotsCount {inventory.Count} componentThreshold:{componentThreshold}");
-            int result = inventory.Count > 0?1:0;
-            if (inventory.Count > 0) {
-                if (inventory[0].Description.Cost > componentThreshold) {
-                    Mod.Log.Info?.Write($" {inventory[0].Description.Id}:{inventory[0].Description.Cost}");
-                    return inventory.Count; 
-                }
-            }
-            foreach (var component in inventory)
+            Mod.Log.Info?.Write($"GetInventorySalvageSlotsCount {inventory.Count} strategy:{Mod.Config.RollupComponentsInsideMechStrategy}");
+            if (Mod.Config.RollupComponentsInsideMechStrategy == FullUnitComponentRollupType.FlatModifier) {
+                float mod = GetSalvageThresholdMod(false);
+                Mod.Log.Info?.Write($" flat modifier:{mod}");
+                return Mathf.CeilToInt(inventory.Count * mod);
+            }else
+            if(Mod.Config.RollupComponentsInsideMechStrategy == FullUnitComponentRollupType.AvgCost)
             {
-                if (component.Description.Cost > componentThreshold) {
-                    tempCost = componentThreshold;
-                    ++result;
-                    Mod.Log.Info?.Write($" {component.Description.Id}:{component.Description.Cost} {tempCost} slot {result}");
-                    continue;
+                if (inventory.Count == 0) { return 0; }
+                float componentThreshold = Mod.Config.DeveloperMode ? 999999999f : (GetSalvageThresholdRaw() * GetSalvageThresholdMod(false));
+                float avgcost = 0f;
+                foreach(var component in inventory)
+                {
+                    avgcost += component.Description.Cost;
                 }
-                if (tempCost < component.Description.Cost) {
-                    ++result; tempCost = componentThreshold;
+                avgcost /= inventory.Count;
+                int result = inventory.Count;
+                if (avgcost < componentThreshold) {
+                    result = Mathf.CeilToInt(inventory.Count * avgcost / componentThreshold);
                 }
-                tempCost -= component.Description.Cost;
-                Mod.Log.Info?.Write($" {component.Description.Id}:{component.Description.Cost} {tempCost} slot {result}");
+                Mod.Log.Info?.Write($" avg cost:{avgcost} componentThreshold:{componentThreshold} result:{result}");
+            }else
+            if(Mod.Config.RollupComponentsInsideMechStrategy == FullUnitComponentRollupType.FlatModifier)
+            {
+                float componentThreshold = Mod.Config.DeveloperMode ? 0.001f : (GetSalvageThresholdMod(false));
+                int result = componentThreshold > 0f ? Mathf.CeilToInt(inventory.Count * componentThreshold) : inventory.Count;
+                Mod.Log.Info?.Write($" componentThreshold:{componentThreshold} result:{result}");
             }
-            Mod.Log.Info?.Write($" result:{result}");
-            return result;
+            else
+            if ((Mod.Config.RollupComponentsInsideMechStrategy == FullUnitComponentRollupType.UpToThreshold) || (Mod.Config.RollupComponentsInsideMechStrategy == FullUnitComponentRollupType.UpToThresholdSame))
+            {
+                float componentThreshold = Mod.Config.DeveloperMode ? 999999999f : (GetSalvageThresholdRaw() * GetSalvageThresholdMod(false));
+                int maxComponents = GetSalvageMaxComponentsRollup();
+                float tempCost = componentThreshold;
+                inventory.Sort((a, b) => { if (a.Description.Cost == b.Description.Cost) { return a.Description.Id.CompareTo(b.Description.Id); } return a.Description.Cost.CompareTo(b.Description.Cost); });
+                int result = 0;
+                if (inventory.Count > 0)
+                {
+                    if (inventory[0].Description.Cost > componentThreshold)
+                    {
+                        Mod.Log.Info?.Write($" {inventory[0].Description.Id}:{inventory[0].Description.Cost}");
+                        return inventory.Count;
+                    }
+                    else
+                    {
+                        tempCost -= inventory[0].Description.Cost;
+                        result = 1;
+                    }
+                }
+                else
+                {
+                    return 0;
+                }
+                int components_in_slot = 1;
+                Mod.Log.Info?.Write($" {inventory[0].Description.Id}:{inventory[0].Description.Cost} {tempCost} slot {result} components:{components_in_slot}");
+                for (int t = 1; t < inventory.Count; ++t) 
+                {
+                    var component = inventory[t];
+                    if (component.Description.Cost > componentThreshold)
+                    {
+                        tempCost = componentThreshold;
+                        ++result; components_in_slot = 1;
+                        Mod.Log.Info?.Write($" {component.Description.Id}:{component.Description.Cost} {tempCost} slot {result} components:{components_in_slot}");
+                        continue;
+                    }
+                    if (Mod.Config.RollupComponentsInsideMechStrategy == FullUnitComponentRollupType.UpToThresholdSame)
+                    {
+                        if (component.Description.Id != inventory[t - 1].Description.Id)
+                        {
+                            tempCost = componentThreshold - component.Description.Cost;
+                            ++result; components_in_slot = 1;
+                            Mod.Log.Info?.Write($" {component.Description.Id}:{component.Description.Cost} {tempCost} slot {result} components:{components_in_slot}");
+                            continue;
+                        }
+                    }
+                    if ((tempCost < component.Description.Cost) || ((maxComponents > 0 && (components_in_slot >= maxComponents))))
+                    {
+                        ++result; tempCost = componentThreshold; components_in_slot = 0;
+                    }
+                    tempCost -= component.Description.Cost;
+                    ++components_in_slot;
+                    Mod.Log.Info?.Write($" {component.Description.Id}:{component.Description.Cost} {tempCost} slot {result} components:{components_in_slot}");
+                }
+                Mod.Log.Info?.Write($" result:{result}");
+                return result;
+            }
+            return inventory.Count;
         }
         // Rollup the salvage into buckets
         public static List<SalvageDef> RollupSalvage(List<SalvageDef> rawSalvage)
@@ -274,7 +369,7 @@ namespace LootMagnet
             if (potentialSalvage == null || potentialSalvage.Count == 0) { return; }
 
             // Filter to mech parts only
-            List<SalvageDef> allMechParts = potentialSalvage.Where(sd => sd.Type != SalvageDef.SalvageType.COMPONENT).ToList();
+            List<SalvageDef> allMechParts = potentialSalvage.Where(sd => sd.Type == SalvageDef.SalvageType.MECH_PART).ToList();
             int mechPartsToHoldback = Mod.Random.Next(Mod.Config.Holdback.MechParts[0], Mod.Config.Holdback.MechParts[1]);
             Mod.Log.Info?.Write($"Holding back up to {mechPartsToHoldback} mech parts.");
 
@@ -528,7 +623,14 @@ namespace LootMagnet
             salvageScreen.totalSalvageMadeAvailable = allSalvageControllers.Count;
             Mod.Log.Debug?.Write("CAAAS - updated salvageController count");
 
-            salvageSelection.ApplySalvageSorting();
+            try
+            {
+                if (salvageSelection.inventoryWidget != null) { salvageSelection.ApplySalvageSorting(); }
+            }catch(Exception e)
+            {
+                UIManager.logger.LogException(e);
+                Mod.Log.Debug?.Write(e.ToString());
+            }
 
             // Update the contract potential salvage
             List<SalvageDef> finalPotentialSalvage = salvageScreen.contract.finalPotentialSalvage;

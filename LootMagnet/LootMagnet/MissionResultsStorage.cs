@@ -1,5 +1,6 @@
 ﻿using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
+using HBS;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -518,6 +519,14 @@ namespace LootMagnet
     [HarmonyPatch(MethodType.Normal)]
     public static class AAR_SalvageScreen_InitializeData
     {
+        public static void Prefix(AAR_SalvageScreen __instance)
+        {
+            // Set the Mod state we'll rely upon
+            ModState.SimGameState = UnityGameInstance.BattleTechGame.Simulation;
+            GameInstance game = SceneSingletonBehavior<UnityGameInstance>.Instance.Game;
+            ModState.AAR_SalvageScreen = __instance;
+            ModState.Contract = game.Combat == null ? game.Simulation.SimulatedContract : game.Combat.ActiveContract;
+        }
         public static void Postfix(AAR_SalvageScreen __instance)
         {
             try
