@@ -232,7 +232,7 @@ namespace LootMagnet
         {
 
             // Rollup items with more than one instance, and that aren't mech chassis
-            List<SalvageDef> toRollup = rawSalvage.Where(sd => sd.Count > 1 && sd?.Description?.Cost != 0 && sd.Type != SalvageDef.SalvageType.CHASSIS).ToList();
+            List<SalvageDef> toRollup = rawSalvage.Where(sd => sd.Count > 1 && sd?.Description?.Cost != 0 && ((sd.Type == SalvageDef.SalvageType.COMPONENT) || (sd.Type == SalvageDef.SalvageType.MECH_PART))).ToList();
             List<SalvageDef> rolledUpSalvage = rawSalvage.Except(toRollup).ToList();
 
             float componentThreshold = Mod.Config.DeveloperMode ? 999999999f : GetSalvageThreshold(false);
@@ -253,6 +253,7 @@ namespace LootMagnet
                 }
                 else
                 {
+                    Mod.Log.Info?.Write($"  No roll up {rawDef.Count} {rawDef.Type}:'{rawDef?.Description?.Name}' with value:{rawDef.Description.Cost} threshold:{mechThreshold.ToString("0")}");
                     rolledUpSalvage.Add(rawDef);
                 }
             }
@@ -480,15 +481,45 @@ namespace LootMagnet
         {
             // TODO: Could cause an NRE, but shouldn't if the holdback logic is safe
             SalvageDef spSDef = ModState.PotentialSalvage.Find((SalvageDef x) => x.Description.Id == holdbackDef.Description.Id && x.RewardID == holdbackDef.RewardID);
-            if (holdbackDef.Count == spSDef.Count)
+            if (spSDef == null)
             {
-                Mod.Log.Debug?.Write($"  Removing salvageDef:({spSDef.Description.Id}_{spSDef.Description.Name}_{spSDef.RewardID}) with count:{spSDef.Count} ");
-                ModState.PotentialSalvage.Remove(spSDef);
+                int rest_count = spSDef.Count;
+                while (true)
+                {
+                    spSDef = ModState.PotentialSalvage.Find((SalvageDef x) => x.Description.Id == holdbackDef.Description.Id && x.ComponentType == holdbackDef.ComponentType && x.Type == holdbackDef.Type);
+                    if (spSDef == null) { break; }
+                    if (spSDef.Count == rest_count)
+                    {
+                        Mod.Log.Debug?.Write($"  Removing salvageDef:({spSDef.Description.Id}_{spSDef.Description.Name}_{spSDef.RewardID}) with count:{spSDef.Count} ");
+                        ModState.PotentialSalvage.Remove(spSDef);
+                        break;
+                    }
+                    else if(spSDef.Count > rest_count)
+                    {
+                        spSDef.Count = spSDef.Count - rest_count;
+                        Mod.Log.Debug?.Write($"  reducing salvageDef:({spSDef.Description.Id}_{spSDef.Description.Name}_{spSDef.RewardID}) to count:{spSDef.Count} ");
+                        break;
+                    }
+                    else
+                    {
+                        Mod.Log.Debug?.Write($"  Removing salvageDef:({spSDef.Description.Id}_{spSDef.Description.Name}_{spSDef.RewardID}) with count:{spSDef.Count} ");
+                        ModState.PotentialSalvage.Remove(spSDef);
+                        rest_count -= spSDef.Count;
+                    }
+                }
             }
             else
             {
-                spSDef.Count = spSDef.Count - holdbackDef.Count;
-                Mod.Log.Debug?.Write($"  reducing salvageDef:({spSDef.Description.Id}_{spSDef.Description.Name}_{spSDef.RewardID}) to count:{spSDef.Count} ");
+                if (holdbackDef.Count == spSDef.Count)
+                {
+                    Mod.Log.Debug?.Write($"  Removing salvageDef:({spSDef.Description.Id}_{spSDef.Description.Name}_{spSDef.RewardID}) with count:{spSDef.Count} ");
+                    ModState.PotentialSalvage.Remove(spSDef);
+                }
+                else
+                {
+                    spSDef.Count = spSDef.Count - holdbackDef.Count;
+                    Mod.Log.Debug?.Write($"  reducing salvageDef:({spSDef.Description.Id}_{spSDef.Description.Name}_{spSDef.RewardID}) to count:{spSDef.Count} ");
+                }
             }
         }
 
@@ -629,7 +660,7 @@ namespace LootMagnet
             }catch(Exception e)
             {
                 UIManager.logger.LogException(e);
-                Mod.Log.Debug?.Write(e.ToString());
+                Mod.Log.Info?.Write(e.ToString());
             }
 
             // Update the contract potential salvage

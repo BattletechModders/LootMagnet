@@ -134,6 +134,8 @@ namespace LootMagnet
 
             // Calculate potential salvage, which will be rolled up at this point (including mechs!)
             ModState.PotentialSalvage = __instance.contract.GetPotentialSalvage();
+            ModState.HeldbackParts.Clear();
+            ModState.CompensationParts.Clear();
 
             // Sort by price, since other functions depend on it
             ModState.PotentialSalvage.Sort(new Helper.SalvageDefByCostDescendingComparer());
@@ -153,7 +155,7 @@ namespace LootMagnet
             }
 
             __instance.totalSalvageMadeAvailable = ModState.PotentialSalvage.Count - ModState.HeldbackParts.Count;
-            Mod.Log.Debug?.Write($"Setting totalSalvageMadeAvailable = potentialSalvage: {ModState.PotentialSalvage.Count} - heldbackParts: {ModState.HeldbackParts.Count}");
+            Mod.Log.Info?.Write($"Setting totalSalvageMadeAvailable = potentialSalvage: {ModState.PotentialSalvage.Count} - heldbackParts: {ModState.HeldbackParts.Count}");
 
             if (ModState.HeldbackParts.Count > 0)
             {
