@@ -345,13 +345,16 @@ namespace LootMagnet
 
                 if (Mod.Config.RollupBlacklistTags?.Count > 0)
                 {
-                    foreach (string componentTag in salvageDef?.MechComponentDef?.ComponentTags)
+                    if ((salvageDef != null) && (salvageDef.MechComponentDef != null) && (salvageDef.MechComponentDef.ComponentTags != null))
                     {
-                        // If the blacklist config contains the componentDef
-                        if (Mod.Config.RollupBlacklistTags.Contains(componentTag))
+                        foreach (string componentTag in salvageDef.MechComponentDef.ComponentTags)
                         {
-                            Mod.Log.Debug?.Write($"  Component blacklisted by component tag: {componentTag}");
-                            return true;
+                            // If the blacklist config contains the componentDef
+                            if (Mod.Config.RollupBlacklistTags.Contains(componentTag))
+                            {
+                                Mod.Log.Debug?.Write($"  Component blacklisted by component tag: {componentTag}");
+                                return true;
+                            }
                         }
                     }
                 }

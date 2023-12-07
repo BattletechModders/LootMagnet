@@ -242,7 +242,7 @@ namespace LootMagnet
                 return;
 
             // skip processing any non-parts or when the UI isn't up
-            if (__instance.controller.salvageDef.Type == SalvageDef.SalvageType.MECH_PART)
+            if (__instance.controller.salvageDef.Type != SalvageDef.SalvageType.COMPONENT)
                 return;
 
             if (ModState.SimGameState == null || ModState.AAR_SalvageScreen == null)
