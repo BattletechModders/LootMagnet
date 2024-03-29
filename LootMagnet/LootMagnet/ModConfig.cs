@@ -115,6 +115,8 @@ namespace LootMagnet
         public const string DT_BUTTON_DISPUTE = "BUTTON_DISPUTE";
         public const string DT_BUTTON_OK = "BUTTON_OK";
 
+        public string SellIcon = "sell-item";
+
         public Dictionary<string, string> DialogText = new Dictionary<string, string>() {
             {  DT_DISPUTE_TITLE, "DISPUTED SALVAGE" },
             {  DT_DISPUTE_TEXT,  "<b>I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii...</b>\n\n" +
