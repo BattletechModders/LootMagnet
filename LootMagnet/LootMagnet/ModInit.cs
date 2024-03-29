@@ -47,6 +47,7 @@ namespace LootMagnet
 
             Mod.Log = new DeferringLogger(modDirectory, LogName, Mod.Config.Debug, false);
 
+            Mod.Log.Info?.Write($"{Assembly.GetCallingAssembly().FullName}");
             Mod.Log.Debug?.Write($"ModDir is:{modDirectory}");
             Mod.Log.Debug?.Write($"mod.json settings are:({settingsJSON})");
             Mod.Config.LogConfig();

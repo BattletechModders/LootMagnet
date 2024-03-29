@@ -89,6 +89,38 @@ namespace LootMagnet
     public static class Contract_AddToFinalSalvage
     {
 
+        public static int GetRealSalvageCount(this SalvageDef def)
+        {
+            if (def.RewardID.Contains("_qty") == false) { return def.Count; }
+            int qtyIdx = def.RewardID.IndexOf("_qty");
+            string countS = def.RewardID.Substring(qtyIdx + "_qty".Length);
+            int count = int.Parse(countS);
+            return count;
+        }
+        public static float GetDefSellCost(this SalvageDef def)
+        {
+            if (UnityGameInstance.BattleTechGame.Simulation == null) { return 0f; }
+            switch (def.Type)
+            {
+                case SalvageDef.SalvageType.COMPONENT: return def.MechComponentDef.Description.Cost;
+                case SalvageDef.SalvageType.MECH_PART:{
+                    if(UnityGameInstance.BattleTechGame.DataManager.MechDefs.TryGet(def.Description.Id, out var mechDef))
+                    {
+                        return mechDef.Chassis.Description.Cost / UnityGameInstance.BattleTechGame.Simulation.Constants.Story.DefaultMechPartMax;
+                    }
+                    return 0f;
+                };
+                case SalvageDef.SalvageType.CHASSIS:
+                {
+                    if(UnityGameInstance.BattleTechGame.DataManager.ChassisDefs.TryGet(def.Description.Id, out var chassisDef))
+                    {
+                        return chassisDef.Description.Cost;
+                    }
+                    return 0f;
+                };
+            }
+            return 0f;
+        }
         public static void Prefix(ref bool __runOriginal, Contract __instance, ref SalvageDef def)
         {
             if (!__runOriginal) return;
@@ -134,6 +166,8 @@ namespace LootMagnet
 
             // Calculate potential salvage, which will be rolled up at this point (including mechs!)
             ModState.PotentialSalvage = __instance.contract.GetPotentialSalvage();
+            ModState.HeldbackParts.Clear();
+            ModState.CompensationParts.Clear();
 
             // Sort by price, since other functions depend on it
             ModState.PotentialSalvage.Sort(new Helper.SalvageDefByCostDescendingComparer());
@@ -153,7 +187,7 @@ namespace LootMagnet
             }
 
             __instance.totalSalvageMadeAvailable = ModState.PotentialSalvage.Count - ModState.HeldbackParts.Count;
-            Mod.Log.Debug?.Write($"Setting totalSalvageMadeAvailable = potentialSalvage: {ModState.PotentialSalvage.Count} - heldbackParts: {ModState.HeldbackParts.Count}");
+            Mod.Log.Info?.Write($"Setting totalSalvageMadeAvailable = potentialSalvage: {ModState.PotentialSalvage.Count} - heldbackParts: {ModState.HeldbackParts.Count}");
 
             if (ModState.HeldbackParts.Count > 0)
             {
@@ -240,7 +274,7 @@ namespace LootMagnet
                 return;
 
             // skip processing any non-parts or when the UI isn't up
-            if (__instance.controller.salvageDef.Type == SalvageDef.SalvageType.MECH_PART)
+            if (__instance.controller.salvageDef.Type != SalvageDef.SalvageType.COMPONENT)
                 return;
 
             if (ModState.SimGameState == null || ModState.AAR_SalvageScreen == null)

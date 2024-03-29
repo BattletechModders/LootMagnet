@@ -161,7 +161,7 @@ namespace LootMagnet
         public HashSet<string> compatibleChassis { get; set; } = null;
         public void OnPointerClick()
         {
-            Mod.Log.Info?.Write("SalvageStorageChassisWidget.OnPointerClick " + chassisId);
+            Mod.Log.Debug?.Write("SalvageStorageChassisWidget.OnPointerClick " + chassisId);
             if (compatibleChassis == null)
             {
                 compatibleChassis = CustomSalvageHelper.GetCompatibleChassis(chassisId);
@@ -184,7 +184,7 @@ namespace LootMagnet
         }
         public void OnPointerEnter()
         {
-            Mod.Log.Info?.Write("SalvageStorageChassisWidget.OnPointerEnter " + chassisId);
+            Mod.Log.Debug?.Write("SalvageStorageChassisWidget.OnPointerEnter " + chassisId);
         }
         public void OnPointerExit()
         {
