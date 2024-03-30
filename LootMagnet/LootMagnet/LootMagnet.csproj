@@ -27,8 +27,8 @@
 		<AssemblyTitle>LootMagnet</AssemblyTitle>
 		<Product>LootMagnet</Product>
 		<Copyright>Copyright ©  2021</Copyright>
-    <AssemblyVersion>8.0.3</AssemblyVersion>
-    <FileVersion>8.0.3</FileVersion>
+    <AssemblyVersion>8.0.4</AssemblyVersion>
+    <FileVersion>8.0.4</FileVersion>
     <LangVersion>11</LangVersion>
 	</PropertyGroup>
 
@@ -65,6 +65,9 @@
 		<Reference Include="CustomComponents">
 			<HintPath>$(DeployedModPath)\..\CustomComponents\CustomComponents.dll</HintPath>
 			<Private>False</Private>
+		</Reference>		
+		<Reference Include="CustomLocalSettings">
+		  <HintPath>..\..\..\..\Mods\Core\CustomLocalSettings\CustomLocalSettings.dll</HintPath>
 		</Reference>
 		<Reference Include="IRBTModUtils">
 			<HintPath>$(DeployedModPath)\..\IRBTModUtils\IRBTModUtils.dll</HintPath>

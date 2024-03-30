@@ -1,4 +1,6 @@
 ﻿
+using Localize;
+using LootMagnet.Utils;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -116,6 +118,17 @@ namespace LootMagnet
         public const string DT_BUTTON_OK = "BUTTON_OK";
 
         public string SellIcon = "sell-item";
+
+        [GameplaySafe]
+        [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_EN_US, "Improved quick sell UI")]
+        [CustomSettings.LocalSettingName(Strings.Culture.CULTURE_RU_RU, "Улучшенный интерфейс быстрой продажи")]
+        [CustomSettings.IsLocalSetting(false)]
+        [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_EN_US, "Use improved quick sell UI. Allows to sell items from reward UI, salvage UI including units parts. Disables old 'shift+click' UI")]
+        [CustomSettings.LocalSettingDescription(Strings.Culture.CULTURE_RU_RU, "Улучшенный интерфейс продажи. Позволяет продавать предметы из интерфеса лутбоксов, сальваги, так же позволяет продавать части юнитов. Отключает старый интерфейс продажи по shift+click")]
+        [CustomSettings.LocalSettingValues(true, false)]
+        [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_EN_US, "Yes", "No")]
+        [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
+        public bool UseImprovedSellUI { get; set; } = false;
 
         public Dictionary<string, string> DialogText = new Dictionary<string, string>() {
             {  DT_DISPUTE_TITLE, "DISPUTED SALVAGE" },
