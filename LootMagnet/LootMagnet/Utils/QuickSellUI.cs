@@ -17,6 +17,9 @@ using static BattleTech.SimGameBattleSimulator;
 using BattleTech.Save.SaveGameStructure;
 using TMPro;
 using HBS;
+using BattleTech.UI.TMProWrapper;
+using UIWidgetsSamples.Shops;
+using IRBTModUtils;
 
 namespace LootMagnet.Utils
 {
@@ -24,6 +27,7 @@ namespace LootMagnet.Utils
     {
         public static void SellItem(this ListElementController_BASE_NotListView item)
         {
+            if (Mod.Config.UseImprovedSellUI == false) { return; }
             if (item == null) { return; }
             if (item.ItemWidget == null) { return; }
             if (UnityGameInstance.BattleTechGame.Simulation == null) { return; }
@@ -151,6 +155,10 @@ namespace LootMagnet.Utils
         public ListElementController_BASE_NotListView owner = null;
         public SVGAsset originalIcon = null;
         public SVGAsset hoverIcon = null;
+        public GameObject priceElement = null;
+        public SVGImage priceIcon = null;
+        public LocalizableText priceText = null;
+        public HBSTooltip priceTooltip = null;
         public void Init(ListElementController_BASE_NotListView owner)
         {
             this.owner = owner;
@@ -161,10 +169,32 @@ namespace LootMagnet.Utils
             Mod.Log.Info?.Write($"QuickSellUIItem.Pool");
             this.owner = null;
             this.enabled = false;
+            if (priceElement != null) { priceElement.SetActive(false); }
         }
         public void IconLoaded(string id, SVGAsset icon)
         {
            this.hoverIcon = icon;
+            if (this.priceIcon != null) this.priceIcon.vectorGraphics = this.hoverIcon;
+        }
+        public void UpdatePrice(bool usePreCount)
+        {
+            try
+            {
+                if (this.priceElement == null) { return; }
+                if (this.owner == null) { return; }
+                if (UnityGameInstance.BattleTechGame.Simulation == null) { return; }
+                if (this.priceText == null) { return; }
+                int count = usePreCount ? owner.salvageDef.GetPreSalvageCount() : owner.salvageDef.GetRealSalvageCount();
+                Mod.Log.Info?.Write($"UpdatePrice: {owner.salvageDef.Description.Id}:{owner.salvageDef.Type} id:{owner.salvageDef.RewardID} cost:{owner.salvageDef.GetDefSellCost()} count:{owner.salvageDef.Count} count:{count} sellMod:{UnityGameInstance.BattleTechGame.Simulation.Constants.Finances.ShopSellModifier}");
+                var cost = owner.salvageDef.GetDefSellCost() * count;
+                var sellCost = Mathf.FloorToInt(cost * UnityGameInstance.BattleTechGame.Simulation.Constants.Finances.ShopSellModifier);
+                this.priceText.SetText("{0}", sellCost);
+                this.priceElement.SetActive(true);
+            }catch(Exception e)
+            {
+                UIManager.logger.LogException(e);
+                Mod.Log.Error?.Write(e.ToString());
+            }
         }
         public static QuickSellUIItem Instantine(InventoryItemElement_NotListView parent)
         {
@@ -186,9 +216,27 @@ namespace LootMagnet.Utils
             if (tooltip2 != null) { GameObject.Destroy(tooltip2); }
             //parent.gameObject.name = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView + FullMechSalvageInfo.FULL_MECH_SUFFIX + "(Clone)";
             var result = TOOLTIP2.AddComponent<QuickSellUIItem>();
+            GameObject priceElement = GameObject.Instantiate(parent.qtyElement);
+            priceElement.transform.SetParent(parent.qtyElement.transform.parent);
+            priceElement.transform.localScale = Vector3.one;
+            priceElement.transform.localPosition = parent.qtyElement.transform.localPosition;
+            result.priceElement = priceElement;
+            if (result.priceElement != null)
+            {
+                result.priceElement.name = "price";
+                result.priceIcon = result.priceElement.GetComponentInChildren<SVGImage>(true);
+                result.priceText = result.priceElement.GetComponentInChildren<LocalizableText>(true);
+                result.priceTooltip = result.priceElement.GetComponentInChildren<HBSTooltip>(true);
+                result.priceElement.SetActive(false);
+                if(result.priceTooltip != null)
+                {
+                    result.priceTooltip.SetDefaultStateData(TooltipUtilities.GetStateDataFromObject("SELLING PRICE"));
+                }
+            }
             if (UIManager.Instance.dataManager.Exists(BattleTechResourceType.SVGAsset, Mod.Config.SellIcon))
             {
                 result.hoverIcon = UIManager.Instance.dataManager.GetObjectOfType<SVGAsset>(Mod.Config.SellIcon, BattleTechResourceType.SVGAsset);
+                if(result.priceIcon != null) result.priceIcon.vectorGraphics = result.hoverIcon;
             }
             else
             {
@@ -356,7 +404,9 @@ namespace LootMagnet.Utils
                     if (item.ItemWidget == null) { continue; }
                     QuickSellUIItem qsitem = item.ItemWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
                     if (qsitem == null) { continue; }
+                    if (Mod.Config.UseImprovedSellUI == false) { continue; }
                     qsitem.enabled = true;
+                    qsitem.UpdatePrice(false);
                 }
             }
             catch (Exception e)
@@ -379,7 +429,9 @@ namespace LootMagnet.Utils
                 if (item.controller == null) { return; }
                 if (item.controller.salvageDef == null) { return; }
                 if (item.controller.salvageDef.GetDefSellCost() == 0f) { return; }
+                if (Mod.Config.UseImprovedSellUI == false) { return; }
                 qsitem.enabled = true;
+                qsitem.UpdatePrice(false);
             }
             catch (Exception e)
             {
@@ -387,5 +439,29 @@ namespace LootMagnet.Utils
             }
         }
     }
+    [HarmonyPatch(typeof(AAR_SalvageScreen), "CalculateAndAddAvailableSalvage")]
+    public static class AAR_SalvageScreen_CalculateAndAddAvailableSalvage
+    {
 
+        public static void Postfix(AAR_SalvageScreen __instance)
+        {
+            try
+            {
+                foreach (var item in __instance.AllSalvageControllers)
+                {
+                    if (item == null) { continue; }
+                    if (item.ItemWidget == null) { continue; }
+                    QuickSellUIItem qsitem = item.ItemWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
+                    if (qsitem == null) { continue; }
+                    if (Mod.Config.UseImprovedSellUI == false) { continue; }
+                    qsitem.UpdatePrice(true);
+                }
+            }
+            catch (Exception e)
+            {
+                UIManager.logger.LogException(e);
+            }
+
+        }
+    }
 }

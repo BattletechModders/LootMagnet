@@ -8,6 +8,7 @@
     "Contact": "",
     "DLL": "LootMagnet.dll",
     "DLLEntryPoint" : "LootMagnet.Mod.Init",
+	"DependsOn": [ "CustomLocalSettings" ],
     "OptionallyDependsOn" : [ "CustomComponents" ],
     "Settings": {
         "Debug" : true,

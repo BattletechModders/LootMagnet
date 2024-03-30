@@ -91,7 +91,17 @@ namespace LootMagnet
 
         public static int GetRealSalvageCount(this SalvageDef def)
         {
-            if (def.RewardID.Contains("_qty") == false) { return def.Count; }
+            if (string.IsNullOrEmpty(def.RewardID)) { return def.Count <= 0 ? 1: def.Count; }
+            if (def.RewardID.Contains("_qty") == false) { return def.Count <= 0 ? 1 : def.Count; }
+            int qtyIdx = def.RewardID.IndexOf("_qty");
+            string countS = def.RewardID.Substring(qtyIdx + "_qty".Length);
+            int count = int.Parse(countS);
+            return count;
+        }
+        public static int GetPreSalvageCount(this SalvageDef def)
+        {
+            if (string.IsNullOrEmpty(def.RewardID)) { return 1; }
+            if (def.RewardID.Contains("_qty") == false) { return 1; }
             int qtyIdx = def.RewardID.IndexOf("_qty");
             string countS = def.RewardID.Substring(qtyIdx + "_qty".Length);
             int count = int.Parse(countS);
@@ -202,6 +212,10 @@ namespace LootMagnet
 
             __runOriginal = false;
         }
+        public static void Postfix(AAR_SalvageScreen __instance)
+        {
+
+        }
     }
 
     // executes after accepting salvage, we unlock the received item widgets
@@ -265,6 +279,7 @@ namespace LootMagnet
         public static void Postfix(InventoryItemElement_NotListView __instance)
         {
 
+            if (Mod.Config.UseImprovedSellUI) { return; }
             // have to be holding shift
             if (!(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
                 return;

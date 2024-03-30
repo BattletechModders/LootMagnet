@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using LootMagnet.Utils;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -14,6 +15,7 @@ namespace LootMagnet
         public static DeferringLogger Log;
         public static string ModDir;
         public static ModConfig Config;
+        public static ModConfig GlobalConfig;
 
         public static readonly Random Random = new Random();
         public static void FinishedLoading(List<string> loadOrder)
@@ -22,6 +24,14 @@ namespace LootMagnet
             try
             {
                 CustomSalvageHelper.DetectAPI();
+                CustomSettings.ModsLocalSettingsHelper.RegisterLocalSettings("LootMagnet", "Loot Magnet"
+                  , LocalSettingsHelper.ResetSettings
+                  , LocalSettingsHelper.ReadSettings
+                  , LocalSettingsHelper.DefaultSettings
+                  , LocalSettingsHelper.CurrentSettings
+                  , LocalSettingsHelper.SaveSettings
+                  );
+
             }
             catch (Exception e)
             {
@@ -36,6 +46,7 @@ namespace LootMagnet
             Exception settingsE = null;
             try
             {
+                Mod.GlobalConfig = JsonConvert.DeserializeObject<ModConfig>(settingsJSON);
                 Mod.Config = JsonConvert.DeserializeObject<ModConfig>(settingsJSON);
             }
             catch (Exception e)
