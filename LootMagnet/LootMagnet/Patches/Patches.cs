@@ -279,6 +279,7 @@ namespace LootMagnet
         public static void Postfix(InventoryItemElement_NotListView __instance)
         {
 
+            Mod.Log.Info?.Write($"InventoryItemElement_NotListView.OnButtonClicked UseImprovedSellUI:{Mod.Config.UseImprovedSellUI}");
             if (Mod.Config.UseImprovedSellUI) { return; }
             // have to be holding shift
             if (!(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
@@ -301,7 +302,7 @@ namespace LootMagnet
             // Ensure we can access the necessary UI elements before adding money
             if (__instance.DropParent is AAR_SalvageChosen salvageChosen)
             {
-                Mod.Log.Debug?.Write("Checking contract salvage against controller item");
+                Mod.Log.Info?.Write("Checking contract salvage against controller item");
                 List<SalvageDef> salvageResults = ModState.Contract.SalvageResults;
                 SalvageDef matchingItem = salvageResults.FirstOrDefault(x => x == __instance.controller.salvageDef);
                 if (matchingItem != null)
