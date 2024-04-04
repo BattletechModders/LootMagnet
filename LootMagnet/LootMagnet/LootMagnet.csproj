@@ -27,8 +27,8 @@
 		<AssemblyTitle>LootMagnet</AssemblyTitle>
 		<Product>LootMagnet</Product>
 		<Copyright>Copyright ©  2021</Copyright>
-    <AssemblyVersion>8.0.4</AssemblyVersion>
-    <FileVersion>8.0.4</FileVersion>
+    <AssemblyVersion>8.0.5</AssemblyVersion>
+    <FileVersion>8.0.5</FileVersion>
     <LangVersion>11</LangVersion>
 	</PropertyGroup>
 

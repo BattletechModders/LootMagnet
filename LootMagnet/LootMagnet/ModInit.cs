@@ -31,7 +31,8 @@ namespace LootMagnet
                   , LocalSettingsHelper.CurrentSettings
                   , LocalSettingsHelper.SaveSettings
                   );
-
+                QuickSellHelper.InitMechLabInventoryAccess();
+                QuickSellHelper.InitCustomShopInfrustructure();
             }
             catch (Exception e)
             {
