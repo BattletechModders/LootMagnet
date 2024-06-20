@@ -317,10 +317,12 @@ namespace LootMagnet
                     ModState.SimGameState.AddFunds(sellCost, "LootMagnet", false, true);
                     ModState.SGCurrencyDisplay.UpdateMoney();
 
-                    // Create the new floatie text for the sell amount
+                    // Create the new floatie text for the sell amount, and position above item to prevent grabbing cursor focus
                     var floatie = new GameObject(ModConsts.LootMagnetFloatieGOName);
                     floatie.transform.SetParent(ModState.HBSPopupRoot.transform);
-                    floatie.transform.position = __instance.gameObject.transform.position;
+                    Vector3 vAbove = __instance.gameObject.transform.position;
+                    vAbove.y += ((RectTransform)__instance.gameObject.transform).rect.height / 2;
+                    floatie.transform.position = vAbove;
 
                     var text = floatie.AddComponent<TextMeshProUGUI>();
                     text.font = ModState.FloatieFont;
