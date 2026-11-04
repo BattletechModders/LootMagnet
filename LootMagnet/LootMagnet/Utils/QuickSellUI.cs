@@ -186,7 +186,7 @@ namespace LootMagnet.Utils
         public static void SellItem(this RewardsPopup reward, ListElementController_BASE_NotListView item)
         {
             Mod.Log.Info?.Write($"SellItem reward rare:{(reward.rarestSalvageDef == null?"null":reward.rarestSalvageDef.Description.Id)} cur:{(item.salvageDef == null?"null":item.salvageDef.Description.Id)}");
-            if (reward.rarestSalvageDef == item.salvageDef)
+            if (reward.rarestSalvageDef == item.salvageDef && Mod.Config.BlockSellRareReward)
             {
                 GenericPopupBuilder.Create(GenericPopupType.Warning, "CAN'T SELL MAIN REWARD ITEM").AddFader().Render();
                 return;
@@ -387,6 +387,7 @@ namespace LootMagnet.Utils
         public RectTransform TOOLTIP_TR = null;
         public RectTransform TOOLTIP2_TR = null;
         public RectTransform main_tr = null;
+        private bool mechIconHidden = false;
         public void Init(ListElementController_BASE_NotListView owner)
         {
             this.owner = owner;
@@ -408,6 +409,7 @@ namespace LootMagnet.Utils
             Mod.Log.Info?.Write($"QuickSellUIItem.Pool");
             this.owner = null;
             this.enabled = false;
+            this.mechIconHidden = false;
             if (priceElement != null) { priceElement.SetActive(false); }
         }
         public void IconLoaded(string id, SVGAsset icon)
@@ -535,7 +537,14 @@ namespace LootMagnet.Utils
             this.owner?.ItemWidget?.tooltip?.OnPointerEnter(eventData);
             if (this.owner != null)
             {
-                this.owner.ItemWidget.icon.vectorGraphics = this.hoverIcon;
+                // If Mech icon is active, disable it so we can show sell icon
+                InventoryItemElement_NotListView widget = this.owner.ItemWidget;
+                this.mechIconHidden = widget.iconMech != null && widget.iconMech.gameObject.activeSelf;
+                if (this.mechIconHidden)
+                {
+                    widget.SetIconNotImageActive(true);
+                }
+                widget.icon.vectorGraphics = this.hoverIcon;
             }
         }
         public override void OnPointerExit(PointerEventData eventData)
@@ -544,8 +553,15 @@ namespace LootMagnet.Utils
             this.owner?.ItemWidget?.tooltip?.OnPointerExit(eventData);
             if (this.owner != null)
             {
-                this.owner.ItemWidget.icon.vectorGraphics = this.originalIcon;
+                // If Mech icon was active, re-enable it after sell icon is removed
+                InventoryItemElement_NotListView widget = this.owner.ItemWidget;
+                widget.icon.vectorGraphics = this.originalIcon;
+                if (this.mechIconHidden)
+                {
+                    widget.SetIconNotImageActive(false);
+                }
             }
+            this.mechIconHidden = false;
         }
     }
     //[HarmonyPatch(typeof(ListElementController_SalvageWeapon_NotListView), "InitAndCreate")]
@@ -711,7 +727,7 @@ namespace LootMagnet.Utils
                 foreach (var item in __instance.AllSalvageControllers)
                 {
                     if (item == null) { continue; }
-                    if (item.salvageDef == __instance.rarestSalvageDef) { continue; }
+                    if (item.salvageDef == __instance.rarestSalvageDef && Mod.Config.BlockSellRareReward) { continue; }
                     if (item.ItemWidget == null) { continue; }
                     QuickSellUIItem qsitem = item.ItemWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
                     if (qsitem == null) { continue; }

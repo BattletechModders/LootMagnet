@@ -130,6 +130,8 @@ namespace LootMagnet
         [CustomSettings.LocalSettingValuesNames(Strings.Culture.CULTURE_RU_RU, "Да", "Нет")]
         public bool UseImprovedSellUI { get; set; } = false;
 
+        public bool BlockSellRareReward { get; set; } = true;
+
         public Dictionary<string, string> DialogText = new Dictionary<string, string>() {
             {  DT_DISPUTE_TITLE, "DISPUTED SALVAGE" },
             {  DT_DISPUTE_TEXT,  "<b>I'm sorry commander, but Section A, Sub-Section 3, Paragraph ii...</b>\n\n" +
