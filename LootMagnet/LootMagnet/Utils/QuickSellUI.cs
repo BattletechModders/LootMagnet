@@ -752,58 +752,58 @@ namespace LootMagnet.Utils
             }
         }
     }
-    [HarmonyPatch(typeof(ListElementController_InventoryGear_NotListView), "SetupLook")]
-    internal static class ListElementController_InventoryGear_NotListView_SetupLook
-    {
-
-        public static void Postfix(ListElementController_InventoryGear_NotListView __instance, InventoryItemElement_NotListView theWidget)
-        {
-            try
-            {
-                if (theWidget == null) { return; }
-                QuickSellUIItem qsitem = theWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
-                if (qsitem == null) { return; }
-                if (theWidget.controller == null) { return; }
-                if (theWidget.controller.componentDef == null) { return; }
-                if (theWidget.controller.quantity == 0) { return; }
-                if (Mod.Config.UseImprovedSellUI == false) { return; }
-                if (UnityGameInstance.BattleTechGame.Simulation == null) { return; }
-                qsitem.enabled = true;
-                qsitem.UpdateIcon();
-                qsitem.UpdateMechLabPrice();
-            }
-            catch (Exception e)
-            {
-                UIManager.logger.LogException(e);
-            }
-        }
-    }
-    [HarmonyPatch(typeof(ListElementController_InventoryWeapon_NotListView), "SetupLook")]
-    internal static class ListElementController_InventoryWeapon_NotListView_SetupLook
-    {
-
-        public static void Postfix(ListElementController_InventoryGear_NotListView __instance, InventoryItemElement_NotListView theWidget)
-        {
-            try
-            {
-                if (theWidget == null) { return; }
-                QuickSellUIItem qsitem = theWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
-                if (qsitem == null) { return; }
-                if (theWidget.controller == null) { return; }
-                if (theWidget.controller.componentDef == null) { return; }
-                if (theWidget.controller.quantity == 0) { return; }
-                if (Mod.Config.UseImprovedSellUI == false) { return; }
-                if (UnityGameInstance.BattleTechGame.Simulation == null) { return; }
-                qsitem.enabled = true;
-                qsitem.UpdateIcon();
-                qsitem.UpdateMechLabPrice();
-            }
-            catch (Exception e)
-            {
-                UIManager.logger.LogException(e);
-            }
-        }
-    }
+    // [HarmonyPatch(typeof(ListElementController_InventoryGear_NotListView), "SetupLook")]
+    // internal static class ListElementController_InventoryGear_NotListView_SetupLook
+    // {
+    //
+    //     public static void Postfix(ListElementController_InventoryGear_NotListView __instance, InventoryItemElement_NotListView theWidget)
+    //     {
+    //         try
+    //         {
+    //             if (theWidget == null) { return; }
+    //             QuickSellUIItem qsitem = theWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
+    //             if (qsitem == null) { return; }
+    //             if (theWidget.controller == null) { return; }
+    //             if (theWidget.controller.componentDef == null) { return; }
+    //             if (theWidget.controller.quantity == 0) { return; }
+    //             if (Mod.Config.UseImprovedSellUI == false) { return; }
+    //             if (UnityGameInstance.BattleTechGame.Simulation == null) { return; }
+    //             qsitem.enabled = true;
+    //             qsitem.UpdateIcon();
+    //             qsitem.UpdateMechLabPrice();
+    //         }
+    //         catch (Exception e)
+    //         {
+    //             UIManager.logger.LogException(e);
+    //         }
+    //     }
+    // }
+    // [HarmonyPatch(typeof(ListElementController_InventoryWeapon_NotListView), "SetupLook")]
+    // internal static class ListElementController_InventoryWeapon_NotListView_SetupLook
+    // {
+    //
+    //     public static void Postfix(ListElementController_InventoryGear_NotListView __instance, InventoryItemElement_NotListView theWidget)
+    //     {
+    //         try
+    //         {
+    //             if (theWidget == null) { return; }
+    //             QuickSellUIItem qsitem = theWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
+    //             if (qsitem == null) { return; }
+    //             if (theWidget.controller == null) { return; }
+    //             if (theWidget.controller.componentDef == null) { return; }
+    //             if (theWidget.controller.quantity == 0) { return; }
+    //             if (Mod.Config.UseImprovedSellUI == false) { return; }
+    //             if (UnityGameInstance.BattleTechGame.Simulation == null) { return; }
+    //             qsitem.enabled = true;
+    //             qsitem.UpdateIcon();
+    //             qsitem.UpdateMechLabPrice();
+    //         }
+    //         catch (Exception e)
+    //         {
+    //             UIManager.logger.LogException(e);
+    //         }
+    //     }
+    // }
     [HarmonyPatch(typeof(AAR_SalvageScreen), "CalculateAndAddAvailableSalvage")]
     public static class AAR_SalvageScreen_CalculateAndAddAvailableSalvage
     {
