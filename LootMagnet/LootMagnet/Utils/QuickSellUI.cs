@@ -564,69 +564,7 @@ namespace LootMagnet.Utils
             this.mechIconHidden = false;
         }
     }
-    //[HarmonyPatch(typeof(ListElementController_SalvageWeapon_NotListView), "InitAndCreate")]
-    //internal static class ListElementController_SalvageWeapon_NotListView_InitAndCreate
-    //{
 
-    //    public static void Postfix(ListElementController_SalvageWeapon_NotListView __instance, SalvageDef theSalvageDef, SimGameState theSim, DataManager dm, IMechLabDropTarget dropParent, int theQuantity, bool isStoreItem)
-    //    {
-    //        try
-    //        {
-    //            QuickSellUIItem qsitem = __instance.ItemWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
-    //            if (qsitem == null)
-    //            {
-    //                qsitem = QuickSellUIItem.Instantine(__instance.ItemWidget);
-    //            }
-    //            qsitem.Init(__instance);
-    //            qsitem.enabled = false;
-    //        }catch(Exception e)
-    //        {
-    //            UIManager.logger.LogException(e);
-    //        }
-    //    }
-    //}
-    //[HarmonyPatch(typeof(ListElementController_SalvageGear_NotListView), "InitAndCreate")]
-    //internal static class ListElementController_SalvageGear_NotListView_InitAndCreate
-    //{
-
-    //    public static void Postfix(ListElementController_SalvageWeapon_NotListView __instance, SalvageDef theSalvageDef, SimGameState theSim, DataManager dm, IMechLabDropTarget dropParent, int theQuantity, bool isStoreItem)
-    //    {
-    //        try { 
-    //            QuickSellUIItem qsitem = __instance.ItemWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
-    //            if (qsitem == null)
-    //            {
-    //                qsitem = QuickSellUIItem.Instantine(__instance.ItemWidget);
-    //            }
-    //            qsitem.Init(__instance);
-    //            qsitem.enabled = false;
-    //        }catch(Exception e)
-    //        {
-    //            UIManager.logger.LogException(e);
-    //        }
-    //    }
-    //}
-    //[HarmonyPatch(typeof(ListElementController_SalvageMechPart_NotListView), "InitAndCreate")]
-    //internal static class ListElementController_SalvageMechPart_NotListView_InitAndCreate
-    //{
-
-    //    public static void Postfix(ListElementController_SalvageMechPart_NotListView __instance, SalvageDef theSalvageDef, SimGameState theSim, DataManager dm, IMechLabDropTarget dropParent, int theQuantity, bool isStoreItem)
-    //    {
-    //        try
-    //        {
-    //            QuickSellUIItem qsitem = __instance.ItemWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
-    //            if (qsitem == null)
-    //            {
-    //                qsitem = QuickSellUIItem.Instantine(__instance.ItemWidget);
-    //            }
-    //            qsitem.Init(__instance);
-    //            qsitem.enabled = false;
-    //        }
-    //        catch (Exception e)
-    //        {
-    //            UIManager.logger.LogException(e);
-    //        }
-    //    }
-    //}
     [HarmonyPatch(typeof(InventoryItemElement_NotListView), "SetData")]
     [HarmonyPatch(new Type[] { typeof(ListElementController_BASE_NotListView), typeof(IMechLabDropTarget), typeof(int), typeof(bool), typeof(UnityAction<InventoryItemElement_NotListView>) })]
     internal static class InventoryItemElement_NotListView_SetData
