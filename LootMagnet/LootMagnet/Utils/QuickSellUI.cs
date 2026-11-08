@@ -1,31 +1,18 @@
-﻿using BattleTech.UI;
-using SVGImporter;
-using System;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static BattleTech.Save.Core.ThreadedSaveManagerRequest;
-using UnityEngine.EventSystems;
-using UnityEngine;
-using UnityEngine.UI;
-using BattleTech.Data;
-using BattleTech.UI.Tooltips;
-using CustomComponents;
-using System.Threading;
-using static BattleTech.SimGameBattleSimulator;
-using BattleTech.Save.SaveGameStructure;
-using TMPro;
-using HBS;
-using BattleTech.UI.TMProWrapper;
-using UIWidgetsSamples.Shops;
-using IRBTModUtils;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+using BattleTech.Data;
+using BattleTech.UI;
+using BattleTech.UI.TMProWrapper;
+using BattleTech.UI.Tooltips;
+using HBS;
+using SVGImporter;
+using TMPro;
+using UnityEngine;
 using UnityEngine.Events;
-using BattleTech.Network.Services.Types;
-using static RootMotion.FinalIK.Grounding;
-using System.Collections;
+using UnityEngine.EventSystems;
 
 namespace LootMagnet.Utils
 {
@@ -74,7 +61,7 @@ namespace LootMagnet.Utils
                     if(CustomShops_Control != null)
                     {
                         Mod.Log.Info?.Write($"{CustomShops_Control.FullName} found");
-                        QuickSellHelper.get_SaleShops = AccessTools.Field(CustomShops_Control, "SaleShops");
+                        get_SaleShops = AccessTools.Field(CustomShops_Control, "SaleShops");
                         if (get_SaleShops != null)
                         {
                             Mod.Log.Info?.Write($"  {get_SaleShops.Name} found");
@@ -88,7 +75,7 @@ namespace LootMagnet.Utils
                     if(CustomShops_UIControler != null)
                     {
                         Mod.Log.Info?.Write($"{CustomShops_UIControler.FullName} found");
-                        QuickSellHelper.CustomShops_SellItem = AccessTools.Method(CustomShops_UIControler, "SellItem");
+                        CustomShops_SellItem = AccessTools.Method(CustomShops_UIControler, "SellItem");
                         if (CustomShops_SellItem != null)
                         {
                             Mod.Log.Info?.Write($"  {CustomShops_SellItem.Name} found");
@@ -186,7 +173,7 @@ namespace LootMagnet.Utils
         public static void SellItem(this RewardsPopup reward, ListElementController_BASE_NotListView item)
         {
             Mod.Log.Info?.Write($"SellItem reward rare:{(reward.rarestSalvageDef == null?"null":reward.rarestSalvageDef.Description.Id)} cur:{(item.salvageDef == null?"null":item.salvageDef.Description.Id)}");
-            if (reward.rarestSalvageDef == item.salvageDef)
+            if (reward.rarestSalvageDef == item.salvageDef && Mod.Config.BlockSellRareReward)
             {
                 GenericPopupBuilder.Create(GenericPopupType.Warning, "CAN'T SELL MAIN REWARD ITEM").AddFader().Render();
                 return;
@@ -206,11 +193,15 @@ namespace LootMagnet.Utils
                 Mod.Log.Warn?.Write($"Can't find matching item for {item.salvageDef.Description.Id}");
                 return;
             }
-            var cost = item.salvageDef.Description.Cost;
+            var cost = item.salvageDef.GetDefSellCost();
             var sellCost = Mathf.FloorToInt(cost * UnityGameInstance.BattleTechGame.Simulation.Constants.Finances.ShopSellModifier);
-
-            Mod.Log.Info?.Write($"Selling {matchingItem?.GUID} worth {item.salvageDef.Description.Cost}" +
-                          $" x {UnityGameInstance.BattleTechGame.Simulation.Constants.Finances.ShopSellModifier} shopSellModifier = {item.salvageDef.Description.Cost * UnityGameInstance.BattleTechGame.Simulation.Constants.Finances.ShopSellModifier}");
+            if(sellCost <= 0)
+            {
+                GenericPopupBuilder.Create(GenericPopupType.Warning, "YOU CAN'T SELL THIS").AddFader().Render();
+                return;
+            }
+            Mod.Log.Info?.Write($"Selling {matchingItem?.GUID} worth {item.salvageDef.GetDefSellCost()}" +
+                          $" x {UnityGameInstance.BattleTechGame.Simulation.Constants.Finances.ShopSellModifier} shopSellModifier = {sellCost}");
 
             UnityGameInstance.BattleTechGame.Simulation.AddFunds(sellCost, "LootMagnet", false, true);
             UnityGameInstance.BattleTechGame.Simulation.RoomManager.CurrencyWidget.UpdateMoney();
@@ -236,7 +227,16 @@ namespace LootMagnet.Utils
             reward.AllSalvageControllers.Remove(item);
             item.Pool();
             matchingItem.Count -= 1;
-            OnSellItems(item.salvageDef.Description.Id, item.salvageDef.ComponentType, 1, sellCost);
+            if (item.salvageDef.Type == SalvageDef.SalvageType.CHASSIS)
+            {
+                OnSellItems(item.salvageDef.Description.Id, ComponentType.MechPart, 
+                    UnityGameInstance.BattleTechGame.Simulation.Constants.Story.DefaultMechPartMax, 
+                    Mathf.FloorToInt((float)sellCost / (float)UnityGameInstance.BattleTechGame.Simulation.Constants.Story.DefaultMechPartMax));
+            }
+            else
+            {
+                OnSellItems(item.salvageDef.Description.Id, item.salvageDef.ComponentType, 1, sellCost);
+            }
         }
         public static void SellItem(this AAR_SalvageScreen salvageScreen, ListElementController_BASE_NotListView item)
         {
@@ -374,6 +374,7 @@ namespace LootMagnet.Utils
         public RectTransform TOOLTIP_TR = null;
         public RectTransform TOOLTIP2_TR = null;
         public RectTransform main_tr = null;
+        private bool mechIconHidden = false;
         public void Init(ListElementController_BASE_NotListView owner)
         {
             this.owner = owner;
@@ -395,6 +396,7 @@ namespace LootMagnet.Utils
             Mod.Log.Info?.Write($"QuickSellUIItem.Pool");
             this.owner = null;
             this.enabled = false;
+            this.mechIconHidden = false;
             if (priceElement != null) { priceElement.SetActive(false); }
         }
         public void IconLoaded(string id, SVGAsset icon)
@@ -415,7 +417,7 @@ namespace LootMagnet.Utils
                 var cost = owner.salvageDef.GetDefSellCost() * count;
                 var sellCost = Mathf.FloorToInt(cost * UnityGameInstance.BattleTechGame.Simulation.Constants.Finances.ShopSellModifier);
                 this.priceText.SetText("{0}", sellCost);
-                this.priceElement.SetActive(sellCost > 0f);
+                this.priceElement.SetActive(sellCost > 0);
             }catch(Exception e)
             {
                 UIManager.logger.LogException(e);
@@ -447,7 +449,7 @@ namespace LootMagnet.Utils
         {
             var TOOLTIP = parent.SalvageTooltip.gameObject;
             var TYPE_ICON_TR = parent.icon.transform.parent.parent.gameObject.GetComponent<RectTransform>();
-            var TOOLTIP2 = GameObject.Instantiate(TOOLTIP);
+            var TOOLTIP2 = Instantiate(TOOLTIP);
             TOOLTIP2.name = "TOOLTIP2";
             var TOOLTIP_TR = TOOLTIP.GetComponent<RectTransform>();
             var TOOLTIP2_TR = TOOLTIP2.GetComponent<RectTransform>();
@@ -461,14 +463,14 @@ namespace LootMagnet.Utils
             TOOLTIP2_TR.anchoredPosition = new Vector2(0f,1f);
             Mod.Log.Info?.Write($" TYPE_ICON_TR:{TYPE_ICON_TR.sizeDelta} main_tr:{main_tr.sizeDelta} TOOLTIP_TR:{TOOLTIP_TR.sizeDelta},{TOOLTIP_TR.anchoredPosition}");
             var tooltip2 = TOOLTIP2.GetComponent<HBSTooltip>();
-            if (tooltip2 != null) { GameObject.Destroy(tooltip2); }
+            if (tooltip2 != null) { Destroy(tooltip2); }
             //parent.gameObject.name = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView + FullMechSalvageInfo.FULL_MECH_SUFFIX + "(Clone)";
             var result = TOOLTIP2.AddComponent<QuickSellUIItem>();
             result.TYPE_ICON_TR = TYPE_ICON_TR;
             result.TOOLTIP2_TR = TOOLTIP2_TR;
             result.TOOLTIP_TR = TOOLTIP_TR;
             result.main_tr = main_tr;
-            GameObject priceElement = GameObject.Instantiate(parent.qtyElement);
+            GameObject priceElement = Instantiate(parent.qtyElement);
             priceElement.transform.SetParent(parent.qtyElement.transform.parent);
             priceElement.transform.localScale = Vector3.one;
             priceElement.transform.localPosition = parent.qtyElement.transform.localPosition;
@@ -522,7 +524,14 @@ namespace LootMagnet.Utils
             this.owner?.ItemWidget?.tooltip?.OnPointerEnter(eventData);
             if (this.owner != null)
             {
-                this.owner.ItemWidget.icon.vectorGraphics = this.hoverIcon;
+                // If Mech icon is active, disable it so we can show sell icon
+                InventoryItemElement_NotListView widget = this.owner.ItemWidget;
+                this.mechIconHidden = widget.iconMech != null && widget.iconMech.gameObject.activeSelf;
+                if (this.mechIconHidden)
+                {
+                    widget.SetIconNotImageActive(true);
+                }
+                widget.icon.vectorGraphics = this.hoverIcon;
             }
         }
         public override void OnPointerExit(PointerEventData eventData)
@@ -531,73 +540,18 @@ namespace LootMagnet.Utils
             this.owner?.ItemWidget?.tooltip?.OnPointerExit(eventData);
             if (this.owner != null)
             {
-                this.owner.ItemWidget.icon.vectorGraphics = this.originalIcon;
+                // If Mech icon was active, re-enable it after sell icon is removed
+                InventoryItemElement_NotListView widget = this.owner.ItemWidget;
+                widget.icon.vectorGraphics = this.originalIcon;
+                if (this.mechIconHidden)
+                {
+                    widget.SetIconNotImageActive(false);
+                }
             }
+            this.mechIconHidden = false;
         }
     }
-    //[HarmonyPatch(typeof(ListElementController_SalvageWeapon_NotListView), "InitAndCreate")]
-    //internal static class ListElementController_SalvageWeapon_NotListView_InitAndCreate
-    //{
 
-    //    public static void Postfix(ListElementController_SalvageWeapon_NotListView __instance, SalvageDef theSalvageDef, SimGameState theSim, DataManager dm, IMechLabDropTarget dropParent, int theQuantity, bool isStoreItem)
-    //    {
-    //        try
-    //        {
-    //            QuickSellUIItem qsitem = __instance.ItemWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
-    //            if (qsitem == null)
-    //            {
-    //                qsitem = QuickSellUIItem.Instantine(__instance.ItemWidget);
-    //            }
-    //            qsitem.Init(__instance);
-    //            qsitem.enabled = false;
-    //        }catch(Exception e)
-    //        {
-    //            UIManager.logger.LogException(e);
-    //        }
-    //    }
-    //}
-    //[HarmonyPatch(typeof(ListElementController_SalvageGear_NotListView), "InitAndCreate")]
-    //internal static class ListElementController_SalvageGear_NotListView_InitAndCreate
-    //{
-
-    //    public static void Postfix(ListElementController_SalvageWeapon_NotListView __instance, SalvageDef theSalvageDef, SimGameState theSim, DataManager dm, IMechLabDropTarget dropParent, int theQuantity, bool isStoreItem)
-    //    {
-    //        try { 
-    //            QuickSellUIItem qsitem = __instance.ItemWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
-    //            if (qsitem == null)
-    //            {
-    //                qsitem = QuickSellUIItem.Instantine(__instance.ItemWidget);
-    //            }
-    //            qsitem.Init(__instance);
-    //            qsitem.enabled = false;
-    //        }catch(Exception e)
-    //        {
-    //            UIManager.logger.LogException(e);
-    //        }
-    //    }
-    //}
-    //[HarmonyPatch(typeof(ListElementController_SalvageMechPart_NotListView), "InitAndCreate")]
-    //internal static class ListElementController_SalvageMechPart_NotListView_InitAndCreate
-    //{
-
-    //    public static void Postfix(ListElementController_SalvageMechPart_NotListView __instance, SalvageDef theSalvageDef, SimGameState theSim, DataManager dm, IMechLabDropTarget dropParent, int theQuantity, bool isStoreItem)
-    //    {
-    //        try
-    //        {
-    //            QuickSellUIItem qsitem = __instance.ItemWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
-    //            if (qsitem == null)
-    //            {
-    //                qsitem = QuickSellUIItem.Instantine(__instance.ItemWidget);
-    //            }
-    //            qsitem.Init(__instance);
-    //            qsitem.enabled = false;
-    //        }
-    //        catch (Exception e)
-    //        {
-    //            UIManager.logger.LogException(e);
-    //        }
-    //    }
-    //}
     [HarmonyPatch(typeof(InventoryItemElement_NotListView), "SetData")]
     [HarmonyPatch(new Type[] { typeof(ListElementController_BASE_NotListView), typeof(IMechLabDropTarget), typeof(int), typeof(bool), typeof(UnityAction<InventoryItemElement_NotListView>) })]
     internal static class InventoryItemElement_NotListView_SetData
@@ -698,7 +652,7 @@ namespace LootMagnet.Utils
                 foreach (var item in __instance.AllSalvageControllers)
                 {
                     if (item == null) { continue; }
-                    if (item.salvageDef == __instance.rarestSalvageDef) { continue; }
+                    if (item.salvageDef == __instance.rarestSalvageDef && Mod.Config.BlockSellRareReward) { continue; }
                     if (item.ItemWidget == null) { continue; }
                     QuickSellUIItem qsitem = item.ItemWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
                     if (qsitem == null) { continue; }
@@ -739,58 +693,7 @@ namespace LootMagnet.Utils
             }
         }
     }
-    [HarmonyPatch(typeof(ListElementController_InventoryGear_NotListView), "SetupLook")]
-    internal static class ListElementController_InventoryGear_NotListView_SetupLook
-    {
-
-        public static void Postfix(ListElementController_InventoryGear_NotListView __instance, InventoryItemElement_NotListView theWidget)
-        {
-            try
-            {
-                if (theWidget == null) { return; }
-                QuickSellUIItem qsitem = theWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
-                if (qsitem == null) { return; }
-                if (theWidget.controller == null) { return; }
-                if (theWidget.controller.componentDef == null) { return; }
-                if (theWidget.controller.quantity == 0) { return; }
-                if (Mod.Config.UseImprovedSellUI == false) { return; }
-                if (UnityGameInstance.BattleTechGame.Simulation == null) { return; }
-                qsitem.enabled = true;
-                qsitem.UpdateIcon();
-                qsitem.UpdateMechLabPrice();
-            }
-            catch (Exception e)
-            {
-                UIManager.logger.LogException(e);
-            }
-        }
-    }
-    [HarmonyPatch(typeof(ListElementController_InventoryWeapon_NotListView), "SetupLook")]
-    internal static class ListElementController_InventoryWeapon_NotListView_SetupLook
-    {
-
-        public static void Postfix(ListElementController_InventoryGear_NotListView __instance, InventoryItemElement_NotListView theWidget)
-        {
-            try
-            {
-                if (theWidget == null) { return; }
-                QuickSellUIItem qsitem = theWidget.gameObject.GetComponentInChildren<QuickSellUIItem>(true);
-                if (qsitem == null) { return; }
-                if (theWidget.controller == null) { return; }
-                if (theWidget.controller.componentDef == null) { return; }
-                if (theWidget.controller.quantity == 0) { return; }
-                if (Mod.Config.UseImprovedSellUI == false) { return; }
-                if (UnityGameInstance.BattleTechGame.Simulation == null) { return; }
-                qsitem.enabled = true;
-                qsitem.UpdateIcon();
-                qsitem.UpdateMechLabPrice();
-            }
-            catch (Exception e)
-            {
-                UIManager.logger.LogException(e);
-            }
-        }
-    }
+    
     [HarmonyPatch(typeof(AAR_SalvageScreen), "CalculateAndAddAvailableSalvage")]
     public static class AAR_SalvageScreen_CalculateAndAddAvailableSalvage
     {

@@ -84,6 +84,74 @@ namespace LootMagnet
         }
     }
 
+    [HarmonyPatch(typeof(ListElementController_SalvageMechPart_NotListView), "IsDuplicateContent")]
+    [HarmonyPatch(new Type[] { typeof(ListElementController_BASE_NotListView) })]
+    public static class ListElementController_SalvageMechPart_IsDuplicateContent
+    {
+        public static void Prefix(ref bool __runOriginal, ref bool __result, ListElementController_SalvageMechPart_NotListView __instance, ListElementController_BASE_NotListView otherController)
+        {
+            try
+            {
+                if (otherController.ItemWidget == null) { __runOriginal = false; __result = false; return; }
+                if (__instance.ItemWidget == null) { __runOriginal = false; __result = false; return; }
+            }
+            catch (Exception e)
+            {
+                UIManager.logger.LogException(e);
+            }
+        }
+    }
+    [HarmonyPatch(typeof(ListElementController_SalvageGear_NotListView), "IsDuplicateContent")]
+    [HarmonyPatch(new Type[] { typeof(ListElementController_BASE_NotListView) })]
+    public static class ListElementController_SalvageGear_NotListView_IsDuplicateContent
+    {
+        public static void Prefix(ref bool __runOriginal, ref bool __result, ListElementController_SalvageGear_NotListView __instance, ListElementController_BASE_NotListView otherController)
+        {
+            try
+            {
+                if (otherController.ItemWidget == null) { __runOriginal = false; __result = false; return; }
+                if (__instance.ItemWidget == null) { __runOriginal = false; __result = false; return; }
+            }
+            catch (Exception e)
+            {
+                UIManager.logger.LogException(e);
+            }
+        }
+    }
+    [HarmonyPatch(typeof(ListElementController_SalvageWeapon_NotListView), "IsDuplicateContent")]
+    [HarmonyPatch(new Type[] { typeof(ListElementController_BASE_NotListView) })]
+    public static class ListElementController_SalvageWeapon_NotListView_IsDuplicateContent
+    {
+        public static void Prefix(ref bool __runOriginal, ref bool __result, ListElementController_SalvageWeapon_NotListView __instance, ListElementController_BASE_NotListView otherController)
+        {
+            try
+            {
+                if (otherController.ItemWidget == null) { __runOriginal = false; __result = false; return; }
+                if (__instance.ItemWidget == null) { __runOriginal = false; __result = false; return; }
+            }
+            catch (Exception e)
+            {
+                UIManager.logger.LogException(e);
+            }
+        }
+    }
+    [HarmonyPatch(typeof(ListElementController_SalvageFullMech_NotListView), "IsDuplicateContent")]
+    [HarmonyPatch(new Type[] { typeof(ListElementController_BASE_NotListView) })]
+    public static class ListElementController_SalvageFullMech_NotListView_IsDuplicateContent
+    {
+        public static void Prefix(ref bool __runOriginal, ref bool __result, ListElementController_SalvageFullMech_NotListView __instance, ListElementController_BASE_NotListView otherController)
+        {
+            try
+            {
+                if (otherController.ItemWidget == null) { __runOriginal = false; __result = false; return; }
+                if (__instance.ItemWidget == null) { __runOriginal = false; __result = false; return; }
+            }
+            catch (Exception e)
+            {
+                UIManager.logger.LogException(e);
+            }
+        }
+    }
     [HarmonyPatch(typeof(Contract), "AddToFinalSalvage")]
     [HarmonyAfter("io.github.denadan.CustomComponents")]
     public static class Contract_AddToFinalSalvage
@@ -91,7 +159,7 @@ namespace LootMagnet
 
         public static int GetRealSalvageCount(this SalvageDef def)
         {
-            if (string.IsNullOrEmpty(def.RewardID)) { return def.Count <= 0 ? 1: def.Count; }
+            if (string.IsNullOrEmpty(def.RewardID)) { return def.Count <= 0 ? 1 : def.Count; }
             if (def.RewardID.Contains("_qty") == false) { return def.Count <= 0 ? 1 : def.Count; }
             int qtyIdx = def.RewardID.IndexOf("_qty");
             string countS = def.RewardID.Substring(qtyIdx + "_qty".Length);
@@ -113,21 +181,26 @@ namespace LootMagnet
             switch (def.Type)
             {
                 case SalvageDef.SalvageType.COMPONENT: return def.MechComponentDef.Description.Cost;
-                case SalvageDef.SalvageType.MECH_PART:{
-                    if(UnityGameInstance.BattleTechGame.DataManager.MechDefs.TryGet(def.Description.Id, out var mechDef))
+                case SalvageDef.SalvageType.MECH_PART:
                     {
-                        return mechDef.Chassis.Description.Cost / UnityGameInstance.BattleTechGame.Simulation.Constants.Story.DefaultMechPartMax;
-                    }
-                    return 0f;
-                };
+                        if (UnityGameInstance.BattleTechGame.DataManager.MechDefs.TryGet(def.Description.Id, out var mechDef))
+                        {
+                            return mechDef.SimGameMechPartCost;
+                        }
+                        return 0f;
+                    };
                 case SalvageDef.SalvageType.CHASSIS:
-                {
-                    if(UnityGameInstance.BattleTechGame.DataManager.ChassisDefs.TryGet(def.Description.Id, out var chassisDef))
                     {
-                        return chassisDef.Description.Cost;
-                    }
-                    return 0f;
-                };
+                        if (UnityGameInstance.BattleTechGame.DataManager.ChassisDefs.TryGet(def.Description.Id, out var chassisDef))
+                        {
+                            return chassisDef.Description.Cost;
+                        }
+                        else if (UnityGameInstance.BattleTechGame.DataManager.MechDefs.TryGet(def.Description.Id, out var mechDef))
+                        {
+                            return mechDef.SimGameMechPartCost * UnityGameInstance.BattleTechGame.Simulation.Constants.Story.DefaultMechPartMax; ;
+                        }
+                        return 0f;
+                    };
             }
             return 0f;
         }
@@ -241,16 +314,15 @@ namespace LootMagnet
                     iie.SetClickable(true);
                 }
             }
-
-            // Update text with Quick Sell instructions
-            string localText = new Text(Mod.Config.LocalizedText[ModConfig.LT_QUICK_SELL], new object[] { }).ToString();
-            __instance.howManyReceivedText.SetText(string.Concat(__instance.howManyReceivedText.text, localText));
-
+            if (Mod.Config.UseImprovedSellUI == false)
+            {
+                // Update text with Quick Sell instructions
+                string localText = new Text(Mod.Config.LocalizedText[ModConfig.LT_QUICK_SELL], new object[] { }).ToString();
+                __instance.howManyReceivedText.SetText(string.Concat(__instance.howManyReceivedText.text, localText));
+            }
             // Painful, full-context searches here
-            ModState.HBSPopupRoot =
-                GameObject.Find(ModConsts.HBSPopupRootGOName);
-            ModState.FloatieFont =
-                Resources.FindObjectsOfTypeAll<TMP_FontAsset>().First(x => x.name == "UnitedSansReg-Black SDF");
+            ModState.HBSPopupRoot = GameObject.Find(ModConsts.HBSPopupRootGOName);
+            ModState.FloatieFont = Resources.FindObjectsOfTypeAll<TMP_FontAsset>().First(x => x.name == "UnitedSansReg-Black SDF");
             ModState.SGCurrencyDisplay = (SGCurrencyDisplay)Object.FindObjectOfType(typeof(SGCurrencyDisplay));
         }
     }
